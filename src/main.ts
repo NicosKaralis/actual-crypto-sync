@@ -4,7 +4,13 @@ import { pathToFileURL } from 'node:url';
 
 import { type Span, SpanStatusCode } from '@opentelemetry/api';
 
-import { type Actual, type ActualApi, type OpenBudgetOptions, openBudget } from './actual.ts';
+import {
+  type Actual,
+  type ActualApi,
+  type OpenBudgetOptions,
+  openBudget,
+  prepareDataDir,
+} from './actual.ts';
 import { collectBalances } from './balances.ts';
 import { type Config, ConfigError, loadConfig } from './config.ts';
 import { redactUrl, toUnits } from './format.ts';
@@ -381,7 +387,10 @@ export async function main(
   try {
     return await run({
       readConfig: () => loadConfig(readConfigFile(configFile), env),
-      openActual: async (options) => openBudget(await actualApi(), options),
+      openActual: async (options) => {
+        prepareDataDir(options.dataDir);
+        return openBudget(await actualApi(), options);
+      },
       fetch: globalThis.fetch,
       telemetry,
       log: createLog({ debug }),

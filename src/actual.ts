@@ -1,6 +1,8 @@
 // The calls to Actual, through @actual-app/api. Its errors are rethrown with
 // only their code: their messages can hold what was sent, secrets included.
 
+import { accessSync, constants, mkdirSync } from 'node:fs';
+
 import type { ActualAuth } from './config.ts';
 import type { PlanTransaction } from './plan.ts';
 
@@ -90,6 +92,24 @@ export class ActualError extends Error {
     super(message);
     this.name = 'ActualError';
     this.code = code;
+  }
+}
+
+/**
+ * Creates the data directory when it's missing and checks it's writable.
+ * @actual-app/api does neither: it fails the download with a filesystem error.
+ */
+export function prepareDataDir(dataDir: string): void {
+  try {
+    mkdirSync(dataDir, { recursive: true });
+    accessSync(dataDir, constants.W_OK);
+  } catch (error) {
+    const raw = error instanceof Error && 'code' in error ? error.code : undefined;
+    const code = typeof raw === 'string' && /^E[A-Z]{1,32}$/.test(raw) ? raw : undefined;
+    throw new ActualError(
+      `can't use the data directory ${dataDir} (${code ?? 'unknown error'}); set ACTUAL_DATA_DIR to a writable directory`,
+      code,
+    );
   }
 }
 

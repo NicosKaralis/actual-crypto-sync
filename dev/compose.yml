@@ -1,0 +1,27 @@
+# A local Actual server for development: `npm run dev:up`, then `npm run dev:seed`.
+# The image matches @actual-app/api's version; Renovate moves them together.
+name: actual-crypto-sync-dev
+
+services:
+  actual:
+    image: actualbudget/actual-server:26.11.0@sha256:06cf186569cf58d93e12659ff1a517b65b5b0ebee7050a3991d4bd8a1d398da6
+    ports:
+      - 127.0.0.1:5006:5006
+    volumes:
+      # Survives `npm run dev:down`; `npm run dev:down -- -v` wipes it.
+      - actual-data:/data
+    # The image has no healthcheck of its own; this one lets `up --wait` return once it answers.
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:5006/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  actual-data:

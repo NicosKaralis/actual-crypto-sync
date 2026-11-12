@@ -1,0 +1,32 @@
+# The dev budget from `npm run dev:seed`, logged in with a session token.
+# dev/config.password.yml is the same with the server password.
+# The wallets are public exchange wallets, the same as in the tests.
+
+actual:
+  server_url: http://localhost:5006
+  sync_id: ${ACTUAL_BUDGET_SYNC_ID}
+  auth:
+    session: ${ACTUAL_SESSION_TOKEN}
+
+prices:
+  currency: eur
+  providers: coingecko
+
+accounts:
+  - name: "TRON: TRX"
+    chain: tron
+    token: TRX
+    wallets:
+      - TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
+
+  - name: "TRON: USDT"
+    chain: tron
+    token: USDT
+    wallets:
+      - TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
+
+  - name: Bitcoin
+    chain: bitcoin
+    token: BTC
+    wallets:
+      - bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v

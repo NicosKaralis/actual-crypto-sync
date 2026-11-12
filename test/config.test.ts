@@ -356,6 +356,25 @@ describe('loadConfig: chains and wallets', () => {
     );
   });
 
+  test('wallets may be a single address', () => {
+    const config = load((raw) => Object.assign(firstAccount(raw), { wallets: '${TRON_WALLET}' }));
+    assert.deepEqual(config.accounts[0]?.wallets, [{ address: TRON_WALLET }]);
+  });
+
+  test('a single address is checked too', () => {
+    assertConfigError(
+      () => load((raw) => Object.assign(firstAccount(raw), { wallets: 'not-an-address' })),
+      'accounts[0].wallets: not a valid tron address',
+    );
+  });
+
+  test('wallets as a map is an error', () => {
+    assertConfigError(
+      () => load((raw) => Object.assign(firstAccount(raw), { wallets: { address: 'x' } })),
+      'accounts[0].wallets: expected an address or a list of addresses',
+    );
+  });
+
   test('an account needs a wallet', () => {
     assertConfigError(
       () => load((raw) => Object.assign(firstAccount(raw), { wallets: [] })),
@@ -848,7 +867,7 @@ describe('config.example.yml', () => {
       config.accounts.map((a) => [a.name, a.chain, a.token.symbol, a.wallets[0]?.address]),
       [
         ['TC9F...R2MJ: TRX', 'tron', 'TRX', TRON_WALLET],
-        ['TC9F...R2MJ: USDT', 'tron', 'USDT', TRON_WALLET],
+        ['SUNDOG Account', 'tron', 'SUNDOG', TRON_WALLET],
         ['Bitcoin', 'bitcoin', 'BTC', BTC_WALLET],
       ],
     );
