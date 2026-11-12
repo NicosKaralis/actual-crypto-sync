@@ -80,7 +80,10 @@ export function buildNote(note: {
   const shownBalance = formatDecimals(balance, displayDecimals);
   const shownDelta = formatDelta(delta, displayDecimals);
   const quote = formatDecimals(price, QUOTE_DECIMALS);
-  const value = formatDecimals(balance * price, currencyDecimals(currency));
+  // Rounded to cents the same way as the amount written to Actual, so the note
+  // never shows a value a cent off from the account.
+  const valueCents = Math.round(balance * price * 100);
+  const value = formatDecimals(valueCents / 100, currencyDecimals(currency));
   return `${shownBalance} ${symbol} (Δ ${shownDelta} @ ${quote} ${code}/${symbol}, ${value} ${code})`;
 }
 

@@ -134,6 +134,21 @@ describe('planAccount', () => {
     assert.deepEqual(second.toDelete, []);
   });
 
+  test("the note's value is the value written to the account", () => {
+    for (const [balance, price] of [
+      [156.9193, 0.297],
+      [1.005, 1],
+      [0.125, 0.1],
+      [10.075, 1],
+      [2.675, 1],
+      [0.01234567, 91234.56789],
+    ] as const) {
+      const result = plan([], { balance, price });
+      const shown = /, (?<value>[\d.]+) EUR\)$/.exec(result.note)?.groups?.value;
+      assert.equal(Number(shown), result.valueCents / 100, result.note);
+    }
+  });
+
   test('a missing or zero price throws instead of writing the account down to 0', () => {
     for (const price of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
       assert.throws(() => plan([], { price }), /price/);
