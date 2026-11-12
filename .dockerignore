@@ -1,0 +1,13 @@
+.git
+.github
+.claude
+node_modules
+coverage
+cache
+.cache
+plan
+CLAUDE.md
+*.log
+.env
+.env.*
+dev/.env
