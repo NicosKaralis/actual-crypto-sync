@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
+import { getChain } from '../src/chains/index.ts';
+import { PRICE_PROVIDERS } from '../src/prices/index.ts';
 import {
   BUILTIN_TOKENS,
   defaultDisplayDecimals,
@@ -53,6 +55,31 @@ describe('the built-in database, src/tokens.yml', () => {
   test('every token has a CoinGecko id', () => {
     for (const token of BUILTIN_TOKENS) {
       assert.ok(token.priceIds.coingecko, `${token.chain}:${token.symbol}`);
+    }
+  });
+
+  test('every chain in it is registered, its native token named as the chain says', () => {
+    for (const token of BUILTIN_TOKENS.filter((t) => t.kind === 'native')) {
+      assert.equal(getChain(token.chain).nativeSymbol, token.symbol, token.chain);
+    }
+  });
+
+  test('every contract is a valid address on its chain, which has tokens', () => {
+    for (const token of BUILTIN_TOKENS.filter((t) => t.kind === 'contract')) {
+      const chain = getChain(token.chain);
+      assert.ok(chain.supportsTokens, `${token.chain}:${token.symbol}`);
+      assert.ok(chain.isValidAddress(token.contract ?? ''), `${token.chain}:${token.symbol}`);
+    }
+  });
+
+  test('every price id names a registered provider', () => {
+    for (const token of BUILTIN_TOKENS) {
+      for (const provider of Object.keys(token.priceIds)) {
+        assert.ok(
+          Object.hasOwn(PRICE_PROVIDERS, provider),
+          `${token.chain}:${token.symbol}: ${provider}`,
+        );
+      }
     }
   });
 });
