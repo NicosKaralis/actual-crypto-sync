@@ -111,13 +111,12 @@ export function buildNote(note: {
 }
 
 const NUMBER = String.raw`\d+(?:\.\d+)?`;
-const CURRENCY = '[A-Z]{3}|€'; // € in notes written by the Go version
-// Either "<balance> <SYMBOL> (Δ <delta>)" (the Go version without a price) or
-// "<balance> <SYMBOL> (Δ <delta> @ <quote> <CUR>/<SYMBOL>, <value> <CUR>)",
-// at the start of the note. Text after the closing parenthesis is ignored.
+const CURRENCY = '[A-Z]{3}';
+// "<balance> <SYMBOL> (Δ <delta> @ <quote> <CUR>/<SYMBOL>, <value> <CUR>)" at the
+// start of the note. Text after the closing parenthesis is ignored.
 const NOTE = new RegExp(
   `^(?<balance>${NUMBER}) (?<symbol>[A-Z0-9]+) \\(Δ [+-]${NUMBER}` +
-    `(?: @ ${NUMBER} (?<quoteCurrency>${CURRENCY})/(?<quoteSymbol>[A-Z0-9]+), ${NUMBER} (?<valueCurrency>${CURRENCY}))?\\)`,
+    ` @ ${NUMBER} (?<quoteCurrency>${CURRENCY})/(?<quoteSymbol>[A-Z0-9]+), ${NUMBER} (?<valueCurrency>${CURRENCY})\\)`,
   'u',
 );
 
@@ -127,10 +126,7 @@ export function parseNote(notes: string | null): { balance: number; symbol: stri
   if (!groups?.balance || !groups.symbol) {
     return null;
   }
-  if (
-    groups.quoteSymbol !== undefined &&
-    (groups.quoteSymbol !== groups.symbol || groups.quoteCurrency !== groups.valueCurrency)
-  ) {
+  if (groups.quoteSymbol !== groups.symbol || groups.quoteCurrency !== groups.valueCurrency) {
     return null;
   }
   return { balance: Number(groups.balance), symbol: groups.symbol };

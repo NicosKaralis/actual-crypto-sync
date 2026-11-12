@@ -63,7 +63,13 @@ describe('planAccount', () => {
 
   test("a note for another symbol, a manual note and a future note aren't the previous note", () => {
     const result = plan([
-      { id: 'u', date: YESTERDAY, amount: 0, notes: '1000 USDT (Δ +0)', cleared: false },
+      {
+        id: 'u',
+        date: YESTERDAY,
+        amount: 0,
+        notes: '1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 EUR)',
+        cleared: false,
+      },
       manualTx('m', YESTERDAY, -500, '5 TRX (Δ fee)'),
       syncTx('f', '2026-11-13', '1'),
       syncTx('b', '2026-11-09', '150'),
@@ -97,7 +103,7 @@ describe('planAccount', () => {
     const result = plan([
       manualTx('m1', TODAY, 250),
       manualTx('m2', YESTERDAY, 100),
-      manualTx('m3', TODAY, 0, '1000 USDT (Δ +0)'), // another symbol's note counts as manual
+      manualTx('m3', TODAY, 0, '1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 EUR)'), // another symbol's note counts as manual
       syncTx('s', TODAY, '150'),
     ]);
     assert.equal(result.existingId, 's');
