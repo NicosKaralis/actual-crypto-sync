@@ -1,7 +1,8 @@
 import type { PriceProvider } from '../types.ts';
+import { coingecko } from './coingecko.ts';
 
-/** Every price provider a config can use, by id. Each provider registers itself here. */
-export const PRICE_PROVIDERS: Readonly<Record<string, PriceProvider>> = {};
+/** Every price provider a config can use, by id. A new provider is added here. */
+export const PRICE_PROVIDERS: Readonly<Record<string, PriceProvider>> = { coingecko };
 
 export function getPriceProvider(
   id: string,

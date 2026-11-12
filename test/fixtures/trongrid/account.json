@@ -1,0 +1,31 @@
+{
+  "data": [
+    {
+      "balance": 2187378616,
+      "frozenV2": [
+        {
+          "amount": 5922000000
+        },
+        {
+          "amount": 134000000000,
+          "type": "ENERGY"
+        },
+        {
+          "type": "TRON_POWER"
+        }
+      ],
+      "trc20": [
+        {
+          "TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT": "19522120000000000000"
+        },
+        {
+          "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t": "828961"
+        }
+      ]
+    }
+  ],
+  "success": true,
+  "meta": {
+    "page_size": 1
+  }
+}

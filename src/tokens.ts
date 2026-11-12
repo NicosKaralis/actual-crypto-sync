@@ -147,6 +147,11 @@ export const BUILTIN_TOKENS: readonly Token[] = parseTokens(
   'src/tokens.yml',
 );
 
+/** How quotes are keyed: `tron:USDT`. */
+export function tokenKey(token: Token): string {
+  return `${token.chain}:${token.symbol}`;
+}
+
 export function findBuiltinToken(
   chain: ChainId,
   symbol: string,
