@@ -47,7 +47,7 @@ The tool writes to the budget of the user. A mistake can change the money that a
 - **One sync transaction per account per day.** The code sorts the transactions by date (newest first), then by id. Then it keeps the first sync transaction of the day and deletes the others. Thus, two runs at the same time keep the same transaction. The code never changes a transaction that the user added.
 - **No price, no write.** If no price provider gives a price for a token, the tool must not write to the accounts of that token. A price of 0 sets the account to zero.
 - **One explorer per wallet in a run.** If an explorer fails for one token of a wallet, the next explorer reads all the tokens of that wallet. The tool does not mix two explorers for one wallet.
-- **Notes from earlier versions.** The tool must read the notes of all earlier versions, also the notes of the old Go version. A change to `parseNote` or `buildNote` needs a test with an earlier note.
+- **Notes from earlier versions.** The tool must read the notes of all earlier versions. A change to `parseNote` or `buildNote` needs a test with an earlier note.
 
 ## Types
 
