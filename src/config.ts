@@ -48,6 +48,12 @@ export class ConfigError extends Error {
 }
 
 const AUTH_METHODS = ['session', 'password', 'api_key'] as const;
+// The names config.example.yml uses, suggested when a method is left blank.
+const EXAMPLE_VARS = {
+  session: 'ACTUAL_SESSION_TOKEN',
+  password: 'ACTUAL_PASSWORD',
+  api_key: 'ACTUAL_API_KEY',
+} as const;
 const VAR_REF = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/;
 const VAR_ANYWHERE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 const ACTUAL_API_KEY = /^actual_[A-Za-z0-9_-]{43}$/;
@@ -134,6 +140,12 @@ class Loader {
     const method = methods[0] as (typeof AUTH_METHODS)[number];
     const methodPath = `${path}.${method}`;
     const ref = raw[method];
+    if (ref === null || ref === '') {
+      throw new ConfigError(
+        methodPath,
+        `empty; set it to a \${VAR} reference, e.g. \${${EXAMPLE_VARS[method]}}`,
+      );
+    }
     const name = typeof ref === 'string' ? VAR_REF.exec(ref)?.[1] : undefined;
     if (typeof ref !== 'string' || name === undefined) {
       throw new ConfigError(methodPath, 'use ${VAR}, never the secret itself');

@@ -245,6 +245,20 @@ describe('loadConfig: actual.auth', () => {
     }
   });
 
+  test('a blank value asks for a ${VAR}, not about a secret', () => {
+    for (const [method, value, example] of [
+      ['session', null, 'ACTUAL_SESSION_TOKEN'],
+      ['session', '', 'ACTUAL_SESSION_TOKEN'],
+      ['password', null, 'ACTUAL_PASSWORD'],
+      ['api_key', null, 'ACTUAL_API_KEY'],
+    ] as const) {
+      assertConfigError(
+        () => load((raw) => Object.assign(actual(raw), { auth: { [method]: value } })),
+        `actual.auth.${method}: empty; set it to a \${VAR} reference, e.g. \${${example}}`,
+      );
+    }
+  });
+
   test('an empty variable is an error naming it', () => {
     assertConfigError(
       () => load(() => {}, { ACTUAL_SESSION_TOKEN: '' }),
