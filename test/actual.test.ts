@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
 import {
@@ -7,6 +10,7 @@ import {
   LOOKBACK_TRANSACTIONS,
   type OpenBudgetOptions,
   openBudget,
+  prepareDataDir,
 } from '../src/actual.ts';
 import type { ActualAuth } from '../src/config.ts';
 
@@ -379,5 +383,41 @@ describe('the opened budget', () => {
     const closed = await rejection(actual.close({ sync: true }));
     assert.equal(closed.message, 'Actual: sync failed (unknown error)');
     assert.ok(!String(created.stack).includes(SECRET));
+  });
+});
+
+describe('prepareDataDir', () => {
+  const withTempDir = (fn: (dir: string) => void) => {
+    const dir = mkdtempSync(join(tmpdir(), 'actual-crypto-sync-'));
+    try {
+      fn(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  test('creates a missing directory, parents included', () => {
+    withTempDir((dir) => {
+      const dataDir = join(dir, 'a', 'b');
+      prepareDataDir(dataDir);
+      assert.ok(statSync(dataDir).isDirectory());
+    });
+  });
+
+  test('accepts a directory that exists', () => {
+    withTempDir((dir) => prepareDataDir(dir));
+  });
+
+  test("a path it can't create names it, the error code and ACTUAL_DATA_DIR", () => {
+    withTempDir((dir) => {
+      const file = join(dir, 'file');
+      writeFileSync(file, '');
+      const dataDir = join(file, 'cache');
+      assert.throws(() => prepareDataDir(dataDir), {
+        name: 'ActualError',
+        code: 'ENOTDIR',
+        message: `can't use the data directory ${dataDir} (ENOTDIR); set ACTUAL_DATA_DIR to a writable directory`,
+      });
+    });
   });
 });
