@@ -1,7 +1,28 @@
+# actual-crypto-sync config. Every key is shown; the commented ones are optional.
+#
+# Secrets never go in this file: write ${NAME} and the value is read from the
+# environment variable NAME when the program starts. ${NAME} works in any string
+# value; an unset variable is an error naming it, and its value is never logged.
+#
+# Set through the environment, not this file:
+#   CONFIG_FILE        this file's path (default /config/config.yml; --config overrides it)
+#   ACTUAL_DATA_DIR    where the budget's local copy is kept (default /cache); created
+#                      when missing, and must be writable
+#   TZ                 the time zone that decides what "today" is, e.g. Europe/Lisbon
+#                      (default UTC in the image)
+#
+# Telemetry (OpenTelemetry over OTLP/HTTP), also through the environment. Nothing is
+# sent unless an endpoint is set:
+#   OTEL_EXPORTER_OTLP_ENDPOINT          base URL for both signals; /v1/traces and
+#                                        /v1/metrics are added, e.g. http://otel-collector:4318
+#   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT   full URL for traces only, overriding the base
+#   OTEL_EXPORTER_OTLP_METRICS_ENDPOINT  full URL for metrics only, overriding the base
+#   OTEL_EXPORTER_OTLP_TIMEOUT           export timeout in milliseconds (default 5000)
+
 actual:
-  server_url: http://actual:5006
-  sync_id: ${ACTUAL_BUDGET_SYNC_ID}
-  auth:                                        # exactly one of the three; see docs/authentication.md
+  server_url: http://actual:5006               # the Actual server, as the program reaches it
+  sync_id: ${ACTUAL_BUDGET_SYNC_ID}            # Settings > Advanced > Sync ID in Actual
+  auth:                                        # exactly one of the three, always as ${VAR}; see docs/authentication.md
     session: ${ACTUAL_SESSION_TOKEN}           # a token from a login (password or OpenID)
     # password: ${ACTUAL_PASSWORD}             # the server password, single-user servers
     # api_key: ${ACTUAL_API_KEY}               # servers newer than 26.11.0
@@ -9,39 +30,44 @@ actual:
 
 prices:
   currency: eur                                # ISO 4217 code, any case; at least one provider must support it
-  providers:                                   # tried in order; each a name, or a name with its settings
+  providers:                                   # required; tried in order, each a name, or a name with its settings
     - coingecko
     # - coingecko:
-    #     api_url: https://api.coingecko.com/api/v3
+    #     api_url: https://api.coingecko.com/api/v3  # the default
+    #     label: coingecko-main                # the name in logs, spans and metric labels (default: the id)
+    #     serial: true                         # one request at a time, 6 s apart, if it rate-limits you
 
 chains:                                        # optional, settings per chain
   tron:
     explorers: trongrid                        # one name works too; this is the default
-    # explorers:
+    # explorers:                               # or a list, tried in order until one answers
     #   - trongrid:
-    #       api_url: https://api.trongrid.io
+    #       api_url: https://api.trongrid.io   # the default
     #       api_key: ${TRONGRID_API_KEY}       # raises TronGrid's rate limit
     #       serial: true                       # or one request at a time, 1 s apart
   bitcoin:
     explorers:
       # - mempool-space:                       # your own mempool instance first...
-      #     api_url: http://mempool.lan/api
-      #     label: home-mempool
-      - mempool-space                          # ...then the public one
+      #     api_url: http://mempool.lan/api    # any mempool or Esplora API
+      #     label: home-mempool                # tells the two entries apart in logs and metrics
+      - mempool-space                          # ...then the public one (https://mempool.space/api)
+      # - mempool-space:
+      #     serial: true                       # one request at a time, 1 s apart
 
-tokens:                                        # optional, tokens that aren't built in
-  # - chain: tron
-  #   symbol: XYZ
-  #   contract: TXyz...
-  #   decimals: 18
-  #   price_ids:
+tokens:                                        # optional, tokens that aren't built in (TRX, USDT and BTC are)
+  # - chain: tron                              # a chain with tokens (not bitcoin)
+  #   symbol: XYZ                              # what accounts use as token:; can't reuse a built-in name
+  #   contract: TXyz...                        # the token's contract address
+  #   decimals: 18                             # the contract's decimals
+  #   display_decimals: 6                      # decimals shown in notes (default: decimals, at most 8)
+  #   price_ids:                               # at least one; the token's id at each price provider
   #     coingecko: xyz-token
 
-accounts:
-  - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id
-    chain: tron
-    token: TRX
-    wallets:
+accounts:                                      # the off-budget Actual accounts to keep in line
+  - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
+    chain: tron                                # tron or bitcoin
+    token: TRX                                 # a built-in token or one from tokens:
+    wallets:                                   # exactly one wallet per account for now
       - ${TRON_WALLET_ADDRESS}
 
   - name: "TC9F...R2MJ: USDT"
@@ -53,5 +79,5 @@ accounts:
   - name: Bitcoin
     chain: bitcoin
     token: BTC
-    wallets:                                   # exactly one wallet per account in v1.0
+    wallets:
       - ${BTC_ADDRESS}
