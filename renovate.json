@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":pinAllExceptPeerDependencies",
+    "docker:pinDigests",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Node: .nvmrc and the Dockerfile's base image move together",
+      "matchDepNames": ["node"],
+      "groupName": "Node.js"
+    },
+    {
+      "description": "@actual-app/api and the actual-server image (dev stack, e2e) move together; the README names the supported version",
+      "matchPackageNames": [
+        "@actual-app/api",
+        "actualbudget/actual-server",
+        "docker.io/actualbudget/actual-server"
+      ],
+      "groupName": "Actual",
+      "automerge": false
+    },
+    {
+      "description": "Biome's schema URL in biome.json follows the package",
+      "matchPackageNames": ["@biomejs/biome"],
+      "groupName": "Biome"
+    }
+  ]
+}
