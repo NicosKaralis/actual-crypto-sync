@@ -20,7 +20,8 @@
     "rules": {
       "preset": "recommended",
       "suspicious": {
-        "noExplicitAny": "error"
+        "noExplicitAny": "error",
+        "noTemplateCurlyInString": "off"
       }
     }
   },
