@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Local secrets and env files
+.env
+.env.*
+!.env.example
+dev/.env
+
+# Actual budget cache (ACTUAL_DATA_DIR) used during development
+cache/
+.cache/
+
+# Logs and coverage
+*.log
+npm-debug.log*
+coverage/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
