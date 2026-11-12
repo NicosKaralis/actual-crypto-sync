@@ -1,5 +1,5 @@
-// Traces and metrics over OTLP/HTTP. Each exporter exists only when its endpoint
-// env is set, so a run with neither sends nothing. Exports time out after
+// Traces and metrics over OTLP/HTTP. Each exporter exists only when an endpoint
+// is set for it (otlpEndpoint), so a run with none sends nothing. Exports time out after
 // OTEL_EXPORTER_OTLP_TIMEOUT (5 s by default), so a telemetry endpoint that's
 // down never holds up a run for long.
 
@@ -56,8 +56,7 @@ let contextManager: AsyncLocalStorageContextManager | undefined;
 
 /**
  * Starts tracing and metrics. Tests pass in-memory exporters; otherwise the
- * OTLP ones are used when OTEL_EXPORTER_OTLP_TRACES_ENDPOINT and
- * OTEL_EXPORTER_OTLP_METRICS_ENDPOINT are set. `instrumentFetch` adds a span
+ * OTLP ones are used for each signal with an endpoint (otlpEndpoint). `instrumentFetch` adds a span
  * for every request, with wallet addresses in its URL shortened.
  */
 export function startTelemetry({
@@ -80,14 +79,17 @@ export function startTelemetry({
   // Only service.name: no host, process or SDK version, so series don't change between runs.
   const resource = resourceFromAttributes({ 'service.name': SERVICE_NAME });
 
+  const tracesEndpoint = otlpEndpoint(env, 'traces');
+  const metricsEndpoint = otlpEndpoint(env, 'metrics');
+
   const spanProcessors: SpanProcessor[] = [];
   if (spanExporter) {
     spanProcessors.push(new SimpleSpanProcessor({ exporter: spanExporter }));
-  } else if (env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT) {
+  } else if (tracesEndpoint) {
     spanProcessors.push(
       new BatchSpanProcessor({
         exporter: new OTLPTraceExporter({
-          url: env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+          url: tracesEndpoint,
           timeoutMillis,
         }),
         exportTimeoutMillis: timeoutMillis,
@@ -98,9 +100,7 @@ export function startTelemetry({
 
   const metricsExporter =
     metricExporter ??
-    (env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
-      ? new OTLPMetricExporter({ url: env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, timeoutMillis })
-      : undefined);
+    (metricsEndpoint ? new OTLPMetricExporter({ url: metricsEndpoint, timeoutMillis }) : undefined);
   const meterProvider = new MeterProvider({
     resource,
     readers: metricsExporter
@@ -144,6 +144,24 @@ export function startTelemetry({
       await Promise.allSettled([tracerProvider.shutdown(), meterProvider.shutdown()]);
     },
   };
+}
+
+/**
+ * Where a signal is exported, as the OpenTelemetry spec reads the env:
+ * OTEL_EXPORTER_OTLP_TRACES_ENDPOINT (or _METRICS_) is the full URL, used as is;
+ * otherwise OTEL_EXPORTER_OTLP_ENDPOINT is a base URL, with /v1/traces (or
+ * /v1/metrics) added. Undefined when neither is set.
+ */
+export function otlpEndpoint(
+  env: Record<string, string | undefined>,
+  signal: 'traces' | 'metrics',
+): string | undefined {
+  const specific = env[`OTEL_EXPORTER_OTLP_${signal.toUpperCase()}_ENDPOINT`];
+  if (specific) {
+    return specific;
+  }
+  const base = env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  return base ? `${base.replace(/\/+$/, '')}/v1/${signal}` : undefined;
 }
 
 function exportTimeout(value: string | undefined): number {

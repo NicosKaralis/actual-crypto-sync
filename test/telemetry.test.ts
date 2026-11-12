@@ -127,6 +127,64 @@ describe('startTelemetry', () => {
     assert.deepEqual(names, []);
   });
 
+  describe('OTLP endpoints', () => {
+    /** A collector on the loopback recording each export's path. */
+    async function collector() {
+      const paths: string[] = [];
+      const server = createServer((req, res) => {
+        paths.push(req.url ?? '');
+        req.resume();
+        req.on('end', () => res.writeHead(200, { 'content-type': 'application/json' }).end('{}'));
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const { port } = server.address() as AddressInfo;
+      return { url: `http://127.0.0.1:${port}`, paths, close: () => server.close() };
+    }
+
+    async function exportOnce(env: Record<string, string>) {
+      const telemetry = startTelemetry({ env, instrumentFetch: false });
+      telemetry.tracer.startSpan('actual-crypto-sync.run').end();
+      telemetry.gauges.lastRun.record(1);
+      await telemetry.shutdown();
+    }
+
+    test('OTEL_EXPORTER_OTLP_ENDPOINT alone sends to /v1/traces and /v1/metrics', async () => {
+      const { url, paths, close } = await collector();
+      try {
+        await exportOnce({ OTEL_EXPORTER_OTLP_ENDPOINT: `${url}/otlp/` });
+      } finally {
+        close();
+      }
+      assert.deepEqual(paths.sort(), ['/otlp/v1/metrics', '/otlp/v1/traces']);
+    });
+
+    test('a signal-specific endpoint wins over OTEL_EXPORTER_OTLP_ENDPOINT, used as is', async () => {
+      const { url, paths, close } = await collector();
+      try {
+        await exportOnce({
+          OTEL_EXPORTER_OTLP_ENDPOINT: url,
+          OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: `${url}/custom-traces`,
+        });
+      } finally {
+        close();
+      }
+      assert.deepEqual(paths.sort(), ['/custom-traces', '/v1/metrics']);
+    });
+
+    test('the signal-specific endpoints alone, used as is', async () => {
+      const { url, paths, close } = await collector();
+      try {
+        await exportOnce({
+          OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: `${url}/t`,
+          OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: `${url}/m`,
+        });
+      } finally {
+        close();
+      }
+      assert.deepEqual(paths.sort(), ['/m', '/t']);
+    });
+  });
+
   test('an endpoint that is down still lets the run end within the timeout', async () => {
     const telemetry = startTelemetry({
       env: {
