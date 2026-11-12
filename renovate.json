@@ -28,6 +28,20 @@
       "description": "Biome's schema URL in biome.json follows the package",
       "matchPackageNames": ["@biomejs/biome"],
       "groupName": "Biome"
+    },
+    {
+      "description": "runs-on and matrix runner labels move together",
+      "matchDatasources": ["github-runners"],
+      "groupName": "GitHub runners"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Runner labels in job matrices (runner: ubuntu-24.04, ubuntu-24.04-arm), which the github-actions manager only reads from runs-on",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": ["runner:\\s*(?<depName>ubuntu)-(?<currentValue>\\d+\\.\\d+)"],
+      "datasourceTemplate": "github-runners"
     }
   ]
 }
