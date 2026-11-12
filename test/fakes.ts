@@ -1,5 +1,9 @@
 // Fake chains, explorers and price providers, registered under the real ids,
-// for tests that only need their metadata. Nothing here makes a request.
+// for tests that only need their metadata, and the test token database.
+// Nothing here makes a request.
+import { readFileSync } from 'node:fs';
+
+import { parseTokens } from '../src/tokens.ts';
 import type { Chain, Explorer, PriceProvider } from '../src/types.ts';
 
 function explorer(id: string, supportsContracts: boolean): Explorer {
@@ -49,7 +53,17 @@ export const fakePriceProviders: Record<string, PriceProvider> = {
   other: provider('other', ['chf']),
 };
 
-export const fakeRegistries = { chains: fakeChains, priceProviders: fakePriceProviders };
+/** test/fixtures/tokens.yml: TRX and USDT on TRON, BTC. */
+export const fakeTokens = parseTokens(
+  readFileSync(new URL('./fixtures/tokens.yml', import.meta.url), 'utf8'),
+  'test/fixtures/tokens.yml',
+);
+
+export const fakeRegistries = {
+  chains: fakeChains,
+  priceProviders: fakePriceProviders,
+  tokens: fakeTokens,
+};
 
 // Public exchange wallets; never anyone's own.
 export const TRON_WALLET = 'TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ';

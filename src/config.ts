@@ -4,9 +4,11 @@ import { CHAINS, getChain } from './chains/index.ts';
 import { getPriceProvider, PRICE_PROVIDERS } from './prices/index.ts';
 import {
   BUILTIN_TOKENS,
-  defaultDisplayDecimals,
+  checkUnique,
   findBuiltinToken,
+  readToken,
   resolveToken,
+  TokenError,
 } from './tokens.ts';
 import type { Chain, ChainId, Currency, Explorer, PriceProvider, Token, Wallet } from './types.ts';
 
@@ -34,6 +36,7 @@ export interface Config {
 export interface Registries {
   chains: Readonly<Record<ChainId, Chain>>;
   priceProviders: Readonly<Record<string, PriceProvider>>;
+  tokens: readonly Token[]; // the built-in ones
 }
 
 type Env = Record<string, string | undefined>;
@@ -59,14 +62,16 @@ const VAR_ANYWHERE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 const ACTUAL_API_KEY = /^actual_[A-Za-z0-9_-]{43}$/;
 // Notes are written and parsed with 3-letter codes only (format.ts), whatever a provider supports.
 const ISO_CURRENCY = /^[a-z]{3}$/;
-const SYMBOL = /^[A-Z0-9]+$/;
-const MAX_DECIMALS = 255;
 
 /** Reads the YAML config, substitutes `${VAR}` from `env`, and checks and resolves it. */
 export function loadConfig(
   text: string,
   env: Env,
-  registries: Registries = { chains: CHAINS, priceProviders: PRICE_PROVIDERS },
+  registries: Registries = {
+    chains: CHAINS,
+    priceProviders: PRICE_PROVIDERS,
+    tokens: BUILTIN_TOKENS,
+  },
 ): Config {
   const doc = parseDocument(text, { uniqueKeys: true });
   const [syntaxError] = doc.errors;
@@ -319,93 +324,40 @@ class Loader {
     if (!Array.isArray(value)) {
       throw new ConfigError('tokens', 'expected a list');
     }
+    const builtins = this.registries.tokens;
     const tokens: Token[] = [];
     value.forEach((entry: unknown, index) => {
       const path = `tokens[${index}]`;
-      const raw = map(entry, path);
-      checkKeys(raw, path, [
-        'chain',
-        'symbol',
-        'contract',
-        'decimals',
-        'display_decimals',
-        'price_ids',
-      ]);
-
+      const raw = map(this.substituteAll(entry, path), path);
       const chainId = this.str(required(raw.chain, `${path}.chain`), `${path}.chain`);
       const chain = at(`${path}.chain`, () => getChain(chainId, this.registries.chains));
       if (!chain.supportsTokens) {
         throw new ConfigError(`${path}.chain`, `${chain.id} has no tokens`);
       }
 
-      const symbol = this.str(required(raw.symbol, `${path}.symbol`), `${path}.symbol`);
-      if (!SYMBOL.test(symbol)) {
+      const token = tokenAt(() => readToken(raw, path, chain.id, ['chain']));
+      if (findBuiltinToken(chain.id, token.symbol, builtins)) {
         throw new ConfigError(
           `${path}.symbol`,
-          'use only upper-case letters and digits (A-Z, 0-9)',
+          `"${token.symbol}" is built in on ${chain.id}; remove it from tokens:`,
         );
       }
-      if (findBuiltinToken(chain.id, symbol)) {
-        throw new ConfigError(
-          `${path}.symbol`,
-          `"${symbol}" is built in on ${chain.id}; remove it from tokens:`,
-        );
+      // Only native tokens leave the contract out, and each chain's is built in.
+      if (token.contract === undefined) {
+        throw new ConfigError(`${path}.contract`, 'required');
       }
-      if (tokens.some((token) => token.chain === chain.id && token.symbol === symbol)) {
-        throw new ConfigError(`${path}.symbol`, `${symbol} is already defined on ${chain.id}`);
-      }
-
-      const contract = this.str(required(raw.contract, `${path}.contract`), `${path}.contract`);
-      if (!chain.isValidAddress(contract)) {
+      if (!chain.isValidAddress(token.contract)) {
         throw new ConfigError(`${path}.contract`, `not a valid ${chain.id} address`);
       }
-      const sameContract = [...BUILTIN_TOKENS, ...tokens].find(
-        (token) => token.chain === chain.id && token.contract === contract,
-      );
-      if (sameContract) {
-        throw new ConfigError(`${path}.contract`, `already used by ${sameContract.symbol}`);
+      tokenAt(() => checkUnique(token, [...builtins, ...tokens], path));
+      for (const providerId of Object.keys(token.priceIds)) {
+        at(`${path}.price_ids.${providerId}`, () =>
+          getPriceProvider(providerId, this.registries.priceProviders),
+        );
       }
-
-      const decimals = integer(
-        required(raw.decimals, `${path}.decimals`),
-        `${path}.decimals`,
-        MAX_DECIMALS,
-      );
-      const displayDecimals =
-        raw.display_decimals === undefined || raw.display_decimals === null
-          ? defaultDisplayDecimals(decimals)
-          : integer(raw.display_decimals, `${path}.display_decimals`, decimals);
-
-      const priceIds = this.priceIds(
-        required(raw.price_ids, `${path}.price_ids`),
-        `${path}.price_ids`,
-      );
-      tokens.push({
-        chain: chain.id,
-        symbol,
-        kind: 'contract',
-        contract,
-        decimals,
-        displayDecimals,
-        priceIds,
-      });
+      tokens.push(token);
     });
     return tokens;
-  }
-
-  priceIds(value: unknown, path: string): Record<string, string> {
-    const raw = map(value, path);
-    if (Object.keys(raw).length === 0) {
-      throw new ConfigError(path, 'list at least one price id');
-    }
-    const priceIds: Record<string, string> = {};
-    for (const [providerId, id] of Object.entries(raw)) {
-      at(`${path}.${providerId}`, () =>
-        getPriceProvider(providerId, this.registries.priceProviders),
-      );
-      priceIds[providerId] = this.nonEmpty(id, `${path}.${providerId}`);
-    }
-    return priceIds;
   }
 
   accounts(
@@ -442,7 +394,9 @@ class Loader {
       const explorers = chains[chain.id]?.explorers ?? [];
 
       const symbol = this.str(required(raw.token, `${path}.token`), `${path}.token`);
-      const token = at(`${path}.token`, () => resolveToken(chain.id, symbol, customTokens));
+      const token = at(`${path}.token`, () =>
+        resolveToken(chain.id, symbol, customTokens, this.registries.tokens),
+      );
       if (!providerIds.some((id) => Object.hasOwn(token.priceIds, id))) {
         throw new ConfigError(
           `${path}.token`,
@@ -511,6 +465,25 @@ class Loader {
     return text.replace(VAR_ANYWHERE, (_, name: string) => this.variable(name, path));
   }
 
+  /** Substitutes every string inside `value`, for entries read elsewhere. */
+  substituteAll(value: unknown, path: string): unknown {
+    if (typeof value === 'string') {
+      return this.substitute(value, path);
+    }
+    if (Array.isArray(value)) {
+      return value.map((item: unknown, index) => this.substituteAll(item, `${path}[${index}]`));
+    }
+    if (isMap(value)) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [
+          key,
+          this.substituteAll(item, `${path}.${key}`),
+        ]),
+      );
+    }
+    return value;
+  }
+
   variable(name: string, path: string): string {
     const value = this.env[name];
     if (value === undefined) {
@@ -549,13 +522,6 @@ function checkKeys(raw: RawMap, path: string, allowed: readonly string[]) {
   }
 }
 
-function integer(value: unknown, path: string, max: number): number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) {
-    throw new ConfigError(path, `expected an integer from 0 to ${max}`);
-  }
-  return value;
-}
-
 /** Runs `fn`, giving a registry's error the config path. */
 function at<T>(path: string, fn: () => T): T {
   try {
@@ -565,6 +531,18 @@ function at<T>(path: string, fn: () => T): T {
       throw error;
     }
     throw new ConfigError(path, error.message);
+  }
+}
+
+/** Runs `fn`, turning a token entry's error into a config error at the same path. */
+function tokenAt<T>(fn: () => T): T {
+  try {
+    return fn();
+  } catch (error) {
+    if (error instanceof TokenError) {
+      throw new ConfigError(error.path, error.detail);
+    }
+    throw error;
   }
 }
 
