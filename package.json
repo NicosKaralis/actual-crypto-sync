@@ -20,7 +20,9 @@
     "typecheck": "tsc",
     "test": "tsc && node --test \"test/**/*.test.ts\"",
     "lint": "biome ci .",
-    "format": "biome check --write ."
+    "format": "biome check --write .",
+    "dev:up": "docker compose -f dev/compose.yml up -d --wait",
+    "dev:down": "docker compose -f dev/compose.yml down"
   },
   "dependencies": {
     "@actual-app/api": "26.11.0",

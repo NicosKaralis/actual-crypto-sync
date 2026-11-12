@@ -11,3 +11,4 @@ CLAUDE.md
 .env
 .env.*
 dev/.env
+dev/.cache
