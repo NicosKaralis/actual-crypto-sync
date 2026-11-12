@@ -18,7 +18,7 @@
 Does the change break existing users? These are breaking changes: the config format, CLI flags
 and env vars, the note format, what the tool writes to Actual, and metric names and labels.
 If yes, mark the commit with `!` and a `BREAKING CHANGE:` footer (see CONTRIBUTING.md), and
-tell users here what they must do.
+tell users here what they must do. A workflow then adds the `breaking change` label.
 -->
 
-- [ ] This is a breaking change.
+No.
