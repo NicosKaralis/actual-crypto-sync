@@ -1,3 +1,5 @@
+import { SpanStatusCode, type Tracer, trace } from '@opentelemetry/api';
+
 import type { Config } from './config.ts';
 import { entryFetch, type Sleep } from './http.ts';
 import { tokenKey } from './tokens.ts';
@@ -14,18 +16,47 @@ export interface QuoteResult {
  * price that it has an id for. A token no provider prices is left out, so its
  * accounts fail instead of being written with a price of 0. An entry in serial
  * mode sends its requests one at a time; a rate limit is warned about with the
- * provider's advice.
+ * provider's advice. Each provider asked gets a span under `quotes`, and
+ * `failed` hears of every provider that failed.
  */
 export async function collectQuotes({
   config,
   fetch,
   warn = () => {},
+  failed = () => {},
+  tracer = trace.getTracer('actual-crypto-sync'),
   sleep,
 }: {
   config: Config;
   fetch: typeof globalThis.fetch;
   warn?: (message: string) => void;
+  failed?: (label: string) => void;
+  tracer?: Tracer;
   sleep?: Sleep;
+}): Promise<Map<string, QuoteResult>> {
+  return tracer.startActiveSpan('quotes', async (span) => {
+    try {
+      return await quote({ config, fetch, warn, failed, tracer, sleep });
+    } finally {
+      span.end();
+    }
+  });
+}
+
+async function quote({
+  config,
+  fetch,
+  warn,
+  failed,
+  tracer,
+  sleep,
+}: {
+  config: Config;
+  fetch: typeof globalThis.fetch;
+  warn: (message: string) => void;
+  failed: (label: string) => void;
+  tracer: Tracer;
+  sleep: Sleep | undefined;
 }): Promise<Map<string, QuoteResult>> {
   const { currency, providers } = config.prices;
   const pending = new Map<string, Token>();
@@ -43,14 +74,28 @@ export async function collectQuotes({
     }
     let quotes: Map<string, Quote>;
     try {
-      quotes = await provider.getQuotes({
-        tokens,
-        currency,
-        settings,
-        fetch: entryFetch(fetch, { serial, intervalMs: provider.serialIntervalMs, sleep }),
+      quotes = await tracer.startActiveSpan(`price ${label}`, async (span) => {
+        span.setAttribute('tokens', tokens.map(tokenKey));
+        try {
+          return await provider.getQuotes({
+            tokens,
+            currency,
+            settings,
+            fetch: entryFetch(fetch, { serial, intervalMs: provider.serialIntervalMs, sleep }),
+          });
+        } catch (error) {
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: error instanceof Error ? error.message : String(error),
+          });
+          throw error;
+        } finally {
+          span.end();
+        }
       });
     } catch (error) {
       warn(`${label} failed: ${error instanceof Error ? error.message : String(error)}`);
+      failed(label);
       const advice = provider.rateLimitAdvice(error, { settings, serial });
       if (advice !== null) {
         warn(`${label} is rate limiting requests: ${advice}`);
