@@ -20,7 +20,8 @@
     "rules": {
       "preset": "recommended",
       "suspicious": {
-        "noExplicitAny": "error"
+        "noExplicitAny": "error",
+        "noTemplateCurlyInString": "off"
       }
     }
   },
@@ -36,5 +37,13 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["config.example.yml"],
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ]
 }

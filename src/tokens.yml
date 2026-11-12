@@ -1,0 +1,25 @@
+# The built-in tokens, which a config picks by symbol. Read when the program starts.
+#
+# Each chain lists its tokens, exactly one of them native (no contract):
+#   symbol            upper-case letters and digits, as notes show it
+#   contract          the token's contract address; leave it out for the native token
+#   decimals          on-chain decimals of the raw balance
+#   display_decimals  optional, decimals shown in notes; defaults to min(decimals, 8)
+#   price_ids         each price provider's id for the token, at least one
+
+tron:
+  - symbol: TRX
+    decimals: 6
+    price_ids:
+      coingecko: tron
+  - symbol: USDT
+    contract: TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
+    decimals: 6
+    price_ids:
+      coingecko: tether
+
+bitcoin:
+  - symbol: BTC
+    decimals: 8
+    price_ids:
+      coingecko: bitcoin

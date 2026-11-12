@@ -1,0 +1,19 @@
+# The test token database. Tests load this instead of src/tokens.yml, so the
+# built-in list can change without changing them.
+
+tron:
+  - symbol: TRX
+    decimals: 6
+    price_ids:
+      coingecko: tron
+  - symbol: USDT
+    contract: TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
+    decimals: 6
+    price_ids:
+      coingecko: tether
+
+bitcoin:
+  - symbol: BTC
+    decimals: 8
+    price_ids:
+      coingecko: bitcoin
