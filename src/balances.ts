@@ -1,3 +1,5 @@
+import { type Span, SpanStatusCode, type Tracer, trace } from '@opentelemetry/api';
+
 import type { Config } from './config.ts';
 import { walletPrefix } from './format.ts';
 import { entryFetch, type Sleep } from './http.ts';
@@ -18,16 +20,22 @@ interface WalletBalance {
  * explorers that answers for all of them. A wallet whose explorers all fail
  * fails only the accounts on it. An entry in serial mode sends its requests one
  * at a time; a rate limit is warned about once per entry, with its advice.
+ * Each wallet gets a span, and `failed` hears of every explorer that failed,
+ * even when the next one answered.
  */
 export async function collectBalances({
   config,
   fetch,
   warn = () => {},
+  failed = () => {},
+  tracer = trace.getTracer('actual-crypto-sync'),
   sleep,
 }: {
   config: Config;
   fetch: typeof globalThis.fetch;
   warn?: (message: string) => void;
+  failed?: (label: string) => void;
+  tracer?: Tracer;
   sleep?: Sleep;
 }): Promise<Map<string, BalanceResult>> {
   // One entry per chain and address, with the tokens of every account on it.
@@ -58,12 +66,26 @@ export async function collectBalances({
     }
   }
   const rateLimited = new Set<string>();
-  const context: ReadContext = { config, fetches, rateLimited, warn };
+  const context: ReadContext = { config, fetches, rateLimited, warn, failed };
 
   const read = new Map<string, WalletBalance | Error>();
   await Promise.all(
     [...wallets].map(async ([key, { chain, wallet, tokens }]) => {
-      read.set(key, await readWallet(context, chain, wallet, tokens));
+      const name = `wallet ${chain} ${walletPrefix(wallet.address)}`;
+      const balance = await tracer.startActiveSpan(name, async (span) => {
+        try {
+          const result = await readWallet(context, chain, wallet, tokens, span);
+          if (result instanceof Error) {
+            span.setStatus({ code: SpanStatusCode.ERROR, message: result.message });
+          } else {
+            span.setAttribute('explorer', result.explorer);
+          }
+          return result;
+        } finally {
+          span.end();
+        }
+      });
+      read.set(key, balance);
     }),
   );
 
@@ -91,13 +113,15 @@ interface ReadContext {
   fetches: Map<ExplorerEntry, typeof globalThis.fetch>;
   rateLimited: Set<string>; // labels already warned about
   warn: (message: string) => void;
+  failed: (label: string) => void;
 }
 
 async function readWallet(
-  { config, fetches, rateLimited, warn }: ReadContext,
+  { config, fetches, rateLimited, warn, failed }: ReadContext,
   chain: ChainId,
   wallet: Wallet,
   tokens: Token[],
+  span: Span,
 ): Promise<WalletBalance | Error> {
   const prefix = walletPrefix(wallet.address);
   const failures: string[] = [];
@@ -108,6 +132,7 @@ async function readWallet(
     const fetch = fetches.get(entry) as typeof globalThis.fetch;
     if (needsContracts && !explorer.supportsContracts) {
       failures.push(`${label}: doesn't read contract tokens`);
+      span.setAttribute(`explorer.${label}`, "skipped: doesn't read contract tokens");
       continue;
     }
     try {
@@ -117,10 +142,13 @@ async function readWallet(
       if (missing.length > 0) {
         throw new Error(`no balance for ${missing.map((token) => token.symbol).join(', ')}`);
       }
+      span.setAttribute(`explorer.${label}`, 'ok');
       return { raws, explorer: label };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       failures.push(`${label}: ${message}`);
+      failed(label);
+      span.setAttribute(`explorer.${label}`, `failed: ${message}`);
       warn(`${prefix}: ${label} failed: ${message}`);
       const advice = explorer.rateLimitAdvice(error, { settings, serial });
       if (advice !== null && !rateLimited.has(label)) {

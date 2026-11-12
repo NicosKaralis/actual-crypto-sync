@@ -214,6 +214,68 @@ describe('collectQuotes', () => {
     ]);
   });
 
+  describe('failed providers, for provider_errors', () => {
+    test('a provider that threw is reported, even when the next one priced the token', async () => {
+      const failed: string[] = [];
+      const trx = withIds(TRX, { coingecko: 'tron', other: 'trx' });
+      const result = await collectQuotes({
+        config: config(
+          [
+            {
+              label: 'coingecko',
+              provider: provider('coingecko', [], new Error('coingecko: HTTP 503')),
+            },
+            { label: 'other', provider: provider('other', [], { 'tron:TRX': eur(0.3) }) },
+          ],
+          [trx],
+        ),
+        fetch,
+        failed: (label) => failed.push(label),
+      });
+      assert.deepEqual(result.get('tron:TRX'), { quote: eur(0.3), source: 'other' });
+      assert.deepEqual(failed, ['coingecko']);
+    });
+
+    test('every provider failing reports each one, by its label', async () => {
+      const failed: string[] = [];
+      const trx = withIds(TRX, { coingecko: 'tron' });
+      await collectQuotes({
+        config: config(
+          [
+            {
+              label: 'coingecko',
+              provider: provider('coingecko', [], new Error('coingecko: HTTP 503')),
+            },
+            {
+              label: 'coingecko#2',
+              provider: provider('coingecko', [], new Error('coingecko: HTTP 500')),
+            },
+          ],
+          [trx],
+        ),
+        fetch,
+        failed: (label) => failed.push(label),
+      });
+      assert.deepEqual(failed, ['coingecko', 'coingecko#2']);
+    });
+
+    test("a provider that answers without some tokens hasn't failed", async () => {
+      const failed: string[] = [];
+      const trx = withIds(TRX, { coingecko: 'tron' });
+      const usdt = withIds(USDT, { coingecko: 'tether' });
+      const result = await collectQuotes({
+        config: config(
+          [{ label: 'coingecko', provider: provider('coingecko', [], { 'tron:TRX': eur(0.3) }) }],
+          [trx, usdt],
+        ),
+        fetch,
+        failed: (label) => failed.push(label),
+      });
+      assert.equal(result.has('tron:USDT'), false);
+      assert.deepEqual(failed, []);
+    });
+  });
+
   describe('rate limits and serial mode', () => {
     test('a rate-limited provider warns with its advice, and the next one is tried', async () => {
       const warnings: string[] = [];

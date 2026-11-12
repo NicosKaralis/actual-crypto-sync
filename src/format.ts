@@ -28,6 +28,29 @@ export function walletPrefix(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
+// A path segment this long and alphanumeric is taken for a wallet address:
+// TRON's are 34 characters, Bitcoin's 26 to 62.
+const ADDRESS_SEGMENT = /^[A-Za-z0-9]{25,}$/;
+
+/**
+ * A URL safe to log or put on a span: no credentials, query or fragment, and
+ * wallet addresses in the path shortened to their prefix.
+ * https://api.trongrid.io/v1/accounts/TC9F6tRX...R2MJ -> https://api.trongrid.io/v1/accounts/TC9F...R2MJ
+ */
+export function redactUrl(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return '(invalid URL)';
+  }
+  const path = parsed.pathname
+    .split('/')
+    .map((segment) => (ADDRESS_SEGMENT.test(segment) ? walletPrefix(segment) : segment))
+    .join('/');
+  return `${parsed.protocol}//${parsed.host}${path}`;
+}
+
 /** The shortest exact decimal, never in exponent notation: 1.2e-7 -> "0.00000012". */
 export function formatAmount(v: number): string {
   return withoutExponent(String(v));

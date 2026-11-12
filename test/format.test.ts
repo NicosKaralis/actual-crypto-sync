@@ -9,6 +9,7 @@ import {
   formatDelta,
   isSyncNote,
   parseNote,
+  redactUrl,
   toUnits,
   walletPrefix,
 } from '../src/format.ts';
@@ -36,6 +37,38 @@ describe('walletPrefix', () => {
 
   test('leaves short strings alone', () => {
     assert.equal(walletPrefix('short'), 'short');
+  });
+});
+
+describe('redactUrl', () => {
+  test('shortens wallet addresses in the path to their prefix', () => {
+    assert.equal(
+      redactUrl('https://api.trongrid.io/v1/accounts/TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ'),
+      'https://api.trongrid.io/v1/accounts/TC9F...R2MJ',
+    );
+    assert.equal(
+      redactUrl('https://mempool.space/api/address/bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v'),
+      'https://mempool.space/api/address/bc1q...298v',
+    );
+  });
+
+  test('drops the query string and fragment', () => {
+    assert.equal(
+      redactUrl('https://api.coingecko.com/api/v3/simple/price?ids=tron&vs_currencies=eur#x'),
+      'https://api.coingecko.com/api/v3/simple/price',
+    );
+  });
+
+  test('drops credentials in the URL', () => {
+    assert.equal(redactUrl('http://user:pass@mempool.lan/api'), 'http://mempool.lan/api');
+  });
+
+  test('keeps short path segments', () => {
+    assert.equal(redactUrl('http://actual:5006/sync/sync'), 'http://actual:5006/sync/sync');
+  });
+
+  test('something that is not a URL gives a placeholder', () => {
+    assert.equal(redactUrl('not a url'), '(invalid URL)');
   });
 });
 
