@@ -21,6 +21,7 @@ chains:                                        # optional, settings per chain
     #   - trongrid:
     #       api_url: https://api.trongrid.io
     #       api_key: ${TRONGRID_API_KEY}       # raises TronGrid's rate limit
+    #       serial: true                       # or one request at a time, 1 s apart
   bitcoin:
     explorers:
       # - mempool-space:                       # your own mempool instance first...

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
 import { trongrid } from '../../../src/chains/tron/trongrid.ts';
+import { ApiError } from '../../../src/http.ts';
 import type { Token } from '../../../src/types.ts';
 import { fakeFetch, fakeTokens, fixture, jsonResponse, TRON_WALLET } from '../../fakes.ts';
 
@@ -180,5 +181,82 @@ describe('trongrid', () => {
       const { result } = balances(body, [TRX]);
       await assert.rejects(result, /^Error: trongrid: /);
     }
+  });
+
+  describe('rate limits', () => {
+    // TronGrid's answer to a second request within a second, without a key.
+    const RATE_LIMITED = {
+      Error:
+        'request rate of (getAccount) exceeded the allowed_rps(1), and the query server is suspended for 5 s.',
+    };
+
+    async function failure(response: Response): Promise<unknown> {
+      const { fetch } = fakeFetch(() => response);
+      try {
+        await trongrid.getBalances({
+          wallet: { address: TRON_WALLET },
+          tokens: [TRX],
+          settings: {},
+          fetch,
+        });
+      } catch (error) {
+        return error;
+      }
+      assert.fail('expected getBalances to throw');
+    }
+
+    test('one request a second in serial mode', () => {
+      assert.equal(trongrid.serialIntervalMs, 1000);
+    });
+
+    test('a 429 carries its status and body, but the message has neither the body nor the address', async () => {
+      const error = await failure(jsonResponse(RATE_LIMITED, 429));
+      assert.ok(error instanceof ApiError);
+      assert.equal(error.status, 429);
+      assert.deepEqual(error.body, RATE_LIMITED);
+      assert.equal(error.message, 'trongrid: HTTP 429');
+    });
+
+    test('a 429 is a rate limit: add an API key or set serial', async () => {
+      const error = await failure(jsonResponse(RATE_LIMITED, 429));
+      assert.equal(
+        trongrid.rateLimitAdvice(error, { settings: {}, serial: false }),
+        'add an API key (api_key: ${TRONGRID_API_KEY}), or set serial: true to send one request at a time',
+      );
+    });
+
+    test('a rate limit error in a 200 body is one too', async () => {
+      const error = await failure(jsonResponse(RATE_LIMITED));
+      assert.equal(error instanceof Error && error.message, 'trongrid: the API answered an error');
+      assert.ok(trongrid.rateLimitAdvice(error, { settings: {}, serial: false }));
+    });
+
+    test("the advice leaves out what's already set", async () => {
+      const error = await failure(jsonResponse(RATE_LIMITED, 429));
+      assert.equal(
+        trongrid.rateLimitAdvice(error, { settings: { api_key: 'test-key' }, serial: false }),
+        'set serial: true to send one request at a time',
+      );
+      assert.equal(
+        trongrid.rateLimitAdvice(error, { settings: {}, serial: true }),
+        'add an API key (api_key: ${TRONGRID_API_KEY})',
+      );
+      assert.equal(
+        trongrid.rateLimitAdvice(error, { settings: { api_key: 'test-key' }, serial: true }),
+        'run less often: TronGrid is limiting requests even with an API key and serial mode',
+      );
+    });
+
+    test('other errors are not rate limits', async () => {
+      for (const error of [
+        await failure(jsonResponse({}, 500)),
+        await failure(jsonResponse({ Error: 'invalid address' }, 400)),
+        await failure(jsonResponse({ data: [] })),
+        new Error('HTTP 429'),
+        'HTTP 429',
+      ]) {
+        assert.equal(trongrid.rateLimitAdvice(error, { settings: {}, serial: false }), null);
+      }
+    });
   });
 });

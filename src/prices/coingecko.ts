@@ -1,4 +1,4 @@
-import { apiUrl, getJson, isRecord } from '../http.ts';
+import { ApiError, apiUrl, getJson, isRecord } from '../http.ts';
 import { tokenKey } from '../tokens.ts';
 import type { PriceProvider, Quote } from '../types.ts';
 
@@ -25,6 +25,18 @@ const CURRENCIES = new Set(
 export const coingecko: PriceProvider = {
   id: ID,
   supportsCurrency: (currency) => CURRENCIES.has(currency),
+  // The public API allows a few requests a minute.
+  serialIntervalMs: 6000,
+  rateLimitAdvice(error) {
+    if (!(error instanceof ApiError)) {
+      return null;
+    }
+    // CoinGecko also puts the code in the body: { "status": { "error_code": 429 } }.
+    const status = isRecord(error.body) && isRecord(error.body.status) ? error.body.status : {};
+    return error.status === 429 || status.error_code === 429
+      ? "run less often, or list another price provider after it: CoinGecko's public API allows a few requests a minute"
+      : null;
+  },
   async getQuotes({ tokens, currency, settings, fetch }) {
     const ids = [...new Set(tokens.map((token) => token.priceIds[ID]))].filter(
       (id): id is string => id !== undefined,

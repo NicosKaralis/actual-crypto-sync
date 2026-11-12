@@ -29,9 +29,18 @@ export interface Chain {
   defaultExplorers: string[]; // used when the config doesn't list any
 }
 
+/** An explorer or provider entry's settings, and whether it's in serial mode. */
+export interface EntrySettings {
+  settings: Record<string, string>;
+  serial: boolean;
+}
+
 export interface Explorer {
   id: string; // 'trongrid', 'mempool-space'
   supportsContracts: boolean; // a native-only explorer is skipped for contract tokens
+  serialIntervalMs: number; // in serial mode, the wait after each request before the next
+  /** When `error` is this API's rate limit, what the user can do about it; null for any other error. */
+  rateLimitAdvice(error: unknown, entry: EntrySettings): string | null;
   /** One wallet, one request where the API allows it; raw integer balances keyed by token symbol. */
   getBalances(req: {
     wallet: Wallet;
@@ -49,6 +58,9 @@ export interface Quote {
 export interface PriceProvider {
   id: string; // 'coingecko'
   supportsCurrency(currency: Currency): boolean;
+  serialIntervalMs: number; // in serial mode, the wait after each request before the next
+  /** When `error` is this API's rate limit, what the user can do about it; null for any other error. */
+  rateLimitAdvice(error: unknown, entry: EntrySettings): string | null;
   /** Every token in one call where the API allows it; tokens it can't price are left out. */
   getQuotes(req: {
     tokens: Token[]; // only tokens with a priceIds entry for this provider

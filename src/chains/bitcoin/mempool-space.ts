@@ -1,4 +1,4 @@
-import { apiUrl, getJson, isRecord, wholeNumber } from '../../http.ts';
+import { ApiError, apiUrl, getJson, isRecord, wholeNumber } from '../../http.ts';
 import type { Explorer } from '../../types.ts';
 
 const ID = 'mempool-space';
@@ -12,6 +12,17 @@ const DEFAULT_API_URL = 'https://mempool.space/api';
 export const mempoolSpace: Explorer = {
   id: ID,
   supportsContracts: false,
+  // mempool.space doesn't publish its limit; one request a second is a cautious pace.
+  serialIntervalMs: 1000,
+  rateLimitAdvice(error, { serial }) {
+    if (!(error instanceof ApiError) || error.status !== 429) {
+      return null;
+    }
+    const ownInstance = 'point api_url at your own mempool instance';
+    return serial
+      ? ownInstance
+      : `set serial: true to send one request at a time, or ${ownInstance}`;
+  },
   async getBalances({ wallet, tokens, settings, fetch }) {
     for (const token of tokens) {
       if (token.kind !== 'native') {

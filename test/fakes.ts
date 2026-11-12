@@ -10,6 +10,8 @@ function explorer(id: string, supportsContracts: boolean): Explorer {
   return {
     id,
     supportsContracts,
+    serialIntervalMs: 0,
+    rateLimitAdvice: () => null,
     getBalances: () => Promise.reject(new Error(`fake explorer ${id} has no balances`)),
   };
 }
@@ -18,6 +20,8 @@ function provider(id: string, currencies: string[]): PriceProvider {
   return {
     id,
     supportsCurrency: (currency) => currencies.includes(currency),
+    serialIntervalMs: 0,
+    rateLimitAdvice: () => null,
     getQuotes: () => Promise.reject(new Error(`fake provider ${id} has no quotes`)),
   };
 }

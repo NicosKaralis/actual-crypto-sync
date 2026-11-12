@@ -1,5 +1,5 @@
 import { walletPrefix } from '../../format.ts';
-import { apiUrl, getJson, isRecord, wholeNumber, wholeNumberString } from '../../http.ts';
+import { ApiError, apiUrl, getJson, isRecord, wholeNumber, wholeNumberString } from '../../http.ts';
 import type { Explorer, Token } from '../../types.ts';
 
 const ID = 'trongrid';
@@ -12,6 +12,24 @@ const DEFAULT_API_URL = 'https://api.trongrid.io';
 export const trongrid: Explorer = {
   id: ID,
   supportsContracts: true,
+  // Without a key TronGrid allows one request a second, and suspends a caller
+  // that sends more for 5 s.
+  serialIntervalMs: 1000,
+  rateLimitAdvice(error, { settings, serial }) {
+    if (!isRateLimit(error)) {
+      return null;
+    }
+    const options: string[] = [];
+    if (!settings.api_key) {
+      options.push('add an API key (api_key: ${TRONGRID_API_KEY})');
+    }
+    if (!serial) {
+      options.push('set serial: true to send one request at a time');
+    }
+    return options.length > 0
+      ? options.join(', or ')
+      : 'run less often: TronGrid is limiting requests even with an API key and serial mode';
+  },
   async getBalances({ wallet, tokens, settings, fetch }) {
     const headers: Record<string, string> = settings.api_key
       ? { 'TRON-PRO-API-KEY': settings.api_key }
@@ -19,6 +37,10 @@ export const trongrid: Explorer = {
     const url = `${apiUrl(settings, DEFAULT_API_URL)}/v1/accounts/${wallet.address}`;
     const body = await getJson(ID, url, fetch, headers);
 
+    // TronGrid can answer an error with a 200, as { "Error": "..." }.
+    if (isRecord(body) && typeof body.Error === 'string') {
+      throw new ApiError(ID, 'the API answered an error', 200, body);
+    }
     if (!isRecord(body) || !Array.isArray(body.data)) {
       throw new Error(`${ID}: expected a data list`);
     }
@@ -94,4 +116,13 @@ function trc20(account: Record<string, unknown>, token: Token): bigint {
 
 function amount(value: unknown, path: string): bigint {
   return value === undefined ? 0n : wholeNumber(value, ID, path);
+}
+
+/** A 429, or TronGrid's `{ "Error": "request rate of (...) exceeded ..." }` with any status. */
+function isRateLimit(error: unknown): boolean {
+  if (!(error instanceof ApiError)) {
+    return false;
+  }
+  const message = isRecord(error.body) ? error.body.Error : undefined;
+  return error.status === 429 || (typeof message === 'string' && /request rate/i.test(message));
 }

@@ -446,6 +446,52 @@ describe('loadConfig: providers and explorers lists', () => {
     );
   });
 
+  test('serial: true and false load into serial, not settings', () => {
+    const config = load((raw) =>
+      Object.assign(raw, {
+        chains: { tron: { explorers: [{ trongrid: { serial: true, api_key: 'k' } }] } },
+        prices: { currency: 'eur', providers: [{ coingecko: { serial: 'false' } }] },
+      }),
+    );
+    const [explorer] = config.chains.tron?.explorers ?? [];
+    assert.deepEqual([explorer?.serial, explorer?.settings], [true, { api_key: 'k' }]);
+    const [provider] = config.prices.providers;
+    assert.deepEqual([provider?.serial, provider?.settings], [false, {}]);
+  });
+
+  test('serial is off unless set', () => {
+    const config = load();
+    assert.equal(config.prices.providers[0]?.serial, false);
+    assert.equal(config.chains.tron?.explorers[0]?.serial, false);
+  });
+
+  test('serial must be true or false', () => {
+    for (const value of ['yes', 1, '']) {
+      assertConfigError(
+        () =>
+          load((raw) =>
+            Object.assign(prices(raw), { providers: [{ coingecko: { serial: value } }] }),
+          ),
+        'prices.providers[0].coingecko.serial: expected true or false',
+      );
+    }
+  });
+
+  test('two entries differing only by serial are not the same settings', () => {
+    const config = load((raw) =>
+      Object.assign(raw, {
+        chains: { tron: { explorers: [{ trongrid: { serial: true } }, 'trongrid'] } },
+      }),
+    );
+    assert.deepEqual(
+      config.chains.tron?.explorers.map((e) => [e.label, e.serial]),
+      [
+        ['trongrid', true],
+        ['trongrid#2', false],
+      ],
+    );
+  });
+
   test('settings must be scalars', () => {
     assertConfigError(
       () =>

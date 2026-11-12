@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
+import { ApiError } from '../../src/http.ts';
 import { coingecko } from '../../src/prices/coingecko.ts';
 import type { Token } from '../../src/types.ts';
 import { fakeFetch, fakeTokens, fixture, jsonResponse } from '../fakes.ts';
@@ -100,5 +101,43 @@ describe('coingecko', () => {
       const { result } = quotes(jsonResponse(body), [TRX]);
       await assert.rejects(result, /^Error: coingecko: /);
     }
+  });
+
+  describe('rate limits', () => {
+    // CoinGecko's public API answer when it's called too often.
+    const RATE_LIMITED = {
+      status: { error_code: 429, error_message: "You've exceeded the Rate Limit." },
+    };
+
+    async function failure(response: Response): Promise<unknown> {
+      const { result } = quotes(response, [TRX]);
+      return result.then(
+        () => assert.fail('expected getQuotes to throw'),
+        (error: unknown) => error,
+      );
+    }
+
+    test('one request every 6 seconds in serial mode', () => {
+      assert.equal(coingecko.serialIntervalMs, 6000);
+    });
+
+    test('a 429 is a rate limit: run less often, or list another provider', async () => {
+      const error = await failure(jsonResponse(RATE_LIMITED, 429));
+      assert.ok(error instanceof ApiError);
+      assert.equal(
+        coingecko.rateLimitAdvice(error, { settings: {}, serial: false }),
+        "run less often, or list another price provider after it: CoinGecko's public API allows a few requests a minute",
+      );
+    });
+
+    test('other errors are not rate limits', async () => {
+      for (const error of [
+        await failure(jsonResponse({ status: { error_code: 500 } }, 500)),
+        await failure(jsonResponse(null)),
+        new Error('HTTP 429'),
+      ]) {
+        assert.equal(coingecko.rateLimitAdvice(error, { settings: {}, serial: false }), null);
+      }
+    });
   });
 });

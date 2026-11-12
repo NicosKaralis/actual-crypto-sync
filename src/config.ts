@@ -21,13 +21,23 @@ export interface Config {
   actual: { serverURL: string; syncId: string; auth: ActualAuth; encryptionPassword?: string };
   prices: {
     currency: Currency;
-    providers: { label: string; provider: PriceProvider; settings: Record<string, string> }[];
+    providers: {
+      label: string;
+      provider: PriceProvider;
+      settings: Record<string, string>;
+      serial: boolean;
+    }[];
   };
   chains: Record<
     ChainId,
     {
       chain: Chain;
-      explorers: { label: string; explorer: Explorer; settings: Record<string, string> }[];
+      explorers: {
+        label: string;
+        explorer: Explorer;
+        settings: Record<string, string>;
+        serial: boolean;
+      }[];
     }
   >;
   accounts: { name: string; chain: ChainId; token: Token; wallets: Wallet[] }[];
@@ -190,7 +200,7 @@ class Loader {
       'prices.providers',
       'provider',
       (id, path) => at(path, () => getPriceProvider(id, this.registries.priceProviders)),
-    ).map(({ label, item, settings }) => ({ label, provider: item, settings }));
+    ).map(({ label, item, settings, serial }) => ({ label, provider: item, settings, serial }));
 
     const currency = this.str(
       required(raw.currency, 'prices.currency'),
@@ -236,20 +246,20 @@ class Loader {
         );
       }
       return explorer;
-    }).map(({ label, item, settings }) => ({ label, explorer: item, settings }));
+    }).map(({ label, item, settings, serial }) => ({ label, explorer: item, settings, serial }));
   }
 
   /**
    * A providers or explorers list: a name, a list of names, or a list of names
    * and one-key maps of name to settings. Repeats are labelled `id#2`, `id#3`
-   * unless they set `label`.
+   * unless they set `label`. `serial` puts the entry in serial mode (C27).
    */
   entries<T>(
     value: unknown,
     path: string,
     noun: string,
     lookup: (id: string, path: string) => T,
-  ): { label: string; item: T; settings: Record<string, string> }[] {
+  ): { label: string; item: T; settings: Record<string, string>; serial: boolean }[] {
     if (typeof value === 'string') {
       return this.entries([value], path, noun, (id) => lookup(id, path));
     }
@@ -259,13 +269,20 @@ class Loader {
     if (value.length === 0) {
       throw new ConfigError(path, `list at least one ${noun}`);
     }
-    const result: { id: string; label: string; item: T; settings: Record<string, string> }[] = [];
+    const result: {
+      id: string;
+      label: string;
+      item: T;
+      settings: Record<string, string>;
+      serial: boolean;
+    }[] = [];
     const unlabelled = new Map<string, number>();
     value.forEach((entry: unknown, index) => {
       const entryPath = `${path}[${index}]`;
       let id: string;
       let settings: Record<string, string> = {};
       let label: string | undefined;
+      let serial = false;
       if (isMap(entry)) {
         const keys = Object.keys(entry);
         if (keys.length !== 1) {
@@ -275,12 +292,17 @@ class Loader {
           );
         }
         id = keys[0] as string;
-        ({ settings, label } = this.settings(entry[id], `${entryPath}.${id}`));
+        ({ settings, label, serial } = this.settings(entry[id], `${entryPath}.${id}`));
       } else {
         id = this.nonEmpty(entry, entryPath);
       }
       const item = lookup(id, entryPath);
-      if (result.some((other) => other.id === id && sameSettings(other.settings, settings))) {
+      if (
+        result.some(
+          (other) =>
+            other.id === id && other.serial === serial && sameSettings(other.settings, settings),
+        )
+      ) {
         throw new ConfigError(entryPath, `${id} is already listed with the same settings`);
       }
       if (label === undefined) {
@@ -291,16 +313,23 @@ class Loader {
       if (result.some((other) => other.label === label)) {
         throw new ConfigError(entryPath, `the label "${label}" is already used`);
       }
-      result.push({ id, label, item, settings });
+      result.push({ id, label, item, settings, serial });
     });
-    return result.map(({ label, item, settings }) => ({ label, item, settings }));
+    return result.map(({ label, item, settings, serial }) => ({ label, item, settings, serial }));
   }
 
-  /** Settings are scalars, passed on as strings; `label` names the entry instead. */
-  settings(value: unknown, path: string): { settings: Record<string, string>; label?: string } {
+  /**
+   * Settings are scalars, passed on as strings; `label` names the entry and
+   * `serial` sets its mode instead.
+   */
+  settings(
+    value: unknown,
+    path: string,
+  ): { settings: Record<string, string>; label?: string; serial: boolean } {
     if (value === null || value === undefined) {
-      return { settings: {} };
+      return { settings: {}, serial: false };
     }
+    let serial = false;
     const settings: Record<string, string> = {};
     let label: string | undefined;
     for (const [key, setting] of Object.entries(map(value, path))) {
@@ -310,11 +339,16 @@ class Loader {
       const text = this.substitute(String(setting), `${path}.${key}`);
       if (key === 'label') {
         label = this.nonEmpty(text, `${path}.label`);
+      } else if (key === 'serial') {
+        if (text !== 'true' && text !== 'false') {
+          throw new ConfigError(`${path}.serial`, 'expected true or false');
+        }
+        serial = text === 'true';
       } else {
         settings[key] = text;
       }
     }
-    return label === undefined ? { settings } : { settings, label };
+    return label === undefined ? { settings, serial } : { settings, label, serial };
   }
 
   tokens(value: unknown): Token[] {
