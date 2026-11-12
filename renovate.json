@@ -25,6 +25,11 @@
       "automerge": false
     },
     {
+      "description": "OpenTelemetry packages require matching versions of each other (api, SDK, exporters, instrumentations), so they move together",
+      "matchPackageNames": ["@opentelemetry/**"],
+      "groupName": "OpenTelemetry"
+    },
+    {
       "description": "Biome's schema URL in biome.json follows the package",
       "matchPackageNames": ["@biomejs/biome"],
       "groupName": "Biome"
