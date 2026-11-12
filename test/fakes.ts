@@ -71,6 +71,8 @@ export const TRON_WALLET_2 = 'TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2';
 export const BTC_WALLET = 'bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v';
 export const BTC_P2PKH_WALLET = '1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP';
 export const BTC_P2SH_WALLET = '3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba';
+// A BIP-350 test vector, not a wallet: none of the exchange wallets above is bech32m.
+export const BTC_BECH32M_VECTOR = 'bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0';
 
 /** A recorded API response from test/fixtures/, e.g. `fixture('trongrid/account.json')`. */
 export function fixture(path: string): unknown {
