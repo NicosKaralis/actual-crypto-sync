@@ -12,7 +12,7 @@ export interface Token {
   kind: 'native' | 'contract';
   contract?: string; // set when kind is 'contract'
   decimals: number; // on-chain decimals of the raw balance
-  displayDecimals: number; // decimals shown in notes: TRX 6, USDT 4, BTC 8
+  displayDecimals: number; // decimals shown in notes: min(decimals, 8), so TRX 6, USDT 6, BTC 8
   priceIds: Record<string, string>; // provider id -> that provider's id: { coingecko: 'tether' }
 }
 
