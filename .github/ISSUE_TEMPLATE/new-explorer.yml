@@ -1,0 +1,65 @@
+name: New explorer
+description: Ask for a new block explorer API on a chain that the tool supports.
+labels: [new explorer]
+body:
+  - type: input
+    id: chain
+    attributes:
+      label: Chain
+      placeholder: tron
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Explorer
+      placeholder: Tronscan
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: API docs
+      description: A link to the docs of the API.
+    validations:
+      required: true
+  - type: textarea
+    id: rate-limits
+    attributes:
+      label: Rate limits
+      description: How many requests the API accepts, with and without a key. Give a link to the page that says this.
+    validations:
+      required: true
+  - type: dropdown
+    id: key
+    attributes:
+      label: Does the API need a key?
+      options:
+        - "No"
+        - Yes, a free key
+        - Yes, a paid key
+        - Optional, a key gives higher limits
+    validations:
+      required: true
+  - type: dropdown
+    id: tokens
+    attributes:
+      label: Does the API return token balances?
+      description: For example, TRC20 balances on TRON.
+      options:
+        - Yes, all tokens in one request
+        - Yes, one request per token
+        - "No"
+        - The chain has no tokens
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Other information
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I can help to write this.

@@ -73,7 +73,7 @@ describe('redactUrl', () => {
 });
 
 describe('formatAmount', () => {
-  test('prints the shortest exact decimal, like Go', () => {
+  test('prints the shortest exact decimal', () => {
     assert.equal(formatAmount(1000), '1000');
     assert.equal(formatAmount(154.910248), '154.910248');
     assert.equal(formatAmount(0), '0');
@@ -219,18 +219,6 @@ describe('buildNote', () => {
 });
 
 describe('parseNote', () => {
-  test("reads the Go version's notes, with and without the price", () => {
-    assert.deepEqual(parseNote('156.9193 TRX (Δ +2.0091 @ 0.2970 €/TRX, 46.60 €)'), {
-      balance: 156.9193,
-      symbol: 'TRX',
-    });
-    assert.deepEqual(parseNote('1000 USDT (Δ +0)'), { balance: 1000, symbol: 'USDT' });
-    assert.deepEqual(parseNote('154.910248 USDT (Δ -2.5)'), {
-      balance: 154.910248,
-      symbol: 'USDT',
-    });
-  });
-
   test('reads the current format in any currency', () => {
     assert.deepEqual(parseNote('156.9193 TRX (Δ +2.009071 @ 0.297 EUR/TRX, 46.61 EUR)'), {
       balance: 156.9193,
@@ -269,11 +257,13 @@ describe('parseNote', () => {
       '',
       'coffee',
       'coffee 12.50',
-      '1.2e-7 BTC (Δ +0)', // exponent notation
-      ' 1000 USDT (Δ +0)', // doesn't start with the balance
-      '1000 USDT (Δ 0)', // the delta has no sign
-      '1000 usdt (Δ +0)', // lowercase symbol
-      '1000 USDT (Δ +0', // not closed
+      '1.2e-7 BTC (Δ +0 @ 91234.56 EUR/BTC, 0.01 EUR)', // exponent notation
+      ' 1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 EUR)', // doesn't start with the balance
+      '1000 USDT (Δ 0 @ 0.93 EUR/USDT, 930 EUR)', // the delta has no sign
+      '1000 usdt (Δ +0 @ 0.93 EUR/usdt, 930 EUR)', // lowercase symbol
+      '1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 EUR', // not closed
+      '1000 USDT (Δ +0)', // no price
+      '1000 USDT (Δ +0 @ 0.93 €/USDT, 930 €)', // a currency sign, not a code
       '1000 USDT (Δ +0 @ 0.93 EUR/TRX, 930 EUR)', // the quote is for another symbol
       '1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 USD)', // two currencies
       '1000 USDT (Δ +0 @ 0.93 EUR/USDT 930 EUR)', // no comma
@@ -288,9 +278,10 @@ describe('parseNote', () => {
 
 describe('isSyncNote', () => {
   test("is true only for a sync note with the account's symbol", () => {
-    assert.equal(isSyncNote('1000 USDT (Δ +0)', 'USDT'), true);
-    assert.equal(isSyncNote('1000 USDT (Δ +0)', 'TRX'), false);
-    assert.equal(isSyncNote('100 EUR (Δ +5)', 'USDT'), false);
+    const note = '1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 EUR)';
+    assert.equal(isSyncNote(note, 'USDT'), true);
+    assert.equal(isSyncNote(note, 'TRX'), false);
+    assert.equal(isSyncNote('100 EUR (Δ +5 @ 1 USD/EUR, 100 USD)', 'USDT'), false);
     assert.equal(isSyncNote('coffee', 'USDT'), false);
     assert.equal(isSyncNote(null, 'USDT'), false);
   });

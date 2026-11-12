@@ -341,7 +341,15 @@ describe('run', () => {
 
   test('--dry-run reads everything and calls no write method', async () => {
     const actual = fakeActual({
-      'acc-trx': [{ id: 'y', date: YESTERDAY, amount: 1, notes: '1 TRX (Δ +1)', cleared: false }],
+      'acc-trx': [
+        {
+          id: 'y',
+          date: YESTERDAY,
+          amount: 1,
+          notes: '1 TRX (Δ +1 @ 0.3 EUR/TRX, 0.3 EUR)',
+          cleared: false,
+        },
+      ],
     });
     const { code, calls, entries } = await runWith({ actual, dryRun: true });
     assert.equal(code, 0);

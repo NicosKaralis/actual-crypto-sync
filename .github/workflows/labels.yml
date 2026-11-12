@@ -1,0 +1,43 @@
+name: Labels
+
+# pull_request_target, so the token can label pull requests from forks too. It checks out no
+# code and reads the title and commit messages only as data.
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  breaking-change:
+    name: Breaking change label
+    runs-on: ubuntu-26.04
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Add or remove the label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+          LABELED: ${{ contains(github.event.pull_request.labels.*.name, 'breaking change') }}
+        run: |
+          # A type with `!` (feat!: or feat(config)!:) in the title or a commit subject, or a
+          # BREAKING CHANGE footer in a commit.
+          marked='^[a-z]+(\([^)]*\))?!:'
+          footer='^BREAKING[ -]CHANGE:'
+          breaking=false
+          if grep -qE "$marked" <<< "$TITLE"; then
+            breaking=true
+          fi
+          messages=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/commits" --jq '.[].commit.message')
+          if grep -qE "$marked|$footer" <<< "$messages"; then
+            breaking=true
+          fi
+          if [ "$breaking" = true ] && [ "$LABELED" = false ]; then
+            gh api -X POST "repos/$GH_REPO/issues/$PR/labels" -f 'labels[]=breaking change' > /dev/null
+          elif [ "$breaking" = false ] && [ "$LABELED" = true ]; then
+            gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/breaking%20change" > /dev/null
+          fi

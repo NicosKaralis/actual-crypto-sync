@@ -1,0 +1,41 @@
+name: New chain
+description: Ask for support of a new blockchain.
+labels: [new chain]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A chain needs at least one explorer API that the tool can use without a key, or with a free key.
+  - type: input
+    id: chain
+    attributes:
+      label: Chain
+      placeholder: Ethereum
+    validations:
+      required: true
+  - type: textarea
+    id: explorers
+    attributes:
+      label: Explorer APIs
+      description: |
+        At least one public explorer API for this chain. For each API, give a link to its docs. Tell us if it needs a key, and if the key is free.
+    validations:
+      required: true
+  - type: textarea
+    id: tokens
+    attributes:
+      label: Tokens
+      description: The native token, and the other tokens that you want, for example USDT. Give the contract of each token.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Other information
+      description: For example, the address formats of the chain.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I can help to write this.
