@@ -42,15 +42,23 @@ function explorer(id: string, calls: string[], failFor: string[] = []): Explorer
   };
 }
 
-/** A provider quoting every token in PRICES except `missing`. */
-function provider(calls: string[], missing: string[] = []): PriceProvider {
+/** A provider quoting every token in PRICES except `missing`, or failing every call. */
+function provider(
+  calls: string[],
+  missing: string[] = [],
+  { fails = false }: { fails?: boolean } = {},
+): PriceProvider {
+  const id = 'coingecko';
   return {
-    id: 'coingecko',
+    id,
     supportsCurrency: () => true,
     serialIntervalMs: 0,
     rateLimitAdvice: () => null,
     getQuotes: async ({ tokens, currency }) => {
-      calls.push(`coingecko ${tokens.map((t) => t.symbol).join(',')}`);
+      calls.push(`${id} ${tokens.map((t) => t.symbol).join(',')}`);
+      if (fails) {
+        throw new Error(`${id}: HTTP 503`);
+      }
       const quotes = new Map<string, Quote>();
       for (const token of tokens) {
         const price = PRICES[token.symbol];
@@ -68,6 +76,7 @@ function config(
     tronExplorers?: Explorer[];
     bitcoinExplorers?: Explorer[];
     priceProvider?: PriceProvider;
+    priceProviders?: { label: string; provider: PriceProvider }[];
     auth?: ActualAuth;
   } = {},
 ): Config {
@@ -86,14 +95,11 @@ function config(
     },
     prices: {
       currency: 'eur',
-      providers: [
-        {
-          label: 'coingecko',
-          provider: options.priceProvider ?? provider(calls),
-          settings: {},
-          serial: false,
-        },
-      ],
+      providers: (
+        options.priceProviders ?? [
+          { label: 'coingecko', provider: options.priceProvider ?? provider(calls) },
+        ]
+      ).map(({ label, provider }) => ({ label, provider, settings: {}, serial: false })),
     },
     chains: {
       tron: {
@@ -398,6 +404,48 @@ describe('run', () => {
     assert.deepEqual(values('providerErrors'), [{ value: 1, kind: 'explorer', id: 'trongrid' }]);
     assert.equal(values('balance')[0]?.explorer, 'tron-backup');
     assert.equal(values('lastSuccess').length, 1);
+  });
+
+  test('a fallback price provider answering counts a provider error and still succeeds', async () => {
+    const calls: string[] = [];
+    const { code, values } = await runWith({
+      config: config({
+        priceProviders: [
+          { label: 'coingecko', provider: provider(calls, [], { fails: true }) },
+          { label: 'coingecko#2', provider: provider(calls) },
+        ],
+      }),
+    });
+    assert.equal(code, 0);
+    assert.deepEqual(values('providerErrors'), [{ value: 1, kind: 'price', id: 'coingecko' }]);
+    assert.ok(values('price').every((entry) => entry.source === 'coingecko#2'));
+    assert.equal(values('lastSuccess').length, 1);
+  });
+
+  test('every price provider failing fails the run, counting each provider', async () => {
+    const calls: string[] = [];
+    const {
+      code,
+      values,
+      calls: actualCalls,
+    } = await runWith({
+      config: config({
+        priceProviders: [
+          { label: 'coingecko', provider: provider(calls, [], { fails: true }) },
+          { label: 'coingecko#2', provider: provider(calls, [], { fails: true }) },
+        ],
+      }),
+    });
+    assert.equal(code, 1);
+    assert.deepEqual(values('providerErrors'), [
+      { value: 1, kind: 'price', id: 'coingecko' },
+      { value: 1, kind: 'price', id: 'coingecko#2' },
+    ]);
+    assert.deepEqual(
+      values('errors').find((entry) => entry.stage === 'quotes'),
+      { value: 3, stage: 'quotes' },
+    );
+    assert.ok(!actualCalls.some((call) => call.startsWith('create')));
   });
 
   test('an account missing in Actual fails alone', async () => {
