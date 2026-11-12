@@ -22,6 +22,8 @@
     "lint": "biome ci .",
     "format": "biome check --write .",
     "dev:up": "docker compose -f dev/compose.yml up -d --wait",
+    "dev:seed": "node --env-file=dev/.env dev/seed.ts",
+    "dev:run": "node --env-file=dev/.env src/main.ts --config dev/config.yml",
     "dev:down": "docker compose -f dev/compose.yml down"
   },
   "dependencies": {
