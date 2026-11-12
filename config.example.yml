@@ -1,0 +1,56 @@
+actual:
+  server_url: http://actual:5006
+  sync_id: ${ACTUAL_BUDGET_SYNC_ID}
+  auth: # exactly one of the three; see docs/authentication.md
+    session: ${ACTUAL_SESSION_TOKEN} # a token from a login (password or OpenID)
+    # password: ${ACTUAL_PASSWORD}             # the server password, single-user servers
+    # api_key: ${ACTUAL_API_KEY}               # servers newer than 26.11.0
+  # encryption_password: ${ACTUAL_ENCRYPTION_PASSWORD}  # budget encryption, not login; only for end-to-end encrypted budgets
+
+prices:
+  currency: eur # ISO 4217 code, any case; at least one provider must support it
+  providers: # tried in order; each a name, or a name with its settings
+    - coingecko
+    # - coingecko:
+    #     api_url: https://api.coingecko.com/api/v3
+
+chains: # optional, settings per chain
+  tron:
+    explorers: trongrid # one name works too; this is the default
+    # explorers:
+    #   - trongrid:
+    #       api_url: https://api.trongrid.io
+    #       api_key: ${TRONGRID_API_KEY}       # raises TronGrid's rate limit
+  bitcoin:
+    explorers:
+      # - mempool-space:                       # your own mempool instance first...
+      #     api_url: http://mempool.lan/api
+      #     label: home-mempool
+      - mempool-space # ...then the public one
+
+tokens: # optional, tokens that aren't built in
+  # - chain: tron
+  #   symbol: XYZ
+  #   contract: TXyz...
+  #   decimals: 18
+  #   price_ids:
+  #     coingecko: xyz-token
+
+accounts:
+  - name: "TC9F...R2MJ: TRX" # the Actual account, by name or id
+    chain: tron
+    token: TRX
+    wallets:
+      - ${TRON_WALLET_ADDRESS}
+
+  - name: "TC9F...R2MJ: USDT"
+    chain: tron
+    token: USDT # built in, the contract comes from the registry
+    wallets:
+      - ${TRON_WALLET_ADDRESS} # same address as above, fetched once
+
+  - name: Bitcoin
+    chain: bitcoin
+    token: BTC
+    wallets: # exactly one wallet per account in v1.0
+      - ${BTC_ADDRESS}
