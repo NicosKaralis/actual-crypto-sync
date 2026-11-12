@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "balance": 66356170,
+      "frozenV2": [
+        {},
+        {
+          "type": "ENERGY"
+        },
+        {
+          "type": "TRON_POWER"
+        }
+      ],
+      "trc20": [
+        {
+          "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t": "274000000"
+        }
+      ]
+    }
+  ],
+  "success": true,
+  "meta": {
+    "page_size": 1
+  }
+}

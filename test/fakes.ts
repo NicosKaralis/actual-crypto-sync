@@ -69,3 +69,33 @@ export const fakeRegistries = {
 export const TRON_WALLET = 'TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ';
 export const TRON_WALLET_2 = 'TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2';
 export const BTC_WALLET = 'bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v';
+export const BTC_P2PKH_WALLET = '1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP';
+export const BTC_P2SH_WALLET = '3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba';
+
+/** A recorded API response from test/fixtures/, e.g. `fixture('trongrid/account.json')`. */
+export function fixture(path: string): unknown {
+  return JSON.parse(readFileSync(new URL(`./fixtures/${path}`, import.meta.url), 'utf8'));
+}
+
+export function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+export interface FetchCall {
+  url: string;
+  headers: Record<string, string>;
+}
+
+/** A `fetch` that answers every request with `respond` and records what was asked. */
+export function fakeFetch(respond: (url: string) => Response) {
+  const calls: FetchCall[] = [];
+  const fetch = (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : String(input);
+    calls.push({ url, headers: Object.fromEntries(new Headers(init?.headers)) });
+    return Promise.resolve(respond(url));
+  };
+  return { fetch: fetch as typeof globalThis.fetch, calls };
+}
