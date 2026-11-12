@@ -49,15 +49,15 @@ Do not open a public issue for a security issue. Use GitHub [private vulnerabili
 
 All commits use [Conventional Commits](https://www.conventionalcommits.org). [Release Please](https://github.com/googleapis/release-please) reads the commit messages. It writes the changelog from them. It also sets the next version from them. Thus, the commit type is important.
 
-| Type | Use | Release |
-| --- | --- | --- |
-| `feat:` | A new feature | Minor |
-| `fix:` | A bug fix | Patch |
-| `docs:` | Documentation only | None |
-| `test:` | Tests only | None |
-| `refactor:` | A code change that does not change behaviour | None |
-| `chore:` | Maintenance, dependencies or tooling | None |
-| `ci:` | The GitHub workflows | None |
+| Type        | Use                                          | Release |
+| ----------- | -------------------------------------------- | ------- |
+| `feat:`     | A new feature                                | Minor   |
+| `fix:`      | A bug fix                                    | Patch   |
+| `docs:`     | Documentation only                           | None    |
+| `test:`     | Tests only                                   | None    |
+| `refactor:` | A code change that does not change behaviour | None    |
+| `chore:`    | Maintenance, dependencies or tooling         | None    |
+| `ci:`       | The GitHub workflows                         | None    |
 
 This is an example of a commit message with a body:
 
