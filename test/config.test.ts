@@ -867,7 +867,7 @@ describe('config.example.yml', () => {
       config.accounts.map((a) => [a.name, a.chain, a.token.symbol, a.wallets[0]?.address]),
       [
         ['TC9F...R2MJ: TRX', 'tron', 'TRX', TRON_WALLET],
-        ['TC9F...R2MJ: USDT', 'tron', 'USDT', TRON_WALLET],
+        ['SUNDOG Account', 'tron', 'SUNDOG', TRON_WALLET],
         ['Bitcoin', 'bitcoin', 'BTC', BTC_WALLET],
       ],
     );
