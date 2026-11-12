@@ -1,0 +1,49 @@
+name: New price provider
+description: Ask for a new source of token prices.
+labels: [new price provider]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Price provider
+      placeholder: Kraken
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: API docs
+      description: A link to the docs of the API.
+    validations:
+      required: true
+  - type: textarea
+    id: rate-limits
+    attributes:
+      label: Rate limits
+      description: How many requests the API accepts, with and without a key. Tell us if it needs a key, and if the key is free.
+    validations:
+      required: true
+  - type: textarea
+    id: currencies
+    attributes:
+      label: Currencies
+      description: The currencies that the API gives prices in, for example EUR and USD. Give a link to the list if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: token-ids
+    attributes:
+      label: Token names
+      description: How the API names tokens, for example `bitcoin`, `BTC` or `XXBTZEUR`. Give the names of TRX, USDT and BTC.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Other information
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I can help to write this.
