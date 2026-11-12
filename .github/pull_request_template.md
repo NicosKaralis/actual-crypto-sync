@@ -4,6 +4,8 @@
 
 ## Checklist
 
+[CODE_REVIEW_GUIDELINES.md](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/CODE_REVIEW_GUIDELINES.md) tells you what a reviewer checks.
+
 - [ ] The title uses [Conventional Commits](https://www.conventionalcommits.org), for example `feat: add the Tronscan explorer`.
 - [ ] I added tests for the change, or the change needs no tests. Tests use recorded fixtures, not real APIs.
 - [ ] I updated the docs and `config.example.yml`, or the change needs no doc update.

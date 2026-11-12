@@ -45,7 +45,7 @@ The full setup guide comes with v1.0.0.
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you start. All commits use [Conventional Commits](https://www.conventionalcommits.org), because the changelog and the versions come from them.
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you start. [CODE_REVIEW_GUIDELINES.md](CODE_REVIEW_GUIDELINES.md) tells you what a reviewer checks in a pull request. All commits use [Conventional Commits](https://www.conventionalcommits.org), because the changelog and the versions come from them.
 
 All participants must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
