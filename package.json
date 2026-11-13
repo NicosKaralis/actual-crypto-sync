@@ -1,6 +1,6 @@
 {
   "name": "actual-crypto-sync",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Keep Actual Budget off-budget accounts in line with your crypto wallets",
   "license": "MIT",
