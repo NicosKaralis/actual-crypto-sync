@@ -37,7 +37,9 @@ To report a bug, open an issue with the bug report form. The form asks for this 
 
 A short address is sufficient, for example `TC9F...R2MJ`. The logs show addresses in the same short form.
 
-To request a new chain, block explorer, price provider or token, use the related issue form. Do not use the bug report form for these requests.
+To request a new feature, use the feature request form. To request a new chain, block explorer, price provider or token, use the related issue form. Do not use the bug report form for these requests.
+
+The [roadmap](ROADMAP.md) tells you how a request becomes a planned item.
 
 ## Report a security issue
 

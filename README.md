@@ -88,7 +88,7 @@ All participants must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Feature Requests
 
-To ask for a new chain, block explorer, price provider or token, open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form. To show that you want an existing request, add a 👍 reaction to its first comment.
+To ask for a new feature, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To ask for a new chain, block explorer, price provider or token, open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form. The [roadmap](ROADMAP.md) shows the planned features. To show that you want an existing request, add a 👍 reaction to its first comment.
 
 ## AI Use
 

@@ -2,7 +2,14 @@
 
 This page tells you what can come after v1.0. Nothing on it has a date. The order can change.
 
-Ideas come in as issues. To propose a new idea, or to tell us that an item is important to you, open an issue or add a comment to an issue. When an item gets an issue, this page links to it.
+Ideas come in as issues. To propose a new idea, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To tell us that an item is important to you, add a 👍 reaction or a comment to its issue.
+
+This is how an idea gets on this page:
+
+1. A new issue gets the `needs triage` label.
+2. The maintainer reads it, and agrees on the approach with you in the issue. This includes whether the change breaks existing users.
+3. The maintainer then gives the issue the `planned` label and adds it to this page, with a link to the issue. Or the maintainer closes the issue, with the reason.
+4. The pull request that makes the change removes it from this page.
 
 ## Next (v1.1)
 
