@@ -54,14 +54,14 @@ chains:                                        # optional, settings per chain
       # - mempool-space:
       #     serial: true                       # one request at a time, 1 s apart
 
-tokens:                                        # optional, tokens that aren't built in (TRX, USDT and BTC are)
+tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
-    symbol: SUNDOG                             # what accounts use as token:; can't reuse a built-in name
-    contract: TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT  # the token's contract address
-    decimals: 18                               # the contract's decimals
+    symbol: WTRX                               # what accounts use as token:; can't reuse a built-in name
+    contract: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR  # the token's contract address
+    decimals: 6                                # the contract's decimals
     # display_decimals: 8                      # decimals shown in notes (default: decimals, at most 8)
     price_ids:                                 # at least one; the token's id at each price provider
-      coingecko: sundog
+      coingecko: wrapped-tron
 
 accounts:                                      # the off-budget Actual accounts to keep in line
   - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
@@ -70,9 +70,9 @@ accounts:                                      # the off-budget Actual accounts 
     wallets:                                   # one wallet per account for now: a list,
       - ${TRON_WALLET_ADDRESS}                 # an inline list or a single address (below)
 
-  - name: "SUNDOG Account"                     # any name you like, as long as it matches the account in Actual
+  - name: "WTRX Account"                       # any name you like, as long as it matches the account in Actual
     chain: tron
-    token: SUNDOG                              # defined in tokens: above; a built-in one (USDT) needs only its name
+    token: WTRX                                # defined in tokens: above; a built-in one (USDT) needs only its name
     wallets: ["${TRON_WALLET_ADDRESS}"]        # an inline list; quote ${...} inside [ ], or YAML reads it as a map
                                                # same address as above, fetched once
 

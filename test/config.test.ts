@@ -855,7 +855,8 @@ describe('loadConfig: tokens', () => {
 describe('config.example.yml', () => {
   test('loads, with the env it names set', async () => {
     const text = await readFile(new URL('../config.example.yml', import.meta.url), 'utf8');
-    const config = loadText(text, {
+    // The real registries: a tokens: entry there must not reuse a built-in symbol.
+    const config = loadConfig(text, {
       ACTUAL_BUDGET_SYNC_ID: ENV.SYNC_ID,
       ACTUAL_SESSION_TOKEN: SESSION,
       TRON_WALLET_ADDRESS: TRON_WALLET,
@@ -867,7 +868,7 @@ describe('config.example.yml', () => {
       config.accounts.map((a) => [a.name, a.chain, a.token.symbol, a.wallets[0]?.address]),
       [
         ['TC9F...R2MJ: TRX', 'tron', 'TRX', TRON_WALLET],
-        ['SUNDOG Account', 'tron', 'SUNDOG', TRON_WALLET],
+        ['WTRX Account', 'tron', 'WTRX', TRON_WALLET],
         ['Bitcoin', 'bitcoin', 'BTC', BTC_WALLET],
       ],
     );
