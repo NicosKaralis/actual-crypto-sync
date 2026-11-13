@@ -40,6 +40,7 @@ Type stripping removes the types and does nothing else. Thus:
 | Command               | What it does                                       |
 | --------------------- | -------------------------------------------------- |
 | `npm test`            | Checks the types, then runs all the unit tests.    |
+| `npm run test:e2e`    | Runs the end-to-end tests in Docker.               |
 | `npm run typecheck`   | Checks the types.                                  |
 | `npm run lint`        | Runs the Biome checks without changes, as CI does. |
 | `npm run format`      | Formats the code and fixes what Biome can fix.     |
@@ -81,6 +82,21 @@ Run it after a change to the Actual version.
 - The tests are in `test/`, in the same structure as `src/`.
 
 Unit tests never call a real explorer, price provider or Actual server. Explorer and provider tests read recorded API responses from `test/fixtures/<explorer or provider>/`. Tests of the Actual calls use a fake of `@actual-app/api`.
+
+### End-to-end tests
+
+`npm run test:e2e` runs the tool against a real Actual server. You need only Docker. CI runs the same command after the unit tests.
+
+The command starts a throwaway stack from `test/e2e/compose.yml`, runs the tests, and then removes the stack and its data. The stack has no ports and no volumes, so it does not change the dev stack.
+
+- **`actual`** is the same Actual server version as the dev stack.
+- **`e2e`** is the `test` stage of the Docker image. It runs `test/e2e/run.e2e.ts`.
+
+The test seeds the server with `dev/seed.ts`. A mock server in the test process (`test/e2e/mock.ts`) answers as TronGrid, mempool.space and CoinGecko, with the responses in `test/fixtures/`. `test/e2e/config.yml` points each explorer and the price provider at the mock with `api_url`. The tests change the mock between runs, for example a new balance, or a price provider that fails. To test a new response, add it to `test/fixtures/`.
+
+The tests call `run()` from `src/main.ts` with the same setup as the CLI, but with their own clock. Thus, they can sync on several days without a change to the tool. One test runs the real CLI.
+
+The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not run it.
 
 ### Record a fixture
 

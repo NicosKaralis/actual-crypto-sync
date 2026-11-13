@@ -1,0 +1,31 @@
+# The throwaway e2e stack: `npm run test:e2e` starts it, runs the tests in the
+# e2e container and removes it with its data. No ports and no volumes, so it
+# never touches the dev stack.
+name: actual-crypto-sync-e2e
+
+services:
+  actual:
+    # The same pinned server as dev/compose.yml; Renovate moves them together.
+    image: actualbudget/actual-server:26.11.0@sha256:06cf186569cf58d93e12659ff1a517b65b5b0ebee7050a3991d4bd8a1d398da6
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:5006/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  e2e:
+    build:
+      context: ../..
+      target: test
+    depends_on:
+      actual:
+        condition: service_healthy
+    environment:
+      ACTUAL_SERVER_URL: http://actual:5006
+    command: [node, --test, test/e2e/run.e2e.ts]

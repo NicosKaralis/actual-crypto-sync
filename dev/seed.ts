@@ -6,18 +6,21 @@
 // assumes about Actual (C18): which transactions balanceThrough counts, and
 // which transactionsForPlan returns, in what order.
 //
+// The e2e tests (test/e2e/) seed their own server with seedBudget.
+//
 // npm run dev:seed [-- --cutoff-check]
 import { mkdirSync } from 'node:fs';
 import { argv, env, exit, stderr, stdout } from 'node:process';
+import { pathToFileURL } from 'node:url';
 
 import * as api from '@actual-app/api';
 
 import { LOOKBACK_TRANSACTIONS, openBudget } from '../src/actual.ts';
 
-const SERVER_URL = 'http://localhost:5006';
+const SERVER_URL = env.ACTUAL_SERVER_URL || 'http://localhost:5006';
 const BUDGET = 'Dev';
-// The names dev/config.yml and dev/config.password.yml use.
-const ACCOUNTS = ['TRON: TRX', 'TRON: USDT', 'Bitcoin'];
+// The names dev/config.yml, dev/config.password.yml and test/e2e/config.yml use.
+export const ACCOUNTS = ['TRON: TRX', 'TRON: USDT', 'Bitcoin'];
 const SCRATCH_ACCOUNT = 'Cutoff check';
 
 class SeedError extends Error {}
@@ -30,8 +33,8 @@ function required(name: string): string {
   return value;
 }
 
-async function post(path: string, body: unknown): Promise<unknown> {
-  const response = await fetch(`${SERVER_URL}${path}`, {
+async function post(serverURL: string, path: string, body: unknown): Promise<unknown> {
+  const response = await fetch(`${serverURL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -50,19 +53,18 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 /** Sets the server password on a new server; on one already set up, does nothing. */
-async function bootstrap(password: string): Promise<void> {
-  const response = await fetch(`${SERVER_URL}/account/needs-bootstrap`);
+async function bootstrap(serverURL: string, password: string): Promise<void> {
+  const response = await fetch(`${serverURL}/account/needs-bootstrap`);
   const json: unknown = await response.json();
   const data = isObject(json) ? json.data : undefined;
   if (isObject(data) && data.bootstrapped === false) {
-    await post('/account/bootstrap', { password });
-    stdout.write('Server password set.\n');
+    await post(serverURL, '/account/bootstrap', { password });
   }
 }
 
 /** A session token, the same as a login from the web client gives. */
-async function login(password: string): Promise<string> {
-  const data = await post('/account/login', { loginMethod: 'password', password });
+async function login(serverURL: string, password: string): Promise<string> {
+  const data = await post(serverURL, '/account/login', { loginMethod: 'password', password });
   if (!isObject(data) || typeof data.token !== 'string') {
     throw new SeedError('POST /account/login returned no token');
   }
@@ -73,7 +75,6 @@ async function login(password: string): Promise<string> {
 async function devBudget(): Promise<string> {
   const existing = (await api.getBudgets()).find((b) => b.name === BUDGET && b.groupId);
   if (existing?.groupId) {
-    stdout.write(`Budget "${BUDGET}" already exists.\n`);
     return existing.groupId;
   }
   // runImport creates a local budget, runs this, then uploads it. It also
@@ -88,22 +89,38 @@ async function devBudget(): Promise<string> {
   if (!created?.groupId) {
     throw new SeedError(`budget "${BUDGET}" was created but not uploaded`);
   }
-  stdout.write(`Budget "${BUDGET}" created with accounts ${ACCOUNTS.join(', ')}.\n`);
   return created.groupId;
 }
 
-async function seed(password: string, dataDir: string): Promise<void> {
-  await bootstrap(password);
-  const token = await login(password);
-  await api.init({ serverURL: SERVER_URL, dataDir, password, verbose: false });
+/**
+ * Sets the server password on a new server, makes sure it has the `Dev` budget
+ * with the off-budget ACCOUNTS, and returns its sync id and a session token.
+ */
+export async function seedBudget({
+  serverURL,
+  password,
+  dataDir,
+}: {
+  serverURL: string;
+  password: string;
+  dataDir: string;
+}): Promise<{ syncId: string; token: string }> {
+  await bootstrap(serverURL, password);
+  const token = await login(serverURL, password);
+  await api.init({ serverURL, dataDir, password, verbose: false });
   try {
-    const syncId = await devBudget();
-    stdout.write(
-      `\nPut these in dev/.env:\nACTUAL_BUDGET_SYNC_ID=${syncId}\nACTUAL_SESSION_TOKEN=${token}\n`,
-    );
+    return { syncId: await devBudget(), token };
   } finally {
     await api.shutdown();
   }
+}
+
+async function seed(password: string, dataDir: string): Promise<void> {
+  const { syncId, token } = await seedBudget({ serverURL: SERVER_URL, password, dataDir });
+  stdout.write(`Budget "${BUDGET}" is ready, with the accounts ${ACCOUNTS.join(', ')}.\n`);
+  stdout.write(
+    `\nPut these in dev/.env:\nACTUAL_BUDGET_SYNC_ID=${syncId}\nACTUAL_SESSION_TOKEN=${token}\n`,
+  );
 }
 
 /** YYYY-MM-DD in local time (TZ), `offset` days from today, as main.ts dates a run. */
@@ -212,7 +229,9 @@ async function main(args: readonly string[]): Promise<number> {
   return 0;
 }
 
-main(argv.slice(2)).then(exit, (error: unknown) => {
-  stderr.write(`dev:seed: ${error instanceof Error ? error.message : String(error)}\n`);
-  exit(1);
-});
+if (import.meta.url === pathToFileURL(argv[1] ?? '').href) {
+  main(argv.slice(2)).then(exit, (error: unknown) => {
+    stderr.write(`dev:seed: ${error instanceof Error ? error.message : String(error)}\n`);
+    exit(1);
+  });
+}
