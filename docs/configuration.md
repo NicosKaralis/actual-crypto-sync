@@ -190,13 +190,7 @@ The run then continues with the next explorer or provider.
 
 ## `tokens`
 
-The tool has these built-in tokens. An account uses them by their symbol only.
-
-| Chain     | Symbol | Kind             | Decimals | Decimals in notes | Contract                             | CoinGecko id |
-| --------- | ------ | ---------------- | -------- | ----------------- | ------------------------------------ | ------------ |
-| `tron`    | `TRX`  | Native           | 6        | 6                 |                                      | `tron`       |
-| `tron`    | `USDT` | Contract (TRC20) | 6        | 6                 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | `tether`     |
-| `bitcoin` | `BTC`  | Native           | 8        | 8                 |                                      | `bitcoin`    |
+The tool has built-in tokens, for example USDT on TRON. An account uses them by their symbol only. [docs/supported.md](supported.md#built-in-tokens) lists them all, with their contracts and price ids.
 
 To use another token, add it to `tokens`:
 

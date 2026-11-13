@@ -36,6 +36,7 @@ Want to say thanks? Click the ⭐ at the top of the page.
 
 - [Configuration](docs/configuration.md): each setting, and the errors that you can see.
 - [Authentication](docs/authentication.md): how the tool logs in to Actual.
+- [Supported](docs/supported.md): all the chains, tokens, block explorers and price providers.
 - [Development](docs/development.md): set up the project, test it, and add a chain, explorer, price provider or token.
 - [Discussions](https://github.com/NicosKaralis/actual-crypto-sync/discussions/categories/q-a) for questions.
 - [Issues](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) for bugs and requests.
@@ -44,24 +45,16 @@ Want to say thanks? Click the ⭐ at the top of the page.
 
 ## Supported
 
-| Chain   | Id        | Tokens                    | Block explorers                                                                              |
-| ------- | --------- | ------------------------- | -------------------------------------------------------------------------------------------- |
-| TRON    | `tron`    | TRX, and all TRC20 tokens | [TronGrid](https://www.trongrid.io) (`trongrid`)                                             |
-| Bitcoin | `bitcoin` | BTC                       | [mempool.space](https://mempool.space) (`mempool-space`), or any mempool or Esplora instance |
+Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
 
-| Price provider                         | Id          | Currencies                                              |
-| -------------------------------------- | ----------- | ------------------------------------------------------- |
-| [CoinGecko](https://www.coingecko.com) | `coingecko` | Most fiat currencies, for example EUR, USD, GBP and JPY |
+- **Chains:** TRON (TRX), Bitcoin (BTC)
+- **Built-in tokens:** TRX, USDT, BTC
+- **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance)
+- **Price providers:** CoinGecko
 
-These tokens are built in. A config uses them by their symbol only. A config can [add other tokens](docs/configuration.md#tokens), for example any TRC20 token.
+The [full list](docs/supported.md) has the ids, the contracts and the currencies.
 
-| Chain   | Symbol | Kind             | Contract                             |
-| ------- | ------ | ---------------- | ------------------------------------ |
-| TRON    | TRX    | Native           |                                      |
-| TRON    | USDT   | Contract (TRC20) | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` |
-| Bitcoin | BTC    | Native           |                                      |
-
-The code lets contributors add more chains, block explorers, price providers and tokens. The [roadmap](ROADMAP.md) shows what can come next.
+To ask for a new [chain](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-chain.yml), [block explorer](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-explorer.yml), [price provider](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-price-provider.yml) or [token](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-token.yml), open an issue. The [roadmap](ROADMAP.md) shows what can come next.
 
 ## Before You Use It
 

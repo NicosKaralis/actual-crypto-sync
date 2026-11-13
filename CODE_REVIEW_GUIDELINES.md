@@ -91,7 +91,7 @@ The TypeScript interfaces in `src/types.ts` are not public. They can change in a
 ## Docs
 
 - A change that a user can see updates the docs and `config.example.yml`.
-- A new chain, explorer, price provider or built-in token updates the tables in the README.
+- A new chain, explorer, price provider or built-in token is added to `docs/supported.md`. The README shows at most 5 of each, the most popular.
 
 ## Related documents
 

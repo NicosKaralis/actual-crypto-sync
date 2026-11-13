@@ -113,7 +113,7 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 4. Add the native token, and popular tokens, to `src/tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
-7. Add the chain to the tables in the README and in [docs/configuration.md](configuration.md).
+7. Add the chain to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 chains.
 
 ## Add an explorer
 
@@ -127,7 +127,7 @@ Open an issue with the [new explorer form](https://github.com/NicosKaralis/actua
 2. Use `getJson`, `apiUrl` and `ApiError` from `src/http.ts`. Errors must never show the URL, the headers or the body, because they can hold a wallet address or a key.
 3. Register the explorer in the `explorers` of its chain.
 4. Record fixtures, and test the parse of the response, each error, and `rateLimitAdvice`.
-5. Add the explorer and its settings to [docs/configuration.md](configuration.md) and the README.
+5. Add the explorer to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 explorers.
 
 ## Add a price provider
 
@@ -140,7 +140,7 @@ Open an issue with the [new price provider form](https://github.com/NicosKaralis
 2. Register the provider in `src/prices/index.ts`.
 3. Add the id of each built-in token at the provider to `price_ids` in `src/tokens.yml`.
 4. Record fixtures, and test the currency mapping, the parse of the response and each error.
-5. Add the provider to [docs/configuration.md](configuration.md) and the README.
+5. Add the provider to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
 
 ## Add a built-in token
 
@@ -150,7 +150,7 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 2. Copy the decimals from the contract.
 3. Find the id at each price provider. On CoinGecko, check that the contract on the token page is the same contract.
 4. Add the token to `src/tokens.yml`. Put the links that you checked in the pull request.
-5. Add the token to the tables in the README and in [docs/configuration.md](configuration.md).
+5. Add the token to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 tokens.
 
 The tests of `src/tokens.yml` check its rules, for example that each contract is a valid address and each token has a CoinGecko id. They do not check its contents, so a new token needs no new test.
 
