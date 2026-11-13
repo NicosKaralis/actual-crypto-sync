@@ -287,6 +287,8 @@ To find the change since the last sync, the tool reads the note of the last sync
 
 The variables that your config uses with `${VAR}` are also necessary.
 
+For the logs, and the metrics and traces that the tool sends to the collector, see [docs/monitoring.md](monitoring.md).
+
 ## Errors
 
 The tool checks all of the config before it connects to Actual. If the config has a problem, the tool writes one error and stops with exit code 1. The error starts with the place of the problem in the file:

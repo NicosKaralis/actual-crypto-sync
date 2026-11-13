@@ -200,3 +200,5 @@ The tool downloads the budget again on each run, so `/cache` can be an `emptyDir
 | `OTEL_EXPORTER_OTLP_TIMEOUT`          | `5000`               | The export timeout in milliseconds.                                 |
 
 Your config can read other variables with `${NAME}`, for example the secrets and the wallets.
+
+For what the tool sends to the collector, see [docs/monitoring.md](monitoring.md).
