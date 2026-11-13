@@ -163,5 +163,8 @@ A new built-in token can break a config that already defines a token with the sa
 1. Each merge to `main` updates a release pull request. It has the next version and the changelog.
 2. The maintainer merges the release pull request when it is time for a release.
 3. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 and pushes it to GHCR.
+4. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone.
+
+The work that is planned for a version is on its [milestone](https://github.com/NicosKaralis/actual-crypto-sync/milestones). See [ROADMAP.md](../ROADMAP.md#how-a-request-is-planned).
 
 The version comes from the commit types: `fix:` gives a patch version, `feat:` a minor version, and a breaking change a major version. See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-messages).
