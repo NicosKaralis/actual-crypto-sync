@@ -6,7 +6,8 @@
 // both.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
+import { dirname, relative } from 'node:path';
 import { describe, test } from 'node:test';
 
 import { Ajv } from 'ajv';
@@ -54,14 +55,33 @@ function entries(...path: (string | number)[]): Record<string, string[]> {
 }
 
 describe('config.schema.json', () => {
-  for (const path of [
-    'config.example.yml',
-    'test/e2e/config.yml',
-    'dev/config.yml',
-    'dev/config.password.yml',
-  ]) {
+  const configs = globSync('**/config*.yml', {
+    cwd: new URL('..', import.meta.url),
+    exclude: (path) => path === 'node_modules',
+  }).sort();
+
+  test('the repo has its configs', () => {
+    assert.deepEqual(configs, [
+      'config.example.yml',
+      'dev/config.password.yml',
+      'dev/config.yml',
+      'test/e2e/config.yml',
+    ]);
+  });
+
+  for (const path of configs) {
     test(`${path} passes it`, () => {
       assert.ok(validate(parse(read(path))), JSON.stringify(validate.errors, null, 2));
+    });
+
+    // The example is copied out of the repo, so it points at the released
+    // schema; the others point at the schema next to them.
+    test(`${path} names it on its first line`, () => {
+      const schema =
+        path === 'config.example.yml'
+          ? 'https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json'
+          : relative(dirname(path), 'config.schema.json');
+      assert.equal(read(path).split('\n')[0], `# yaml-language-server: $schema=${schema}`);
     });
   }
 });
