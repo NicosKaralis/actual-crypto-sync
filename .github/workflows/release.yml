@@ -1,10 +1,17 @@
 name: Release
 
-# Runs on a tag pushed by hand, or from release-please.yml when it creates a release.
+# Runs on a tag pushed by hand, from release-please.yml when it creates a release, or by hand
+# for an existing tag when that run failed.
 on:
   push:
     tags: ["v*"]
   workflow_call:
+    inputs:
+      tag:
+        description: The release tag, such as v1.0.0
+        required: true
+        type: string
+  workflow_dispatch:
     inputs:
       tag:
         description: The release tag, such as v1.0.0

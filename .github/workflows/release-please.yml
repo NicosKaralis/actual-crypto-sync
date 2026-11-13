@@ -13,10 +13,8 @@ concurrency:
 
 jobs:
   release-please:
-    name: Release PR
+    name: Release
     runs-on: ubuntu-26.04
-    # Holds the Release Please app's key; only main and v* tags can use it.
-    environment: release
     permissions:
       contents: write
       issues: write
@@ -33,6 +31,17 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           skip-github-pull-request: true
+
+  # Its own job, so that a failure here never stops the image, the milestone or the merge back.
+  release-pr:
+    name: Release PR
+    needs: release-please
+    runs-on: ubuntu-26.04
+    # Holds the Release Please app's key; only main and v* tags can use it.
+    environment: release
+    permissions:
+      contents: read
+    steps:
       - id: app
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
@@ -51,13 +60,16 @@ jobs:
       # so each new Actual version becomes a patch release. Any other release waits for the
       # maintainer.
       - name: Auto-merge an Actual-only release
-        if: steps.pr.outputs.pr != ''
+        if: steps.pr.outputs.prs_created == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           GH_REPO: ${{ github.repository }}
-          PR: ${{ fromJSON(steps.pr.outputs.pr).number }}
+          # The PR as JSON, read with jq: GitHub evaluates a step's env even when its if is
+          # false, and fromJSON fails on an empty output.
+          PR_JSON: ${{ steps.pr.outputs.pr }}
           SHA: ${{ github.sha }}
         run: |
+          pr=$(jq -r .number <<< "$PR_JSON")
           last=$(gh release view --json tagName --jq .tagName)
           # The subjects of the commits since the last release, without the merge commits.
           # More commits than the compare API returns can't be an Actual-only release.
@@ -69,11 +81,11 @@ jobs:
             echo "The release has more than Actual updates, so the maintainer merges it:"
             echo "$others"
             # Auto-merge may be on from an earlier, Actual-only state of the release PR.
-            gh pr merge "$PR" --disable-auto 2>/dev/null || true
+            gh pr merge "$pr" --disable-auto 2>/dev/null || true
             exit 0
           fi
-          gh pr merge "$PR" --auto --merge
-          echo "Release PR #$PR merges when its checks pass."
+          gh pr merge "$pr" --auto --merge
+          echo "Release PR #$pr merges when its checks pass."
 
   # The milestone of a version, for example v1.0.0, holds the issues planned for it.
   milestone:
