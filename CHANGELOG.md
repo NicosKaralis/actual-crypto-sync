@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.1](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.0...v1.1.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* copy the GHCR image to Docker Hub with the same digest ([ccfed9a](https://github.com/NicosKaralis/actual-crypto-sync/commit/ccfed9a5dddb2df5cecad614cc08fff3dc552a6a))
+* copy the GHCR image to Docker Hub with the same digest ([097aed5](https://github.com/NicosKaralis/actual-crypto-sync/commit/097aed509b97b53735d2a48bd92bcd7c4b0533fa)), closes [#41](https://github.com/NicosKaralis/actual-crypto-sync/issues/41)
+* label release images with the commit of their tag ([7970ea4](https://github.com/NicosKaralis/actual-crypto-sync/commit/7970ea4116cf01df5aa068c9a15cc8387e600c2b)), closes [#42](https://github.com/NicosKaralis/actual-crypto-sync/issues/42)
+* show text links in place of badges on Docker Hub ([54d0ac7](https://github.com/NicosKaralis/actual-crypto-sync/commit/54d0ac7b923e7b5f53dcd40fb7192e8a564561cb))
+* show text links in place of badges on Docker Hub ([a83306f](https://github.com/NicosKaralis/actual-crypto-sync/commit/a83306f85a3d0a1518d3d7248adccfd7aeddbc94)), closes [#44](https://github.com/NicosKaralis/actual-crypto-sync/issues/44)
+
 ## [1.1.0](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.0.0...v1.1.0) (2026-11-13)
 
 This release adds more TRON tokens, a second price provider and a JSON Schema for the config. The image is now also on Docker Hub. Tested with Actual server 26.11.0.
