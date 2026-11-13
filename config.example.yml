@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json
 # actual-crypto-sync config. Every key is shown; the commented ones are optional.
 #
 # Secrets never go in this file: write ${NAME} and the value is read from the

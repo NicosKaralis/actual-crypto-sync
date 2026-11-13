@@ -1,0 +1,440 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json",
+  "title": "actual-crypto-sync config",
+  "description": "The config file of actual-crypto-sync. The tool checks more when it loads the file: ${VAR} values, addresses, token symbols and duplicates. See docs/configuration.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["actual", "prices", "accounts"],
+  "properties": {
+    "actual": {
+      "description": "The Actual server and budget.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_url", "sync_id", "auth"],
+      "properties": {
+        "server_url": {
+          "type": "string",
+          "pattern": "^(https?://\\S+|.*\\$\\{[A-Za-z_][A-Za-z0-9_]*\\}.*)$",
+          "description": "The URL of the Actual server: http or https."
+        },
+        "sync_id": {
+          "$ref": "#/definitions/text",
+          "description": "The budget's Sync ID, from Settings > Advanced in Actual."
+        },
+        "auth": {
+          "description": "How the tool logs in: exactly one method, as a ${VAR} reference.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "maxProperties": 1,
+          "properties": {
+            "session": {
+              "$ref": "#/definitions/varRef",
+              "description": "A session token. The recommended way."
+            },
+            "password": {
+              "$ref": "#/definitions/varRef",
+              "description": "The server password."
+            },
+            "api_key": {
+              "$ref": "#/definitions/varRef",
+              "description": "An Actual API key, on servers newer than 26.11.0."
+            }
+          }
+        },
+        "encryption_password": {
+          "$ref": "#/definitions/text",
+          "description": "Decrypts a budget with end-to-end encryption. Not a login."
+        }
+      }
+    },
+    "prices": {
+      "description": "The currency of the budget and the price providers.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "providers"],
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{3}$",
+          "description": "An ISO 4217 code, for example eur or usd."
+        },
+        "providers": {
+          "description": "The price providers, in the order the tool tries them: a name, a list of names, or names with their settings.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["coingecko", "coinpaprika"]
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": ["coingecko", "coinpaprika"]
+                  },
+                  {
+                    "type": "object",
+                    "minProperties": 1,
+                    "maxProperties": 1,
+                    "additionalProperties": false,
+                    "properties": {
+                      "coingecko": {
+                        "type": ["object", "null"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "api_url": {
+                            "$ref": "#/definitions/setting",
+                            "description": "The API base URL."
+                          },
+                          "demo_api_key": {
+                            "$ref": "#/definitions/setting",
+                            "description": "A free CoinGecko Demo key. Use ${VAR}. Not with pro_api_key."
+                          },
+                          "pro_api_key": {
+                            "$ref": "#/definitions/setting",
+                            "description": "A paid CoinGecko Pro key; the default api_url is then the Pro API. Use ${VAR}. Not with demo_api_key."
+                          },
+                          "label": {
+                            "$ref": "#/definitions/label"
+                          },
+                          "serial": {
+                            "$ref": "#/definitions/serial"
+                          }
+                        },
+                        "not": {
+                          "type": "object",
+                          "required": ["demo_api_key", "pro_api_key"]
+                        }
+                      },
+                      "coinpaprika": {
+                        "type": ["object", "null"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "api_url": {
+                            "$ref": "#/definitions/setting",
+                            "description": "The API base URL."
+                          },
+                          "label": {
+                            "$ref": "#/definitions/label"
+                          },
+                          "serial": {
+                            "$ref": "#/definitions/serial"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "chains": {
+      "description": "Optional settings for each chain.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bitcoin": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "explorers": {
+              "description": "The block explorers, in the order the tool tries them: a name, a list of names, or names with their settings.",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["mempool-space"]
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": ["mempool-space"]
+                      },
+                      {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "additionalProperties": false,
+                        "properties": {
+                          "mempool-space": {
+                            "type": ["object", "null"],
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The API base URL."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "tron": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "explorers": {
+              "description": "The block explorers, in the order the tool tries them: a name, a list of names, or names with their settings.",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["trongrid"]
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": ["trongrid"]
+                      },
+                      {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "additionalProperties": false,
+                        "properties": {
+                          "trongrid": {
+                            "type": ["object", "null"],
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The API base URL."
+                              },
+                              "api_key": {
+                                "$ref": "#/definitions/setting",
+                                "description": "An API key. Use ${VAR}."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "tokens": {
+      "description": "Tokens that are not built in. See docs/supported.md for the built-in ones.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["chain", "symbol", "contract", "decimals", "price_ids"],
+        "properties": {
+          "chain": {
+            "enum": ["tron"],
+            "description": "A chain with tokens."
+          },
+          "symbol": {
+            "$ref": "#/definitions/symbol",
+            "description": "Upper-case letters and digits. A built-in symbol replaces the built-in token."
+          },
+          "contract": {
+            "$ref": "#/definitions/text",
+            "description": "The address of the token contract."
+          },
+          "decimals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "description": "The decimals of the contract."
+          },
+          "display_decimals": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The decimals in the notes; at most decimals. Default: decimals, at most 8."
+          },
+          "price_ids": {
+            "description": "The id of the token at each price provider; at least one.",
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "coingecko": {
+                "$ref": "#/definitions/text"
+              },
+              "coinpaprika": {
+                "$ref": "#/definitions/text"
+              }
+            }
+          }
+        }
+      }
+    },
+    "accounts": {
+      "description": "The off-budget Actual accounts to keep in line.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "chain", "token", "wallets"],
+        "properties": {
+          "name": {
+            "$ref": "#/definitions/text",
+            "description": "The Actual account, by its name or its id."
+          },
+          "chain": {
+            "enum": ["bitcoin", "tron"],
+            "description": "The chain of the wallet."
+          },
+          "token": {
+            "$ref": "#/definitions/symbol",
+            "description": "The chain's coin, a built-in token, or a token from tokens."
+          },
+          "wallets": {
+            "description": "The wallet address: one address, or a list with one address.",
+            "oneOf": [
+              {
+                "$ref": "#/definitions/text"
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "items": {
+                  "$ref": "#/definitions/text"
+                }
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "chain": {
+                  "const": "bitcoin"
+                }
+              },
+              "required": ["chain"]
+            },
+            "then": {
+              "properties": {
+                "token": {
+                  "anyOf": [
+                    {
+                      "enum": ["BTC"]
+                    },
+                    {
+                      "$ref": "#/definitions/symbol"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "chain": {
+                  "const": "tron"
+                }
+              },
+              "required": ["chain"]
+            },
+            "then": {
+              "properties": {
+                "token": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "TRX",
+                        "USDT",
+                        "USDD",
+                        "TUSD",
+                        "USD1",
+                        "WBTC",
+                        "WETH",
+                        "JST",
+                        "SUN",
+                        "BTT",
+                        "WIN",
+                        "SUNDOG"
+                      ]
+                    },
+                    {
+                      "$ref": "#/definitions/symbol"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "varRef": {
+      "type": "string",
+      "pattern": "^\\$\\{[A-Za-z_][A-Za-z0-9_]*\\}$",
+      "description": "A ${VAR} reference to an environment variable."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "setting": {
+      "type": ["string", "number", "boolean"]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The name of the entry in logs, traces and metric labels."
+    },
+    "serial": {
+      "description": "true sends one request at a time, with a fixed wait after each one.",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "enum": ["true", "false"]
+        },
+        {
+          "$ref": "#/definitions/varRef"
+        }
+      ]
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+$"
+    }
+  }
+}
