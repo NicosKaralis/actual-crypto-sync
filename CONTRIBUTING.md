@@ -135,8 +135,6 @@ These changes need a minor version:
 - A new optional config key.
 - A change to the default explorers of a chain. The changelog tells users.
 
-A new built-in token can break a config that already defines a token with the same symbol in `tokens:`. The changelog tells users about it.
-
 The TypeScript interfaces in `src/types.ts` are not public. The project is not a library, so they can change in all versions.
 
 ## Branches

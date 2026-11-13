@@ -76,7 +76,7 @@ These items are the public interface of the tool:
 
 A change to one of these items is a breaking change. The commit must have `!` after the type and a `BREAKING CHANGE:` footer. The footer tells users what they must do. If a pull request changes one of these items without the marks, ask for them.
 
-These changes are not breaking changes: a new chain, explorer, price provider, built-in token or optional config key. A new built-in token can break a config that already defines a token with the same symbol. In that case, the changelog must tell users.
+These changes are not breaking changes: a new chain, explorer, price provider, built-in token or optional config key. A config that already defines a token with the symbol of a new built-in token keeps its own token.
 
 The TypeScript interfaces in `src/types.ts` are not public. They can change in all versions.
 
