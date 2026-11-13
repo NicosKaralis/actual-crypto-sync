@@ -95,6 +95,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          # The annotations go on the multi-arch index, the manifest that a tag points to.
+          # GHCR reads org.opencontainers.image.source there to link the package to the repo.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
           images: ${{ env.IMAGE }}
           # <version>, <major> and latest (latest only for stable versions).
@@ -105,8 +109,9 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           mapfile -t tags < <(jq -r '.tags[] | "--tag=" + .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          mapfile -t annotations < <(jq -r '.annotations[] | "--annotation=" + .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
           sources=()
           for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
-          docker buildx imagetools create "${tags[@]}" "${sources[@]}"
+          docker buildx imagetools create "${tags[@]}" "${annotations[@]}" "${sources[@]}"
       - name: Inspect
         run: docker buildx imagetools inspect "$IMAGE:$DOCKER_METADATA_OUTPUT_VERSION"
