@@ -4,6 +4,9 @@ import type { PriceProvider, Quote } from '../types.ts';
 
 const ID = 'coingecko';
 const DEFAULT_API_URL = 'https://api.coingecko.com/api/v3';
+// A Pro key works only on the Pro API, and a Demo key only on the public one.
+// Both start with CG-, so the setting's name says which plan a key is for.
+const PRO_API_URL = 'https://pro-api.coingecko.com/api/v3';
 
 /**
  * The fiat currencies among CoinGecko's `vs_currencies`
@@ -27,14 +30,22 @@ export const coingecko: PriceProvider = {
   supportsCurrency: (currency) => CURRENCIES.has(currency),
   // The public API allows a few requests a minute.
   serialIntervalMs: 6000,
-  rateLimitAdvice(error) {
+  rateLimitAdvice(error, { settings }) {
     if (!(error instanceof ApiError)) {
       return null;
     }
     // CoinGecko also puts the code in the body: { "status": { "error_code": 429 } }.
     const status = isRecord(error.body) && isRecord(error.body.status) ? error.body.status : {};
-    return error.status === 429 || status.error_code === 429
-      ? "run less often, or list another price provider after it: CoinGecko's public API allows a few requests a minute"
+    if (error.status !== 429 && status.error_code !== 429) {
+      return null;
+    }
+    return settings.demo_api_key || settings.pro_api_key
+      ? 'run less often, or list another price provider after it'
+      : "add a free Demo key (demo_api_key: ${COINGECKO_API_KEY}), run less often, or list another price provider after it: CoinGecko's public API allows a few requests a minute";
+  },
+  checkSettings(settings) {
+    return settings.demo_api_key && settings.pro_api_key
+      ? 'set only one of demo_api_key and pro_api_key'
       : null;
   },
   async getQuotes({ tokens, currency, settings, fetch }) {
@@ -42,9 +53,14 @@ export const coingecko: PriceProvider = {
       (id): id is string => id !== undefined,
     );
     const url =
-      `${apiUrl(settings, DEFAULT_API_URL)}/simple/price` +
+      `${apiUrl(settings, settings.pro_api_key ? PRO_API_URL : DEFAULT_API_URL)}/simple/price` +
       `?ids=${ids.map(encodeURIComponent).join(',')}&vs_currencies=${encodeURIComponent(currency)}`;
-    const body = await getJson(ID, url, fetch);
+    const headers: Record<string, string> = settings.pro_api_key
+      ? { 'x-cg-pro-api-key': settings.pro_api_key }
+      : settings.demo_api_key
+        ? { 'x-cg-demo-api-key': settings.demo_api_key }
+        : {};
+    const body = await getJson(ID, url, fetch, headers);
     if (!isRecord(body)) {
       throw new Error(`${ID}: expected a map of ids to prices`);
     }

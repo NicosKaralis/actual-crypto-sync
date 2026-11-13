@@ -465,6 +465,18 @@ describe('loadConfig: providers and explorers lists', () => {
     );
   });
 
+  test("an entry's settings are checked by its provider", () => {
+    // The real registries: coingecko refuses both kinds of key at once.
+    const raw = base();
+    Object.assign(prices(raw), {
+      providers: [{ coingecko: { demo_api_key: '${DEMO}', pro_api_key: '${PRO}' } }],
+    });
+    assertConfigError(
+      () => loadConfig(stringify(raw), { ...ENV, DEMO: 'a', PRO: 'b' }),
+      'prices.providers[0].coingecko: set only one of demo_api_key and pro_api_key',
+    );
+  });
+
   test('serial: true and false load into serial, not settings', () => {
     const config = load((raw) =>
       Object.assign(raw, {
