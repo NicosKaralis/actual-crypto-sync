@@ -52,6 +52,21 @@ To ask for a new [chain](https://github.com/NicosKaralis/actual-crypto-sync/issu
 - It writes to your budget. Back up your budget first, and start with `--dry-run`. With `--dry-run`, the tool shows what it will do and writes nothing.
 - It is tested with Actual server **26.11.0**. Other versions can work, but they are not tested.
 
+### Privacy and data
+
+The tool collects nothing, and it has no telemetry of its own. It contacts only these services:
+
+- **Your Actual server.** The tool reads and writes your budget.
+- **The block explorers in your config.** They get your wallet addresses and your API key, if you set one, to read the balances.
+- **The price providers in your config.** They get the token ids and the currency only. They get no addresses and no amounts.
+- **Your OpenTelemetry collector**, only if you set an OTLP endpoint, such as `OTEL_EXPORTER_OTLP_ENDPOINT`. See [Monitoring](docs/monitoring.md).
+
+The tool needs only public addresses. It never asks for private keys or seed phrases, and it cannot move funds.
+
+A block explorer sees your full address and your IP address, and it can log them. To keep your Bitcoin addresses private, use your own mempool or Esplora instance with `api_url`. See [Supported](docs/supported.md).
+
+Logs, traces and errors show only short addresses, and they never show secrets. See [SECURITY.md](SECURITY.md).
+
 ## Installation
 
 The tool is a Docker image on GitHub Container Registry, for amd64 and arm64. [docs/installation.md](docs/installation.md) has the image tags, all the ways to run the tool, and the environment variables.
