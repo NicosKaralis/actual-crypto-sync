@@ -18,13 +18,6 @@ To propose an idea, open an issue with the [feature request form](https://github
 
 When a version is released, its milestone closes automatically.
 
-## Next
-
-These ideas are likely to come first.
-
-- **A CoinGecko API key, and a second price provider.** An API key gives higher rate limits. When CoinGecko fails, the tool uses the second provider.
-- **A JSON Schema for the config.** Your editor can then check the config file and complete its keys.
-
 ## Later
 
 - **Several wallets in one account.** The account shows the total of all its wallets.
