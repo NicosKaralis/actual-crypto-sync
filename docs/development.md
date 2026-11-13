@@ -203,6 +203,8 @@ The unit tests of `src/tokens.yml` check its rules, for example that each contra
 6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone.
 7. A workflow merges `main` back into `develop`, so `develop` gets the new version number and the changelog. If the merge has a conflict, the workflow fails, and the maintainer merges by hand.
 
+If the image build did not run for a release, the maintainer runs the Release workflow by hand: **Actions → Release → Run workflow**, with the tag, for example `v1.1.0`. It builds the image from the tag.
+
 An urgent fix goes on a `hotfix/<name>` branch from `main`, with a pull request into `main`. Then the same steps from step 3 make a patch release, and step 7 brings the fix into `develop`.
 
 ### Actual updates
