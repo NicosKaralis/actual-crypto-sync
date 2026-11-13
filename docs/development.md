@@ -160,10 +160,15 @@ A new built-in token can break a config that already defines a token with the sa
 
 [Release Please](https://github.com/googleapis/release-please) makes the releases from the commit messages.
 
-1. Each merge to `main` updates a release pull request. It has the next version and the changelog.
-2. The maintainer merges the release pull request when it is time for a release.
-3. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 and pushes it to GHCR.
-4. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone.
+1. The work for the next version collects in `develop`. See [Branches](../CONTRIBUTING.md#branches).
+2. When it is time for a release, the maintainer merges `develop` into `main` with a pull request, or a `release/<version>` branch if the release needs changes first.
+3. Each merge to `main` updates a release pull request. It has the next version and the changelog.
+4. The maintainer merges the release pull request.
+5. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 and pushes it to GHCR.
+6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone.
+7. A workflow merges `main` back into `develop`, so `develop` gets the new version number and the changelog. If the merge has a conflict, the workflow fails, and the maintainer merges by hand.
+
+An urgent fix goes on a `hotfix/<name>` branch from `main`, with a pull request into `main`. Then the same steps from step 3 make a patch release, and step 7 brings the fix into `develop`.
 
 The work that is planned for a version is on its [milestone](https://github.com/NicosKaralis/actual-crypto-sync/milestones). See [ROADMAP.md](../ROADMAP.md#how-a-request-is-planned).
 
