@@ -204,6 +204,42 @@ describe('buildNote', () => {
     assert.equal(note, '0.00000012 BTC (Δ +0.00000012 @ 91234.56 EUR/BTC, 0.01 EUR)');
   });
 
+  test('a quote below 0.1 keeps 4 significant digits, never in exponent notation', () => {
+    const note = buildNote({
+      symbol: 'BTT',
+      displayDecimals: 8,
+      balance: 50_000_000,
+      delta: 0,
+      price: 2.92795e-7,
+      currency: 'eur',
+    });
+    // 50000000 * 0.000000292795 = 14.63975
+    assert.equal(note, '50000000 BTT (Δ +0 @ 0.0000002928 EUR/BTT, 14.64 EUR)');
+  });
+
+  test('the quote has at most 4 decimals, or more to keep 4 significant digits', () => {
+    const quote = (price: number) =>
+      /@ (\S+) /.exec(
+        buildNote({
+          symbol: 'X',
+          displayDecimals: 8,
+          balance: 1,
+          delta: 0,
+          price,
+          currency: 'eur',
+        }),
+      )?.[1];
+    assert.equal(quote(0.297), '0.297');
+    assert.equal(quote(0.282493), '0.2825');
+    assert.equal(quote(0.01359111), '0.01359');
+    assert.equal(quote(0.00068379), '0.0006838');
+    assert.equal(quote(0.001), '0.001');
+    assert.equal(quote(0.00009999999), '0.0001');
+    assert.equal(quote(1.234e-29), '0.00000000000000000000000000001234');
+    assert.equal(quote(1.234e-31), '0.00000000000000000000000000000012');
+    assert.equal(quote(1e-40), '0');
+  });
+
   test('a currency without minor units has no decimals in the value', () => {
     const note = buildNote({
       symbol: 'TRX',

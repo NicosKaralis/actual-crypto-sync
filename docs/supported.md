@@ -15,10 +15,12 @@ To add one yourself, see [docs/development.md](development.md).
 
 ## Chains and block explorers
 
-| Chain   | Id        | Native token | Has tokens | Block explorers                                                                               |
-| ------- | --------- | ------------ | ---------- | --------------------------------------------------------------------------------------------- |
-| TRON    | `tron`    | TRX          | Yes, TRC20 | [TronGrid](https://www.trongrid.io) (`trongrid`)                                              |
-| Bitcoin | `bitcoin` | BTC          | No         | [mempool.space](https://mempool.space) (`mempool-space`), and any mempool or Esplora instance |
+| Chain   | Id        | Coin | Coin's CoinGecko id | Has tokens | Block explorers                                                                               |
+| ------- | --------- | ---- | ------------------- | ---------- | --------------------------------------------------------------------------------------------- |
+| TRON    | `tron`    | TRX  | `tron`              | Yes, TRC20 | [TronGrid](https://www.trongrid.io) (`trongrid`)                                              |
+| Bitcoin | `bitcoin` | BTC  | `bitcoin`           | No         | [mempool.space](https://mempool.space) (`mempool-space`), and any mempool or Esplora instance |
+
+An account uses a chain's coin by its symbol, for example `token: TRX`.
 
 To use your own mempool or Esplora instance, set `api_url` on the `mempool-space` explorer. See [Settings of each entry](configuration.md#settings-of-each-entry).
 
@@ -32,8 +34,18 @@ To use your own mempool or Esplora instance, set `api_url` on the `mempool-space
 
 An account uses a built-in token by its symbol only. To use another token, [add it to the config](configuration.md#tokens).
 
-| Chain     | Symbol | Kind             | Decimals | Decimals in notes | Contract                             | CoinGecko id |
-| --------- | ------ | ---------------- | -------- | ----------------- | ------------------------------------ | ------------ |
-| `tron`    | `TRX`  | Native           | 6        | 6                 |                                      | `tron`       |
-| `tron`    | `USDT` | Contract (TRC20) | 6        | 6                 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | `tether`     |
-| `bitcoin` | `BTC`  | Native           | 8        | 8                 |                                      | `bitcoin`    |
+| Chain  | Symbol   | Standard | Decimals | Decimals in notes | Contract                             | CoinGecko id    |
+| ------ | -------- | -------- | -------- | ----------------- | ------------------------------------ | --------------- |
+| `tron` | `USDT`   | TRC20    | 6        | 6                 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | `tether`        |
+| `tron` | `USDD`   | TRC20    | 18       | 8                 | `TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz` | `usdd`          |
+| `tron` | `TUSD`   | TRC20    | 18       | 8                 | `TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4` | `true-usd`      |
+| `tron` | `USD1`   | TRC20    | 18       | 8                 | `TPFqcBAaaUMCSVRCqPaQ9QnzKhmuoLR6Rc` | `usd1-wlfi`     |
+| `tron` | `WBTC`   | TRC20    | 8        | 8                 | `TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9` | `bitcoin-trc20` |
+| `tron` | `WETH`   | TRC20    | 18       | 8                 | `THb4CqiFdwNHsWsQCs4JhzwjMWys4aqCbF` | `weth`          |
+| `tron` | `JST`    | TRC20    | 18       | 8                 | `TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9` | `just`          |
+| `tron` | `SUN`    | TRC20    | 18       | 8                 | `TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S` | `sun-token`     |
+| `tron` | `BTT`    | TRC20    | 18       | 8                 | `TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4` | `bittorrent`    |
+| `tron` | `WIN`    | TRC20    | 6        | 6                 | `TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7` | `wink`          |
+| `tron` | `SUNDOG` | TRC20    | 18       | 8                 | `TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT` | `sundog`        |
+
+`WBTC` and `WETH` are wrapped bitcoin and ether on TRON: TRC20 tokens, not the coins of the Bitcoin and Ethereum chains. Each has its own CoinGecko price.

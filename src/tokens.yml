@@ -17,6 +17,56 @@ tron:
     decimals: 6
     price_ids:
       coingecko: tether
+  - symbol: USDD
+    contract: TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz
+    decimals: 18
+    price_ids:
+      coingecko: usdd
+  - symbol: TUSD
+    contract: TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4
+    decimals: 18
+    price_ids:
+      coingecko: true-usd
+  - symbol: USD1
+    contract: TPFqcBAaaUMCSVRCqPaQ9QnzKhmuoLR6Rc
+    decimals: 18
+    price_ids:
+      coingecko: usd1-wlfi
+  - symbol: WBTC
+    contract: TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9
+    decimals: 8
+    price_ids:
+      coingecko: bitcoin-trc20
+  - symbol: WETH
+    contract: THb4CqiFdwNHsWsQCs4JhzwjMWys4aqCbF
+    decimals: 18
+    price_ids:
+      coingecko: weth
+  - symbol: JST
+    contract: TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9
+    decimals: 18
+    price_ids:
+      coingecko: just
+  - symbol: SUN
+    contract: TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S
+    decimals: 18
+    price_ids:
+      coingecko: sun-token
+  - symbol: BTT
+    contract: TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4
+    decimals: 18
+    price_ids:
+      coingecko: bittorrent
+  - symbol: WIN
+    contract: TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7
+    decimals: 6
+    price_ids:
+      coingecko: wink
+  - symbol: SUNDOG
+    contract: TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT
+    decimals: 18
+    price_ids:
+      coingecko: sundog
 
 bitcoin:
   - symbol: BTC
