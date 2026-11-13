@@ -15,7 +15,7 @@ import { collectBalances } from './balances.ts';
 import { type Config, ConfigError, loadConfig } from './config.ts';
 import { redactUrl, toUnits } from './format.ts';
 import type { Sleep } from './http.ts';
-import { createLog, errorMessage, type Log } from './log.ts';
+import { createLog, errorMessage, type Log, type LogFormat, parseLogFormat } from './log.ts';
 import { planAccount } from './plan.ts';
 import { collectQuotes } from './quotes.ts';
 import { startTelemetry, type Telemetry } from './telemetry.ts';
@@ -383,6 +383,15 @@ export async function main(
     }
   }
 
+  // Before anything else is logged: a typo must not change the format silently.
+  let format: LogFormat;
+  try {
+    format = parseLogFormat(env.LOG_FORMAT);
+  } catch (error) {
+    createLog()('error', errorMessage(error), { stage: 'config' });
+    return 1;
+  }
+
   const telemetry = startTelemetry({ env });
   try {
     return await run({
@@ -393,7 +402,7 @@ export async function main(
       },
       fetch: globalThis.fetch,
       telemetry,
-      log: createLog({ debug }),
+      log: createLog({ debug, format }),
       now: () => new Date(),
       dryRun,
       dataDir: env.ACTUAL_DATA_DIR || DEFAULT_DATA_DIR,

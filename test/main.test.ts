@@ -6,8 +6,8 @@ import { InMemorySpanExporter } from '@opentelemetry/sdk-trace';
 
 import { type Actual, type ActualApi, type OpenBudgetOptions, openBudget } from '../src/actual.ts';
 import { type ActualAuth, type Config, ConfigError } from '../src/config.ts';
-import { createLog } from '../src/log.ts';
-import { run } from '../src/main.ts';
+import { createLog, LOG_FORMATS } from '../src/log.ts';
+import { main, run } from '../src/main.ts';
 import type { PlanTransaction } from '../src/plan.ts';
 import { type GaugeName, startTelemetry, type Telemetry } from '../src/telemetry.ts';
 import type { Chain, Explorer, PriceProvider, Quote, Token } from '../src/types.ts';
@@ -185,7 +185,7 @@ function fakeTelemetry() {
 
 function capturedLog() {
   const lines: string[] = [];
-  const log = createLog({ debug: true, write: (line) => lines.push(line) });
+  const log = createLog({ debug: true, format: 'json', write: (line) => lines.push(line) });
   const entries = () => lines.map((line) => JSON.parse(line) as Record<string, unknown>);
   return { log, lines, entries };
 }
@@ -579,12 +579,12 @@ describe('secrets', () => {
     { kind: 'password', password: SECRET },
     { kind: 'apiKey', key: SECRET },
   ];
-  for (const auth of auths) {
-    test(`a failing ${auth.kind} login never shows the secret`, async () => {
+  for (const [auth, format] of auths.flatMap((a) => LOG_FORMATS.map((f) => [a, f] as const))) {
+    test(`a failing ${auth.kind} login never shows the secret in ${format} logs`, async () => {
       const spanExporter = new InMemorySpanExporter();
       const telemetry = startTelemetry({ env: {}, spanExporter, instrumentFetch: false });
       const written: string[] = [];
-      const log = createLog({ debug: true, write: (line) => written.push(line) });
+      const log = createLog({ debug: true, format, write: (line) => written.push(line) });
       // Anything else written to stdout or stderr during the run.
       const stdoutWrite = process.stdout.write;
       const stderrWrite = process.stderr.write;
@@ -629,4 +629,27 @@ describe('secrets', () => {
       assert.ok(!exported.includes(SECRET));
     });
   }
+});
+
+describe('main', () => {
+  test('an unknown LOG_FORMAT exits 1 with a text error, before reading the config', async () => {
+    const written: string[] = [];
+    const stdoutWrite = process.stdout.write;
+    process.stdout.write = ((chunk: unknown) => {
+      written.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    let code: number;
+    try {
+      code = await main(['--config', '/nonexistent/config.yml'], { LOG_FORMAT: 'xml' });
+    } finally {
+      process.stdout.write = stdoutWrite;
+    }
+    assert.equal(code, 1);
+    assert.equal(written.length, 1);
+    assert.match(
+      written[0] ?? '',
+      /^\S+ ERROR LOG_FORMAT: use text or json, not "xml" stage=config\n$/,
+    );
+  });
 });
