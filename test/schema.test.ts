@@ -1,8 +1,9 @@
 // config.schema.json, the JSON Schema that editors use to check a config file.
 // The loader stays the authority: the schema checks the shape, and the loader
-// also checks ${VAR} values, addresses, token symbols and duplicates. These
-// tests keep the two in line: the configs in the repo pass the schema, the
-// schema lists what the registries hold, and a shape error is refused by both.
+// also checks ${VAR} values, addresses, the tokens of accounts and duplicates.
+// These tests keep the two in line: the configs in the repo pass the schema,
+// the schema lists what the registries hold, and a shape error is refused by
+// both.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -14,7 +15,6 @@ import { parse, stringify } from 'yaml';
 import { CHAINS } from '../src/chains/index.ts';
 import { ConfigError, loadConfig } from '../src/config.ts';
 import { PRICE_PROVIDERS } from '../src/prices/index.ts';
-import { BUILTIN_TOKENS } from '../src/tokens.ts';
 import { TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -53,15 +53,6 @@ function entries(...path: (string | number)[]): Record<string, string[]> {
   return settings;
 }
 
-/** Each chain's symbols in an `if chain is X then ...` list. */
-function perChain(rules: unknown, symbols: (then: unknown) => unknown): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
-  for (const rule of rules as { if: { properties: { chain: { const: string } } } }[]) {
-    result[rule.if.properties.chain.const] = sorted(symbols(rule) as string[]);
-  }
-  return result;
-}
-
 describe('config.schema.json', () => {
   for (const path of [
     'config.example.yml',
@@ -76,11 +67,6 @@ describe('config.schema.json', () => {
 });
 
 describe('the schema lists what the registries hold', () => {
-  const builtins: Record<string, string[]> = {};
-  for (const token of BUILTIN_TOKENS) {
-    builtins[token.chain] = sorted([...(builtins[token.chain] ?? []), token.symbol]);
-  }
-
   test('the chains, under chains and in accounts', () => {
     assert.deepEqual(keys('properties', 'chains', 'properties'), sorted(Object.keys(CHAINS)));
     assert.deepEqual(
@@ -113,16 +99,7 @@ describe('the schema lists what the registries hold', () => {
     );
   });
 
-  test("each chain's built-in tokens, suggested in accounts", () => {
-    assert.deepEqual(
-      perChain(
-        at('properties', 'accounts', 'items', 'allOf'),
-        (rule) =>
-          (rule as { then: { properties: { token: { anyOf: [{ enum: string[] }] } } } }).then
-            .properties.token.anyOf[0].enum,
-      ),
-      builtins,
-    );
+  test('the chains with tokens', () => {
     const withTokens = Object.values(CHAINS)
       .filter((chain) => chain.supportsTokens)
       .map((chain) => chain.id);
@@ -328,6 +305,18 @@ describe('the schema and the loader agree on the shape', () => {
     test(`both accept ${name}`, () => {
       const { schema, loader } = both(change);
       assert.equal(loader, null, String(loader));
+      assert.ok(schema, JSON.stringify(validate.errors, null, 2));
+    });
+  }
+
+  // Any symbol passes the schema: the loader knows the tokens of each chain.
+  for (const [name, symbol] of [
+    ['an unknown token', 'NOPE'],
+    ['a token of another chain', 'BTC'],
+  ]) {
+    test(`only the loader refuses ${name} in an account`, () => {
+      const { schema, loader } = both((raw) => Object.assign(account(raw), { token: symbol }));
+      assert.ok(loader instanceof ConfigError, `the loader accepted it: ${String(loader)}`);
       assert.ok(schema, JSON.stringify(validate.errors, null, 2));
     });
   }

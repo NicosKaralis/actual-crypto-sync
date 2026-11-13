@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json",
   "title": "actual-crypto-sync config",
-  "description": "The config file of actual-crypto-sync. The tool checks more when it loads the file: ${VAR} values, addresses, token symbols and duplicates. See docs/configuration.md.",
+  "description": "The config file of actual-crypto-sync. The tool checks more when it loads the file: ${VAR} values, addresses, the tokens of accounts and duplicates. See docs/configuration.md.",
   "type": "object",
   "additionalProperties": false,
   "required": ["actual", "prices", "accounts"],
@@ -315,7 +315,7 @@
           },
           "token": {
             "$ref": "#/definitions/symbol",
-            "description": "The chain's coin, a built-in token, or a token from tokens."
+            "description": "The chain's coin, a built-in token, or a token from tokens. The tool checks that the chain has it."
           },
           "wallets": {
             "description": "The wallet address: one address, or a list with one address.",
@@ -333,70 +333,7 @@
               }
             ]
           }
-        },
-        "allOf": [
-          {
-            "if": {
-              "properties": {
-                "chain": {
-                  "const": "bitcoin"
-                }
-              },
-              "required": ["chain"]
-            },
-            "then": {
-              "properties": {
-                "token": {
-                  "anyOf": [
-                    {
-                      "enum": ["BTC"]
-                    },
-                    {
-                      "$ref": "#/definitions/symbol"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          {
-            "if": {
-              "properties": {
-                "chain": {
-                  "const": "tron"
-                }
-              },
-              "required": ["chain"]
-            },
-            "then": {
-              "properties": {
-                "token": {
-                  "anyOf": [
-                    {
-                      "enum": [
-                        "TRX",
-                        "USDT",
-                        "USDD",
-                        "TUSD",
-                        "USD1",
-                        "WBTC",
-                        "WETH",
-                        "JST",
-                        "SUN",
-                        "BTT",
-                        "WIN",
-                        "SUNDOG"
-                      ]
-                    },
-                    {
-                      "$ref": "#/definitions/symbol"
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        ]
+        }
       }
     }
   },
