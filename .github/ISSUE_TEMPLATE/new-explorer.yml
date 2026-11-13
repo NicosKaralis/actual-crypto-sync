@@ -1,6 +1,6 @@
 name: New explorer
 description: Ask for a new block explorer API on a chain that the tool supports.
-labels: [new explorer]
+labels: [new explorer, needs triage]
 body:
   - type: input
     id: chain

@@ -1,0 +1,45 @@
+name: Feature request
+description: Ask for a new feature, or a change to how the tool works.
+labels: [enhancement, needs triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        To ask for a new chain, block explorer, price provider or token, use the related form instead.
+
+        First, check the [milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones), the [roadmap](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/ROADMAP.md) and the open issues. If the feature is already there, add a 👍 reaction to its issue.
+
+        **Never paste API keys, passwords, session tokens or full wallet addresses.** This repository is public. A short address, for example `TC9F...R2MJ`, is sufficient.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What do you want to do, and why can't you do it today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: The solution that you want
+      description: How should the tool work? For example, a new config key or a new CLI option.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do today
+      description: Your workaround, if you have one.
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Can you make the change?
+      options:
+        - Yes, I can open a pull request
+        - I can help to test it
+        - No
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Other information
