@@ -39,7 +39,7 @@ A short address is sufficient, for example `TC9F...R2MJ`. The logs show addresse
 
 To request a new feature, use the feature request form. To request a new chain, block explorer, price provider or token, use the related issue form. Do not use the bug report form for these requests.
 
-The [roadmap](ROADMAP.md) tells you how a request becomes a planned item.
+The [roadmap](ROADMAP.md#how-a-request-is-planned) tells you how a request is planned.
 
 ## Report a security issue
 

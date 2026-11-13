@@ -11,7 +11,6 @@
 - [ ] I updated the docs and `config.example.yml`, or the change needs no doc update.
 - [ ] `npm run lint`, `npm run typecheck` and `npm test` pass.
 - [ ] There are no API keys, passwords, session tokens or real wallet addresses in the code, tests, fixtures or this description.
-- [ ] If the change is on the [roadmap](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/ROADMAP.md), I removed it from there.
 
 ## Breaking change
 

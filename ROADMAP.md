@@ -1,17 +1,26 @@
 # Roadmap
 
-This page tells you what can come after v1.0. Nothing on it has a date. The order can change.
+This page tells you the ideas for the future of the tool. Nothing on it has a version or a date. The order can change.
 
-Ideas come in as issues. To propose a new idea, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To tell us that an item is important to you, add a 👍 reaction or a comment to its issue.
+The work that is planned for a version is not on this page. It is on the [milestone](https://github.com/NicosKaralis/actual-crypto-sync/milestones) of that version, for example `v1.1.0`. A milestone lists its issues, and shows which are done.
 
-This is how an idea gets on this page:
+## How a request is planned
+
+To propose an idea, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To tell us that an item is important to you, add a 👍 reaction or a comment to its issue.
 
 1. A new issue gets the `needs triage` label.
 2. The maintainer reads it, and agrees on the approach with you in the issue. This includes whether the change breaks existing users.
-3. The maintainer then gives the issue the `planned` label and adds it to this page, with a link to the issue. Or the maintainer closes the issue, with the reason.
-4. The pull request that makes the change removes it from this page.
+3. The maintainer then does one of these:
+   - **For the next versions:** gives the issue the `planned` label and adds it to the milestone of a version. Bug fixes and small features go this way.
+   - **For later:** adds it to this page, with a link to the issue. Large features with no version yet go this way.
+   - **Not planned:** closes the issue, with the reason.
+4. When an item on this page gets a version, the maintainer adds its issue to the milestone and removes it from this page.
 
-## Next (v1.1)
+When a version is released, its milestone closes automatically.
+
+## Next
+
+These ideas are likely to come first.
 
 - **End-to-end tests.** Each test run starts a temporary Actual server and a mock of the explorers and price providers. Then it runs the tool against them. The tests run locally and in CI.
 - **More built-in TRON tokens.** For example USDD, BTT, WTRX, JST, SUN, WIN and USDC. The list is not final.
@@ -19,8 +28,6 @@ This is how an idea gets on this page:
 - **A JSON Schema for the config.** Your editor can then check the config file and complete its keys.
 
 ## Later
-
-These ideas have no version yet.
 
 - **Several wallets in one account.** The account shows the total of all its wallets.
 - **One token across chains in one account.** For example, USDT on TRON and on Ethereum in one account. This needs several wallets in one account, and a second chain with USDT.

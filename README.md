@@ -37,7 +37,7 @@ Want to say thanks? Click the ⭐ at the top of the page.
 
 - [Discussions](https://github.com/NicosKaralis/actual-crypto-sync/discussions/categories/q-a) for questions.
 - [Issues](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) for bugs and requests.
-- [Roadmap](ROADMAP.md) for what can come next.
+- [Milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) for the work planned for each version, and the [roadmap](ROADMAP.md) for the ideas for later.
 - [Actual Budget documentation](https://actualbudget.org/docs).
 
 ## Supported
@@ -88,7 +88,7 @@ All participants must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Feature Requests
 
-To ask for a new feature, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To ask for a new chain, block explorer, price provider or token, open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form. The [roadmap](ROADMAP.md) shows the planned features. To show that you want an existing request, add a 👍 reaction to its first comment.
+To ask for a new feature, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To ask for a new chain, block explorer, price provider or token, open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form. The [milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) show the work planned for each version, and the [roadmap](ROADMAP.md) shows the ideas for later. To show that you want an existing request, add a 👍 reaction to its first comment.
 
 ## AI Use
 
