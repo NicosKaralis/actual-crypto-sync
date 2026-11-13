@@ -8,6 +8,7 @@
   <img src="https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/docs/images/screenshot.png" alt="An off-budget TRX account in Actual Budget, with one transaction per day written by actual-crypto-sync" width="720" />
 </p>
 
+<!-- badges: Docker Hub shows text links here (release.yml) -->
 <p align="center" style="margin-bottom: 0;">
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/ci.yml"><img src="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/live.yml"><img src="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/live.yml/badge.svg?branch=main" alt="Live checks" /></a>
@@ -19,6 +20,7 @@
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/pkgs/container/actual-crypto-sync"><img src="https://img.shields.io/badge/image-ghcr.io-blue?logo=docker&logoColor=white" alt="Docker image on GHCR" /></a>
   <a href="https://hub.docker.com/r/nicoskaralis/actual-crypto-sync"><img src="https://img.shields.io/badge/image-Docker%20Hub-blue?logo=docker&logoColor=white" alt="Docker image on Docker Hub" /></a>
 </p>
+<!-- /badges -->
 
 ## Getting Started
 
