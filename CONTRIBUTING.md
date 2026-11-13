@@ -1,6 +1,6 @@
 # Contributing to actual-crypto-sync
 
-Thank you for your help. This guide gives the basics. A full guide will come later. It will have the development setup and the PR checklist.
+Thank you for your help. This guide tells you how to contribute. [docs/development.md](docs/development.md) tells you how to set up the project and test it.
 
 ## What this project is
 
@@ -44,6 +44,30 @@ To request a new chain, block explorer, price provider or token, use the related
 Do not open a public issue for a security issue. Use GitHub [private vulnerability reporting](https://github.com/NicosKaralis/actual-crypto-sync/security/advisories/new).
 
 [SECURITY.md](SECURITY.md) tells you which issues are security issues. It also tells you which versions get fixes.
+
+## Before you start
+
+For a small fix, you can open a pull request directly.
+
+Open an issue first for these changes:
+
+- A new chain, block explorer, price provider or built-in token. Use the related issue form.
+- A breaking change. See [Versions](#versions).
+- A new dependency.
+- A large change to how the tool works.
+
+In the issue, we agree on the approach before you write the code. Thus, you do not do work that we cannot merge.
+
+## Development
+
+[docs/development.md](docs/development.md) tells you how to:
+
+- Set up the project, with Node.js or with Docker only.
+- Run the tool against a local Actual server.
+- Run the tests, and record fixtures.
+- Add a chain, a block explorer, a price provider or a built-in token.
+
+[CODE_REVIEW_GUIDELINES.md](CODE_REVIEW_GUIDELINES.md) tells you what a reviewer checks. Read it before you open a pull request.
 
 ## Commit messages
 
@@ -90,6 +114,38 @@ to `addresses:`.
 Put one logical change in each commit. If the subject does not give the reason for the change, write the reason in the body.
 
 Pull request titles use the same format. CI checks the commits. CI also checks the pull request title.
+
+## Versions
+
+The project uses [semantic versioning](https://semver.org). These items are the public interface of the tool. A change that breaks one of them needs a major version:
+
+- The config file: the keys, their meaning, their defaults, and the explorer and provider ids.
+- The CLI options and the environment variables.
+- The note format. Each version must read the notes that earlier versions wrote.
+- What the tool writes to Actual: one transaction per account per day, the payee and the cleared flags.
+- The metric names and labels. Users have alerts on them.
+
+These changes need a minor version:
+
+- A new chain, block explorer, price provider or built-in token.
+- A new optional config key.
+- A change to the default explorers of a chain. The changelog tells users.
+
+A new built-in token can break a config that already defines a token with the same symbol in `tokens:`. The changelog tells users about it.
+
+The TypeScript interfaces in `src/types.ts` are not public. The project is not a library, so they can change in all versions.
+
+## Pull requests
+
+Before you open a pull request, do these checks:
+
+1. The title and all the commits use Conventional Commits.
+2. Each new feature or fix has tests. The tests use recorded fixtures, not real APIs.
+3. The docs and `config.example.yml` show the change.
+4. `npm run lint`, `npm run typecheck` and `npm test` pass.
+5. There are no API keys, passwords, session tokens or real wallet addresses in the code, the tests, the fixtures or the description.
+
+The pull request template has the same checklist. For a breaking change, tell users in the description what they must do. A workflow adds the `breaking change` label from the commit marks.
 
 ## AI, Claude Code and other agents
 
