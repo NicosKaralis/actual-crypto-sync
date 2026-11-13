@@ -53,6 +53,7 @@ For a small fix, you can open a pull request directly.
 
 Open an issue first for these changes:
 
+- A new feature. Use the feature request form.
 - A new chain, block explorer, price provider or built-in token. Use the related issue form.
 - A breaking change. See [Versions](#versions).
 - A new dependency.
@@ -125,6 +126,7 @@ The project uses [semantic versioning](https://semver.org). These items are the 
 - The CLI options and the environment variables.
 - The note format. Each version must read the notes that earlier versions wrote.
 - What the tool writes to Actual: one transaction per account per day, the payee and the cleared flags.
+- The log format. Users parse the logs, for example in VictoriaLogs or Loki.
 - The metric names and labels. Users have alerts on them.
 
 These changes need a minor version:
