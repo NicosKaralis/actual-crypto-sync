@@ -7,7 +7,7 @@ body:
       value: |
         To ask for a new chain, block explorer, price provider or token, use the related form instead.
 
-        First, check the [roadmap](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/ROADMAP.md) and the open issues. If the feature is already there, add a 👍 reaction to its issue.
+        First, check the [milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones), the [roadmap](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/ROADMAP.md) and the open issues. If the feature is already there, add a 👍 reaction to its issue.
 
         **Never paste API keys, passwords, session tokens or full wallet addresses.** This repository is public. A short address, for example `TC9F...R2MJ`, is sufficient.
   - type: textarea
