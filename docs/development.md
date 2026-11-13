@@ -199,7 +199,7 @@ The unit tests of `src/tokens.yml` check its rules, for example that each contra
 2. When it is time for a release, the maintainer merges `develop` into `main` with a pull request, or a `release/<version>` branch if the release needs changes first.
 3. Each merge to `main` updates a release pull request. It has the next version and the changelog.
 4. The maintainer merges the release pull request.
-5. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 and pushes it to GHCR.
+5. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 and pushes it to GHCR and Docker Hub. It also copies `README.md` to the Docker Hub overview.
 6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone.
 7. A workflow merges `main` back into `develop`, so `develop` gets the new version number and the changelog. If the merge has a conflict, the workflow fails, and the maintainer merges by hand.
 
