@@ -60,7 +60,7 @@ chains:                                        # optional, settings per chain
 
 tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
-    symbol: WTRX                               # what accounts use as token:; a built-in name replaces that token
+    symbol: WTRX                               # what accounts use as token:; replaces a built-in token of that name
     contract: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR  # the token's contract address
     decimals: 6                                # the contract's decimals
     # display_decimals: 8                      # decimals shown in notes (default: decimals, at most 8)

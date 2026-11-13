@@ -14,7 +14,7 @@ The tool reads the config from the first of these:
 
 ## Check the file in your editor
 
-[`config.schema.json`](../config.schema.json) is a JSON Schema for the config. An editor with YAML support uses it to check the file and to complete the keys while you type. It knows the chains, the explorers, the price providers, the settings of each one, and the built-in tokens.
+[`config.schema.json`](../config.schema.json) is a JSON Schema for the config. An editor with YAML support uses it to check the file and to complete the keys while you type. It knows the chains, the explorers, the price providers and the settings of each one. An account can name any token: the tool checks that its chain has it.
 
 For VS Code, install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) by Red Hat. Then put this line at the top of your config file, as in `config.example.yml`:
 
@@ -24,7 +24,7 @@ For VS Code, install the [YAML extension](https://marketplace.visualstudio.com/i
 
 Other editors that use the YAML language server read the same line, for example Neovim and Zed. JetBrains IDEs can map the schema to the file in their JSON Schema settings.
 
-The schema checks the shape of the file. The tool checks more when it starts: the `${VAR}` values, the addresses, the token symbols, the currency and duplicates. So a file that the editor accepts can still give an error. The schema on `main` is for the latest release.
+The schema checks the shape of the file. The tool checks more when it starts: the `${VAR}` values, the addresses, the tokens of accounts, the currency and duplicates. So a file that the editor accepts can still give an error. The schema on `main` is for the latest release.
 
 ## Secrets and `${VAR}`
 

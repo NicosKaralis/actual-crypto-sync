@@ -141,7 +141,7 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
    - its explorers, and the default explorer list.
 2. Add at least one explorer. See [Add an explorer](#add-an-explorer).
 3. Register the chain in `src/chains/index.ts`.
-   Add it to `config.schema.json`: under `chains`, to the chains of `accounts` with its built-in tokens, and to the chains of `tokens` if it has tokens. The schema tests fail until you do.
+   Add it to `config.schema.json`: under `chains`, to the chains of `accounts`, and to the chains of `tokens` if it has tokens. The schema tests fail until you do.
 4. Add the native token, and popular tokens, to `src/tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
@@ -186,7 +186,6 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 2. Copy the decimals from the contract.
 3. Find the id at each price provider. On CoinGecko, check that the contract on the token page is the same contract.
 4. Add the token to `src/tokens.yml`. Put the links that you checked in the pull request.
-   Add its symbol to the built-in tokens of its chain in `config.schema.json`, under `accounts`. The schema tests fail until you do.
 5. Add the token to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 tokens.
 6. Run `npm run test:live`. It checks the decimals on chain and the CoinGecko id of the new token. The pull request runs it too.
 
