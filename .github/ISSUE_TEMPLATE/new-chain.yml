@@ -1,6 +1,6 @@
 name: New chain
 description: Ask for support of a new blockchain.
-labels: [new chain]
+labels: [new chain, needs triage]
 body:
   - type: markdown
     attributes:

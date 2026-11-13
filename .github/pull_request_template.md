@@ -11,12 +11,14 @@
 - [ ] I updated the docs and `config.example.yml`, or the change needs no doc update.
 - [ ] `npm run lint`, `npm run typecheck` and `npm test` pass.
 - [ ] There are no API keys, passwords, session tokens or real wallet addresses in the code, tests, fixtures or this description.
+- [ ] If the change is on the [roadmap](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/ROADMAP.md), I removed it from there.
 
 ## Breaking change
 
 <!--
 Does the change break existing users? These are breaking changes: the config format, CLI flags
-and env vars, the note format, what the tool writes to Actual, and metric names and labels.
+and env vars, the note format, the log format, what the tool writes to Actual, and metric names
+and labels.
 If yes, mark the commit with `!` and a `BREAKING CHANGE:` footer (see CONTRIBUTING.md), and
 tell users here what they must do. A workflow then adds the `breaking change` label.
 -->

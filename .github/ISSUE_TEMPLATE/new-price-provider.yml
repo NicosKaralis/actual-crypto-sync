@@ -1,6 +1,6 @@
 name: New price provider
 description: Ask for a new source of token prices.
-labels: [new price provider]
+labels: [new price provider, needs triage]
 body:
   - type: input
     id: name
