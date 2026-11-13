@@ -26,6 +26,30 @@ jobs:
       - run: npx biome ci .
       - run: npx tsc
 
+  # Git flow: main only takes develop, a release or hotfix branch, or Release Please's PR.
+  # GitHub opens pull requests against main, the default branch, so this catches the rest.
+  base:
+    name: Base branch
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Check the PR's base branch
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          if [ "$BASE" != main ]; then
+            exit 0
+          fi
+          if [ "$SAME_REPO" = true ]; then
+            case "$HEAD" in
+              develop | release/* | hotfix/* | release-please--*) exit 0 ;;
+            esac
+          fi
+          echo "::error::Pull requests go into develop. Change the base branch of this pull request to develop."
+          exit 1
+
   commits:
     name: Conventional Commits
     if: github.event_name == 'pull_request'
