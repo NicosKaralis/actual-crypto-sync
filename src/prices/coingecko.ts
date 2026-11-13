@@ -28,6 +28,7 @@ const CURRENCIES = new Set(
 export const coingecko: PriceProvider = {
   id: ID,
   supportsCurrency: (currency) => CURRENCIES.has(currency),
+  settingKeys: ['api_url', 'demo_api_key', 'pro_api_key'],
   // The public API allows a few requests a minute.
   serialIntervalMs: 6000,
   rateLimitAdvice(error, { settings }) {

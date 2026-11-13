@@ -26,6 +26,7 @@ function explorer(
   return {
     id,
     supportsContracts,
+    settingKeys: [],
     serialIntervalMs: 1000,
     // Any error ending in HTTP 429 is this fake's rate limit.
     rateLimitAdvice: (error, { serial }) =>

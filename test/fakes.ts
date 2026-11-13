@@ -6,10 +6,14 @@ import { readFileSync } from 'node:fs';
 import { parseTokens } from '../src/tokens.ts';
 import type { Chain, Explorer, PriceProvider } from '../src/types.ts';
 
+// The settings the config tests use; anything else is an unknown setting.
+const SETTING_KEYS = ['api_url', 'api_key', 'timeout'];
+
 function explorer(id: string, supportsContracts: boolean): Explorer {
   return {
     id,
     supportsContracts,
+    settingKeys: SETTING_KEYS,
     serialIntervalMs: 0,
     rateLimitAdvice: () => null,
     getBalances: () => Promise.reject(new Error(`fake explorer ${id} has no balances`)),
@@ -20,6 +24,7 @@ function provider(id: string, currencies: string[]): PriceProvider {
   return {
     id,
     supportsCurrency: (currency) => currencies.includes(currency),
+    settingKeys: SETTING_KEYS,
     serialIntervalMs: 0,
     rateLimitAdvice: () => null,
     getQuotes: () => Promise.reject(new Error(`fake provider ${id} has no quotes`)),

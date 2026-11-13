@@ -465,6 +465,23 @@ describe('loadConfig: providers and explorers lists', () => {
     );
   });
 
+  test('an unknown setting names the settings of that provider or explorer', () => {
+    assertConfigError(
+      () =>
+        load((raw) => Object.assign(prices(raw), { providers: [{ coingecko: { api_kye: 'x' } }] })),
+      'prices.providers[0].coingecko.api_kye: unknown setting; expected api_url, api_key, timeout, label or serial',
+    );
+    assertConfigError(
+      () =>
+        load((raw) =>
+          Object.assign(raw, {
+            chains: { tron: { explorers: [{ trongrid: { serial: true, apikey: 'k' } }] } },
+          }),
+        ),
+      'chains.tron.explorers[0].trongrid.apikey: unknown setting; expected api_url, api_key, timeout, label or serial',
+    );
+  });
+
   test("an entry's settings are checked by its provider", () => {
     // The real registries: coingecko refuses both kinds of key at once.
     const raw = base();

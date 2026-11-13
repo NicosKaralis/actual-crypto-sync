@@ -254,7 +254,7 @@ class Loader {
    * and one-key maps of name to settings. Repeats are labelled `id#2`, `id#3`
    * unless they set `label`. `serial` puts the entry in serial mode (C27).
    */
-  entries<T extends Pick<PriceProvider, 'checkSettings'>>(
+  entries<T extends Pick<PriceProvider, 'settingKeys' | 'checkSettings'>>(
     value: unknown,
     path: string,
     noun: string,
@@ -297,6 +297,14 @@ class Loader {
         id = this.nonEmpty(entry, entryPath);
       }
       const item = lookup(id, entryPath);
+      for (const key of Object.keys(settings)) {
+        if (!item.settingKeys.includes(key)) {
+          throw new ConfigError(
+            `${entryPath}.${id}.${key}`,
+            `unknown setting; expected ${listOr([...item.settingKeys, 'label', 'serial'])}`,
+          );
+        }
+      }
       const problem = item.checkSettings?.(settings);
       if (problem) {
         throw new ConfigError(`${entryPath}.${id}`, problem);
