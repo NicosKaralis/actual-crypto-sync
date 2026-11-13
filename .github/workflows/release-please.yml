@@ -15,6 +15,8 @@ jobs:
   release-please:
     name: Release PR
     runs-on: ubuntu-26.04
+    # Holds the Release Please app's key; only main and v* tags can use it.
+    environment: release
     permissions:
       contents: write
       issues: write
@@ -23,13 +25,55 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      # Keeps the release PR up to date with the commits on main. Merging it creates the tag
-      # and the GitHub release.
+      # Creates the tag and the GitHub release once the release PR is merged. It uses
+      # GITHUB_TOKEN, so the tag starts no workflow and the image job below builds the image once.
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-pull-request: true
+      - id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+      # Keeps the release PR up to date with the commits on main. With the app's token, the
+      # release PR runs CI like any other PR.
+      - id: pr
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-release: true
+      # A release of nothing but Renovate's Actual updates merges by itself once its checks pass,
+      # so each new Actual version becomes a patch release. Any other release waits for the
+      # maintainer.
+      - name: Auto-merge an Actual-only release
+        if: steps.pr.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ fromJSON(steps.pr.outputs.pr).number }}
+          SHA: ${{ github.sha }}
+        run: |
+          last=$(gh release view --json tagName --jq .tagName)
+          # The subjects of the commits since the last release, without the merge commits.
+          # More commits than the compare API returns can't be an Actual-only release.
+          others=$(gh api "repos/$GH_REPO/compare/$last...$SHA" --jq '
+            if .total_commits > (.commits | length) then "too many commits"
+            else .commits[] | select(.parents | length == 1) | .commit.message | split("\n")[0]
+            end' | grep -Eiv '^fix\(deps\): update actual( |$)' || true)
+          if [ -n "$others" ]; then
+            echo "The release has more than Actual updates, so the maintainer merges it:"
+            echo "$others"
+            # Auto-merge may be on from an earlier, Actual-only state of the release PR.
+            gh pr merge "$PR" --disable-auto 2>/dev/null || true
+            exit 0
+          fi
+          gh pr merge "$PR" --auto --merge
+          echo "Release PR #$PR merges when its checks pass."
 
   # The milestone of a version, for example v1.0.0, holds the issues planned for it.
   milestone:

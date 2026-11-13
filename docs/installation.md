@@ -10,6 +10,8 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64:
 ghcr.io/nicoskaralis/actual-crypto-sync:1
 ```
 
+The same image is also on Docker Hub as `docker.io/nicoskaralis/actual-crypto-sync`, with the same tags. Use it if you can't pull from GHCR.
+
 Each release has these tags:
 
 | Tag            | Points to                                                |

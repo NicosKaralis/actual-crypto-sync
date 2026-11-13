@@ -12,6 +12,7 @@ const DEFAULT_API_URL = 'https://mempool.space/api';
 export const mempoolSpace: Explorer = {
   id: ID,
   supportsContracts: false,
+  settingKeys: ['api_url'],
   // mempool.space doesn't publish its limit; one request a second is a cautious pace.
   serialIntervalMs: 1000,
   rateLimitAdvice(error, { serial }) {

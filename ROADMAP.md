@@ -15,17 +15,9 @@ To propose an idea, open an issue with the [feature request form](https://github
    - **For later:** adds it to this page, with a link to the issue. Large features with no version yet go this way.
    - **Not planned:** closes the issue, with the reason.
 4. When an item on this page gets a version, the maintainer adds its issue to the milestone and removes it from this page.
+5. When the work is merged into `develop`, the issue gets the `awaiting release` label instead of `planned`. It stays open until the next release brings the work to `main`, which closes it.
 
 When a version is released, its milestone closes automatically.
-
-## Next
-
-These ideas are likely to come first.
-
-- **End-to-end tests.** Each test run starts a temporary Actual server and a mock of the explorers and price providers. Then it runs the tool against them. The tests run locally and in CI.
-- **More built-in TRON tokens.** For example USDD, BTT, WTRX, JST, SUN, WIN and USDC. The list is not final.
-- **A CoinGecko API key, and a second price provider.** An API key gives higher rate limits. When CoinGecko fails, the tool uses the second provider.
-- **A JSON Schema for the config.** Your editor can then check the config file and complete its keys.
 
 ## Later
 

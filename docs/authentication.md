@@ -2,7 +2,7 @@
 
 actual-crypto-sync logs in to your Actual server to download and change your budget. This page tells you which login method to use, how to get its secret, and how to fix login errors.
 
-This page is for Actual server **26.11.0**, the version that the tool is tested with.
+This page describes the logins of Actual server **26.11.0**. The tool follows each new Actual version with a patch release; when a new server version changes how logins work, this page changes with it.
 
 The config sets exactly one method under `actual.auth`, always as a `${VAR}` reference:
 

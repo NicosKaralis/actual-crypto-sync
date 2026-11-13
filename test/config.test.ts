@@ -465,6 +465,35 @@ describe('loadConfig: providers and explorers lists', () => {
     );
   });
 
+  test('an unknown setting names the settings of that provider or explorer', () => {
+    assertConfigError(
+      () =>
+        load((raw) => Object.assign(prices(raw), { providers: [{ coingecko: { api_kye: 'x' } }] })),
+      'prices.providers[0].coingecko.api_kye: unknown setting; expected api_url, api_key, timeout, label or serial',
+    );
+    assertConfigError(
+      () =>
+        load((raw) =>
+          Object.assign(raw, {
+            chains: { tron: { explorers: [{ trongrid: { serial: true, apikey: 'k' } }] } },
+          }),
+        ),
+      'chains.tron.explorers[0].trongrid.apikey: unknown setting; expected api_url, api_key, timeout, label or serial',
+    );
+  });
+
+  test("an entry's settings are checked by its provider", () => {
+    // The real registries: coingecko refuses both kinds of key at once.
+    const raw = base();
+    Object.assign(prices(raw), {
+      providers: [{ coingecko: { demo_api_key: '${DEMO}', pro_api_key: '${PRO}' } }],
+    });
+    assertConfigError(
+      () => loadConfig(stringify(raw), { ...ENV, DEMO: 'a', PRO: 'b' }),
+      'prices.providers[0].coingecko: set only one of demo_api_key and pro_api_key',
+    );
+  });
+
   test('serial: true and false load into serial, not settings', () => {
     const config = load((raw) =>
       Object.assign(raw, {
@@ -790,11 +819,17 @@ describe('loadConfig: tokens', () => {
     );
   });
 
-  test("a tokens: entry can't reuse a built-in symbol", () => {
-    assertConfigError(
-      () => load((raw) => Object.assign(raw, { tokens: [{ ...customToken, symbol: 'USDT' }] })),
-      'tokens[0].symbol: "USDT" is built in on tron; remove it from tokens:',
+  test('a tokens: entry with a built-in symbol replaces the built-in token', () => {
+    // Even with the built-in contract: only the custom tokens must differ.
+    const usdt = { ...customToken, symbol: 'USDT', contract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' };
+    const config = load((raw) =>
+      Object.assign(raw, {
+        tokens: [usdt],
+        accounts: [{ name: 'USDT', chain: 'tron', token: 'USDT', wallets: '${TRON_WALLET}' }],
+      }),
     );
+    assert.deepEqual(config.accounts[0]?.token.priceIds, { coingecko: 'xyz-token' });
+    assert.equal(config.accounts[0]?.token.decimals, 18);
   });
 
   test('symbols are upper-case letters and digits, as notes need', () => {
@@ -855,7 +890,8 @@ describe('loadConfig: tokens', () => {
 describe('config.example.yml', () => {
   test('loads, with the env it names set', async () => {
     const text = await readFile(new URL('../config.example.yml', import.meta.url), 'utf8');
-    const config = loadText(text, {
+    // The real registries, as the tool loads it.
+    const config = loadConfig(text, {
       ACTUAL_BUDGET_SYNC_ID: ENV.SYNC_ID,
       ACTUAL_SESSION_TOKEN: SESSION,
       TRON_WALLET_ADDRESS: TRON_WALLET,
@@ -867,7 +903,7 @@ describe('config.example.yml', () => {
       config.accounts.map((a) => [a.name, a.chain, a.token.symbol, a.wallets[0]?.address]),
       [
         ['TC9F...R2MJ: TRX', 'tron', 'TRX', TRON_WALLET],
-        ['SUNDOG Account', 'tron', 'SUNDOG', TRON_WALLET],
+        ['WTRX Account', 'tron', 'WTRX', TRON_WALLET],
         ['Bitcoin', 'bitcoin', 'BTC', BTC_WALLET],
       ],
     );

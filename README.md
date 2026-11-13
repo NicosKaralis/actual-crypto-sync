@@ -5,15 +5,19 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshot.png" alt="An off-budget TRX account in Actual Budget, with one transaction per day written by actual-crypto-sync" width="720" />
+  <img src="https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/docs/images/screenshot.png" alt="An off-budget TRX account in Actual Budget, with one transaction per day written by actual-crypto-sync" width="720" />
 </p>
 
-<p align="center">
+<p align="center" style="margin-bottom: 0;">
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/ci.yml"><img src="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/live.yml"><img src="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/live.yml/badge.svg?branch=main" alt="Live checks" /></a>
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/releases/latest"><img src="https://img.shields.io/github/v/release/NicosKaralis/actual-crypto-sync?sort=semver" alt="Latest release" /></a>
-  <a href="https://github.com/NicosKaralis/actual-crypto-sync/pkgs/container/actual-crypto-sync"><img src="https://img.shields.io/badge/image-ghcr.io-blue?logo=docker&logoColor=white" alt="Docker image on GHCR" /></a>
   <a href="https://actualbudget.org"><img src="https://img.shields.io/badge/Actual-26.11.0-8719e0" alt="Actual server 26.11.0" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/NicosKaralis/actual-crypto-sync" alt="MIT license" /></a>
+  <a href="https://github.com/NicosKaralis/actual-crypto-sync/blob/main/LICENSE"><img src="https://img.shields.io/github/license/NicosKaralis/actual-crypto-sync" alt="MIT license" /></a>
+</p>
+<p align="center">
+  <a href="https://github.com/NicosKaralis/actual-crypto-sync/pkgs/container/actual-crypto-sync"><img src="https://img.shields.io/badge/image-ghcr.io-blue?logo=docker&logoColor=white" alt="Docker image on GHCR" /></a>
+  <a href="https://hub.docker.com/r/nicoskaralis/actual-crypto-sync"><img src="https://img.shields.io/badge/image-Docker%20Hub-blue?logo=docker&logoColor=white" alt="Docker image on Docker Hub" /></a>
 </p>
 
 ## Getting Started
@@ -37,9 +41,9 @@ The tool runs once and exits. Run it on a schedule, for example with cron or a K
 Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
 
 - **Chains:** TRON (TRX), Bitcoin (BTC)
-- **Built-in tokens:** TRX, USDT, BTC
+- **Built-in tokens:** USDT, WBTC, WETH, USDD, SUNDOG [and more](docs/supported.md#built-in-tokens)
 - **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance)
-- **Price providers:** CoinGecko
+- **Price providers:** CoinGecko, CoinPaprika
 
 The [full list](docs/supported.md) has the ids, the contracts and the currencies.
 
@@ -51,6 +55,21 @@ To ask for a new [chain](https://github.com/NicosKaralis/actual-crypto-sync/issu
 - It is not financial advice.
 - It writes to your budget. Back up your budget first, and start with `--dry-run`. With `--dry-run`, the tool shows what it will do and writes nothing.
 - It is tested with Actual server **26.11.0**. Other versions can work, but they are not tested.
+
+### Privacy and data
+
+The tool collects nothing, and it has no telemetry of its own. It contacts only these services:
+
+- **Your Actual server.** The tool reads and writes your budget.
+- **The block explorers in your config.** They get your wallet addresses and your API key, if you set one, to read the balances.
+- **The price providers in your config.** They get the token ids and the currency only. They get no addresses and no amounts.
+- **Your OpenTelemetry collector**, only if you set an OTLP endpoint, such as `OTEL_EXPORTER_OTLP_ENDPOINT`. See [Monitoring](docs/monitoring.md).
+
+The tool needs only public addresses. It never asks for private keys or seed phrases, and it cannot move funds.
+
+A block explorer sees your full address and your IP address, and it can log them. To keep your Bitcoin addresses private, use your own mempool or Esplora instance with `api_url`. See [Supported](docs/supported.md).
+
+Logs, traces and errors show only short addresses, and they never show secrets. See [SECURITY.md](SECURITY.md).
 
 ## Installation
 

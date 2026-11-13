@@ -1,0 +1,32 @@
+{
+  "id": "trx-tron",
+  "name": "TRON",
+  "symbol": "TRX",
+  "rank": 8,
+  "total_supply": 95038381681,
+  "max_supply": 0,
+  "beta_value": 0.200887,
+  "first_data_at": "2017-09-13T00:00:00Z",
+  "last_updated": "2026-11-13T14:19:15Z",
+  "quotes": {
+    "EUR": {
+      "price": 0.2836451012079849,
+      "volume_24h": 272311923.8041618,
+      "volume_24h_change_24h": 40.89,
+      "market_cap": 26957171189.611385,
+      "market_cap_change_24h": -0.65,
+      "percent_change_15m": 0.01,
+      "percent_change_30m": 0.03,
+      "percent_change_1h": 0.12,
+      "percent_change_6h": 0.87,
+      "percent_change_12h": -0.49,
+      "percent_change_24h": -0.65,
+      "percent_change_7d": -0.53,
+      "percent_change_30d": -3.88,
+      "percent_change_1y": 13.45,
+      "ath_price": 0.39857560205945597,
+      "ath_date": "2024-12-04T00:12:23Z",
+      "percent_from_price_ath": -28.83
+    }
+  }
+}

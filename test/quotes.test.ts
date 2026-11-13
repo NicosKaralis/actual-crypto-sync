@@ -25,6 +25,7 @@ function provider(
   return {
     id,
     supportsCurrency: (currency) => currencies.includes(currency),
+    settingKeys: [],
     serialIntervalMs: 6000,
     rateLimitAdvice: (error) =>
       error instanceof Error && error.message.endsWith('HTTP 429') ? 'run less often' : null,

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../config.schema.json
 # The dev budget from `npm run dev:seed`, logged in with a session token.
 # dev/config.password.yml is the same with the server password.
 # The wallets are public exchange wallets, the same as in the tests.

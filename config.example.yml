@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json
 # actual-crypto-sync config. Every key is shown; the commented ones are optional.
 #
 # Secrets never go in this file: write ${NAME} and the value is read from the
@@ -33,9 +34,12 @@ prices:
   providers:                                   # required; tried in order, each a name, or a name with its settings
     - coingecko
     # - coingecko:
+    #     demo_api_key: ${COINGECKO_API_KEY}   # a free Demo key raises the rate limit
+    #     # pro_api_key: ${COINGECKO_API_KEY}  # or a paid Pro key (uses the Pro API); not both
     #     api_url: https://api.coingecko.com/api/v3  # the default
     #     label: coingecko-main                # the name in logs, spans and metric labels (default: the id)
     #     serial: true                         # one request at a time, 6 s apart, if it rate-limits you
+    - coinpaprika                              # asked for the prices that CoinGecko didn't give
 
 chains:                                        # optional, settings per chain
   tron:
@@ -54,14 +58,14 @@ chains:                                        # optional, settings per chain
       # - mempool-space:
       #     serial: true                       # one request at a time, 1 s apart
 
-tokens:                                        # optional, tokens that aren't built in (TRX, USDT and BTC are)
+tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
-    symbol: SUNDOG                             # what accounts use as token:; can't reuse a built-in name
-    contract: TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT  # the token's contract address
-    decimals: 18                               # the contract's decimals
+    symbol: WTRX                               # what accounts use as token:; replaces a built-in token of that name
+    contract: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR  # the token's contract address
+    decimals: 6                                # the contract's decimals
     # display_decimals: 8                      # decimals shown in notes (default: decimals, at most 8)
     price_ids:                                 # at least one; the token's id at each price provider
-      coingecko: sundog
+      coingecko: wrapped-tron
 
 accounts:                                      # the off-budget Actual accounts to keep in line
   - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
@@ -70,9 +74,9 @@ accounts:                                      # the off-budget Actual accounts 
     wallets:                                   # one wallet per account for now: a list,
       - ${TRON_WALLET_ADDRESS}                 # an inline list or a single address (below)
 
-  - name: "SUNDOG Account"                     # any name you like, as long as it matches the account in Actual
+  - name: "WTRX Account"                       # any name you like, as long as it matches the account in Actual
     chain: tron
-    token: SUNDOG                              # defined in tokens: above; a built-in one (USDT) needs only its name
+    token: WTRX                                # defined in tokens: above; a built-in one (USDT) needs only its name
     wallets: ["${TRON_WALLET_ADDRESS}"]        # an inline list; quote ${...} inside [ ], or YAML reads it as a map
                                                # same address as above, fetched once
 

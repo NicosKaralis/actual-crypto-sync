@@ -2,14 +2,7 @@ import { parseDocument } from 'yaml';
 
 import { CHAINS, getChain } from './chains/index.ts';
 import { getPriceProvider, PRICE_PROVIDERS } from './prices/index.ts';
-import {
-  BUILTIN_TOKENS,
-  checkUnique,
-  findBuiltinToken,
-  readToken,
-  resolveToken,
-  TokenError,
-} from './tokens.ts';
+import { BUILTIN_TOKENS, checkUnique, readToken, resolveToken, TokenError } from './tokens.ts';
 import type { Chain, ChainId, Currency, Explorer, PriceProvider, Token, Wallet } from './types.ts';
 
 export type ActualAuth =
@@ -254,7 +247,7 @@ class Loader {
    * and one-key maps of name to settings. Repeats are labelled `id#2`, `id#3`
    * unless they set `label`. `serial` puts the entry in serial mode (C27).
    */
-  entries<T>(
+  entries<T extends Pick<PriceProvider, 'settingKeys' | 'checkSettings'>>(
     value: unknown,
     path: string,
     noun: string,
@@ -297,6 +290,18 @@ class Loader {
         id = this.nonEmpty(entry, entryPath);
       }
       const item = lookup(id, entryPath);
+      for (const key of Object.keys(settings)) {
+        if (!item.settingKeys.includes(key)) {
+          throw new ConfigError(
+            `${entryPath}.${id}.${key}`,
+            `unknown setting; expected ${listOr([...item.settingKeys, 'label', 'serial'])}`,
+          );
+        }
+      }
+      const problem = item.checkSettings?.(settings);
+      if (problem) {
+        throw new ConfigError(`${entryPath}.${id}`, problem);
+      }
       if (
         result.some(
           (other) =>
@@ -358,7 +363,6 @@ class Loader {
     if (!Array.isArray(value)) {
       throw new ConfigError('tokens', 'expected a list');
     }
-    const builtins = this.registries.tokens;
     const tokens: Token[] = [];
     value.forEach((entry: unknown, index) => {
       const path = `tokens[${index}]`;
@@ -369,13 +373,8 @@ class Loader {
         throw new ConfigError(`${path}.chain`, `${chain.id} has no tokens`);
       }
 
+      // A built-in symbol is fine: the entry replaces the built-in token.
       const token = tokenAt(() => readToken(raw, path, chain.id, ['chain']));
-      if (findBuiltinToken(chain.id, token.symbol, builtins)) {
-        throw new ConfigError(
-          `${path}.symbol`,
-          `"${token.symbol}" is built in on ${chain.id}; remove it from tokens:`,
-        );
-      }
       // Only native tokens leave the contract out, and each chain's is built in.
       if (token.contract === undefined) {
         throw new ConfigError(`${path}.contract`, 'required');
@@ -383,7 +382,7 @@ class Loader {
       if (!chain.isValidAddress(token.contract)) {
         throw new ConfigError(`${path}.contract`, `not a valid ${chain.id} address`);
       }
-      tokenAt(() => checkUnique(token, [...builtins, ...tokens], path));
+      tokenAt(() => checkUnique(token, tokens, path));
       for (const providerId of Object.keys(token.priceIds)) {
         at(`${path}.price_ids.${providerId}`, () =>
           getPriceProvider(providerId, this.registries.priceProviders),
