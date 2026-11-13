@@ -1,6 +1,9 @@
 ## What changed
 
-<!-- What does this pull request change, and why? Link the issue, for example "Closes #12". -->
+<!--
+What does this pull request change, and why? Link the issue, for example "Closes #12".
+Open the pull request into `develop`, not `main` (see CONTRIBUTING.md).
+-->
 
 ## Checklist
 

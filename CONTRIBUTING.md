@@ -139,15 +139,30 @@ A new built-in token can break a config that already defines a token with the sa
 
 The TypeScript interfaces in `src/types.ts` are not public. The project is not a library, so they can change in all versions.
 
+## Branches
+
+The project uses git flow. `develop` has the work for the next version, and `main` has the released versions.
+
+| Branch              | Starts from | Pull request into | Use                                                                      |
+| ------------------- | ----------- | ----------------- | ------------------------------------------------------------------------ |
+| `feature/<name>`    | `develop`   | `develop`         | All normal work: features, bug fixes, docs and CI.                       |
+| `release/<version>` | `develop`   | `main`            | The maintainer prepares a release that needs changes before it goes out. |
+| `hotfix/<name>`     | `main`      | `main`            | The maintainer fixes an urgent bug in the released version.              |
+
+**Open your pull request into `develop`.** GitHub selects `main` by default, so change the base branch. A check fails pull requests into `main` from other branches.
+
+After each release, a workflow merges `main` back into `develop`. Thus, `develop` also gets the release commit and each hotfix.
+
 ## Pull requests
 
 Before you open a pull request, do these checks:
 
-1. The title and all the commits use Conventional Commits.
-2. Each new feature or fix has tests. The tests use recorded fixtures, not real APIs.
-3. The docs and `config.example.yml` show the change.
-4. `npm run lint`, `npm run typecheck` and `npm test` pass.
-5. There are no API keys, passwords, session tokens or real wallet addresses in the code, the tests, the fixtures or the description.
+1. The pull request goes into `develop`.
+2. The title and all the commits use Conventional Commits.
+3. Each new feature or fix has tests. The tests use recorded fixtures, not real APIs.
+4. The docs and `config.example.yml` show the change.
+5. `npm run lint`, `npm run typecheck` and `npm test` pass.
+6. There are no API keys, passwords, session tokens or real wallet addresses in the code, the tests, the fixtures or the description.
 
 The pull request template has the same checklist. For a breaking change, tell users in the description what they must do. A workflow adds the `breaking change` label from the commit marks.
 
