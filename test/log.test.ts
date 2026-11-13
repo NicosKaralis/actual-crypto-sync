@@ -3,12 +3,12 @@ import { describe, test } from 'node:test';
 
 import { InMemorySpanExporter } from '@opentelemetry/sdk-trace';
 
-import { createLog } from '../src/log.ts';
+import { createLog, parseLogFormat } from '../src/log.ts';
 import { startTelemetry } from '../src/telemetry.ts';
 
 function capture(debug = false) {
   const lines: string[] = [];
-  const log = createLog({ debug, write: (line) => lines.push(line) });
+  const log = createLog({ debug, format: 'json', write: (line) => lines.push(line) });
   const parsed = () => lines.map((line) => JSON.parse(line) as Record<string, unknown>);
   return { log, lines, parsed };
 }
@@ -62,5 +62,86 @@ describe('log', () => {
     log('warn', 'real', { msg: 'fake', level: 'info' });
     assert.equal(parsed()[0]?.msg, 'real');
     assert.equal(parsed()[0]?.level, 'warn');
+  });
+});
+
+describe('text log', () => {
+  function text(debug = false) {
+    const lines: string[] = [];
+    const log = createLog({ debug, write: (line) => lines.push(line) });
+    return { log, lines };
+  }
+
+  test('is the default: time, level, message, then the fields', () => {
+    const { log, lines } = text();
+    log('info', 'created a transaction', {
+      account: 'TRON: TRX',
+      amount_cents: 4661,
+      dry_run: false,
+    });
+    assert.equal(lines.length, 1);
+    assert.match(
+      lines[0] ?? '',
+      /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z INFO {2}created a transaction account="TRON: TRX" amount_cents=4661 dry_run=false\n$/,
+    );
+  });
+
+  test('quotes values with spaces, quotes, = or backslashes, and empty values', () => {
+    const { log, lines } = text();
+    log('warn', 'x', {
+      a: 'plain',
+      b: '',
+      c: 'say "hi"',
+      d: 'k=v',
+      e: 'C:\\dir',
+      f: null,
+      g: undefined,
+    });
+    assert.ok(
+      lines[0]?.endsWith(' WARN  x a=plain b="" c="say \\"hi\\"" d="k=v" e="C:\\\\dir" f=null\n'),
+    );
+  });
+
+  test('a newline in the message or a field stays on one line', () => {
+    const { log, lines } = text();
+    log('error', 'first\nsecond\r\nthird', { detail: 'a\nb' });
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0]?.split('\n').length, 2);
+    assert.ok(lines[0]?.includes(' ERROR first\\nsecond\\r\\nthird detail="a\\nb"'));
+  });
+
+  test("fields can't overwrite time, level or msg", () => {
+    const { log, lines } = text();
+    log('warn', 'real', { msg: 'fake', level: 'info', time: 'never' });
+    assert.match(lines[0] ?? '', /^\S+ WARN {2}real\n$/);
+  });
+
+  test('debug entries only with debug on', () => {
+    const quiet = text(false);
+    quiet.log('debug', 'GET https://api.trongrid.io');
+    assert.equal(quiet.lines.length, 0);
+    const loud = text(true);
+    loud.log('debug', 'GET https://api.trongrid.io');
+    assert.match(loud.lines[0] ?? '', / DEBUG GET https:\/\/api\.trongrid\.io\n$/);
+  });
+});
+
+describe('parseLogFormat', () => {
+  test('text when unset or empty', () => {
+    assert.equal(parseLogFormat(undefined), 'text');
+    assert.equal(parseLogFormat(''), 'text');
+    assert.equal(parseLogFormat('  '), 'text');
+  });
+
+  test('text or json, in any case', () => {
+    assert.equal(parseLogFormat('text'), 'text');
+    assert.equal(parseLogFormat('JSON'), 'json');
+    assert.equal(parseLogFormat(' json '), 'json');
+  });
+
+  test('anything else is an error that names the value', () => {
+    assert.throws(() => parseLogFormat('xml'), {
+      message: 'LOG_FORMAT: use text or json, not "xml"',
+    });
   });
 });

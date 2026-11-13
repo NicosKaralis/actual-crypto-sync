@@ -4,7 +4,28 @@ This page tells you what the tool logs, and which metrics and traces it sends. U
 
 ## Logs
 
-Logs are JSON, one line per entry, on standard output. With `--debug`, the tool also logs each request: the method, the URL without its query string, the status and the time. Wallet addresses show only in a short form, for example `TC9F...R2MJ`. Secrets never show.
+The tool writes its logs on standard output, one line per entry. The `LOG_FORMAT` environment variable sets the format:
+
+| `LOG_FORMAT`         | Format                                                            |
+| -------------------- | ----------------------------------------------------------------- |
+| `text` (the default) | For people: in a terminal, a cron mail or `docker logs`.          |
+| `json`               | For log systems, for example VictoriaLogs, Loki or Elasticsearch. |
+
+Any other value is an error: the tool writes one error line in text, and stops with exit code 1.
+
+In both formats, wallet addresses show only in a short form, for example `TC9F...R2MJ`, and secrets never show. With `--debug`, the tool also logs each request: the method, the URL without its query string, the status and the time.
+
+### Text
+
+Each line has the time in UTC, the level, the message, then the fields as `key=value`. A value with a space, a quote or `=` is in quotes:
+
+```
+2026-11-13T06:00:02.000Z INFO  created a transaction account="TRON: TRX" amount_cents=4661 value_cents=4661 note="156.9193 TRX (Δ +156.9193 @ 0.297 EUR/TRX, 46.61 EUR)" explorer=trongrid source=coingecko
+```
+
+### JSON
+
+With `LOG_FORMAT=json`, each line is one JSON object. It has the same fields as the text line, and also the `trace_id` and `span_id` of the active span, so you can find the trace of a log line:
 
 ```json
 {
@@ -16,7 +37,9 @@ Logs are JSON, one line per entry, on standard output. With `--debug`, the tool 
   "value_cents": 4661,
   "note": "156.9193 TRX (Δ +156.9193 @ 0.297 EUR/TRX, 46.61 EUR)",
   "explorer": "trongrid",
-  "source": "coingecko"
+  "source": "coingecko",
+  "trace_id": "5b8efff798038103d269b633813fc60c",
+  "span_id": "eee19b7ec3c1b174"
 }
 ```
 

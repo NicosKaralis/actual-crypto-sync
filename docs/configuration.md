@@ -275,15 +275,16 @@ To find the change since the last sync, the tool reads the note of the last sync
 
 ## Environment variables
 
-| Variable                              | Default              | What it is                                                                             |
-| ------------------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `CONFIG_FILE`                         | `/config/config.yml` | The path of the config file. `--config` overrides it.                                  |
-| `ACTUAL_DATA_DIR`                     | `/cache`             | Where the tool keeps its copy of the budget. The tool creates it. It must be writable. |
-| `TZ`                                  | `UTC` in the image   | The time zone that sets the date of "today".                                           |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`         |                      | The base URL of an OpenTelemetry collector, for traces and metrics.                    |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`  |                      | The full URL for traces only. It overrides the base URL.                               |
-| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` |                      | The full URL for metrics only. It overrides the base URL.                              |
-| `OTEL_EXPORTER_OTLP_TIMEOUT`          | `5000`               | The export timeout in milliseconds.                                                    |
+| Variable                              | Default              | What it is                                                                                  |
+| ------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| `CONFIG_FILE`                         | `/config/config.yml` | The path of the config file. `--config` overrides it.                                       |
+| `ACTUAL_DATA_DIR`                     | `/cache`             | Where the tool keeps its copy of the budget. The tool creates it. It must be writable.      |
+| `TZ`                                  | `UTC` in the image   | The time zone that sets the date of "today".                                                |
+| `LOG_FORMAT`                          | `text`               | `text` for people, or `json` for log systems. See [docs/monitoring.md](monitoring.md#logs). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`         |                      | The base URL of an OpenTelemetry collector, for traces and metrics.                         |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`  |                      | The full URL for traces only. It overrides the base URL.                                    |
+| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` |                      | The full URL for metrics only. It overrides the base URL.                                   |
+| `OTEL_EXPORTER_OTLP_TIMEOUT`          | `5000`               | The export timeout in milliseconds.                                                         |
 
 The variables that your config uses with `${VAR}` are also necessary.
 
@@ -293,13 +294,8 @@ For the logs, and the metrics and traces that the tool sends to the collector, s
 
 The tool checks all of the config before it connects to Actual. If the config has a problem, the tool writes one error and stops with exit code 1. The error starts with the place of the problem in the file:
 
-```json
-{
-  "time": "2026-11-13T06:00:00.000Z",
-  "level": "error",
-  "msg": "accounts[2].token: \"XYZ\" isn't built in on tron; define it in tokens:",
-  "stage": "config"
-}
+```
+2026-11-13T06:00:00.000Z ERROR accounts[2].token: "XYZ" isn't built in on tron; define it in tokens: stage=config
 ```
 
 `accounts[2]` is the third account, because the count starts at 0.
