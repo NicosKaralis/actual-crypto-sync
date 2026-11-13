@@ -194,9 +194,26 @@ jobs:
           ref: ${{ env.TAG }}
           sparse-checkout: README.md
           sparse-checkout-cone-mode: false
-      - name: Sync the Docker Hub overview from the README
+      # Docker Hub's CSS shows each image as a block, so the README's badges would stack one per
+      # line. The overview gets one line of text links in their place.
+      - name: Write the Docker Hub overview
+        env:
+          REPO: https://github.com/${{ github.repository }}
+        run: |
+          if ! grep -q '^<!-- badges' README.md || ! grep -q '^<!-- /badges -->' README.md; then
+            echo "::error::README.md has no <!-- badges --> and <!-- /badges --> lines."
+            exit 1
+          fi
+          links="[GitHub]($REPO) · [Releases]($REPO/releases) · [Changelog]($REPO/blob/main/CHANGELOG.md) · [Docs]($REPO/tree/main/docs) · [Image on GHCR]($REPO/pkgs/container/actual-crypto-sync)"
+          awk -v links="$links" '
+            /^<!-- badges/ { print links; skip = 1; next }
+            /^<!-- \/badges -->/ { skip = 0; next }
+            !skip
+          ' README.md > "$RUNNER_TEMP/dockerhub-overview.md"
+      - name: Sync the Docker Hub overview
         uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
         with:
+          readme-filepath: ${{ runner.temp }}/dockerhub-overview.md
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: nicoskaralis/actual-crypto-sync
