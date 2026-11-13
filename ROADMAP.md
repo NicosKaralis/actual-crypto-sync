@@ -22,8 +22,6 @@ When a version is released, its milestone closes automatically.
 
 These ideas are likely to come first.
 
-- **End-to-end tests.** Each test run starts a temporary Actual server and a mock of the explorers and price providers. Then it runs the tool against them. The tests run locally and in CI.
-- **More built-in TRON tokens.** For example USDD, BTT, WTRX, JST, SUN, WIN and USDC. The list is not final.
 - **A CoinGecko API key, and a second price provider.** An API key gives higher rate limits. When CoinGecko fails, the tool uses the second provider.
 - **A JSON Schema for the config.** Your editor can then check the config file and complete its keys.
 
