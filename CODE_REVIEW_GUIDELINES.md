@@ -84,14 +84,14 @@ The TypeScript interfaces in `src/types.ts` are not public. They can change in a
 
 - Each dependency has an exact version, and the pull request includes `package-lock.json`.
 - Do not approve a new dependency that needs an install script. `.npmrc` sets `ignore-scripts=true`.
-- `@actual-app/api` and the `actual-server` image always have the same version.
+- `@actual-app/api` and the `actual-server` image always have the same version. A change to that version also updates the Actual badge in the README and the tested version in the docs.
 - GitHub Actions use a commit SHA, with the version in a comment.
 - The image for each architecture builds on a runner of that architecture, not under QEMU.
 
 ## Docs
 
 - A change that a user can see updates the docs and `config.example.yml`.
-- A new chain, explorer, price provider or built-in token updates the tables in the README.
+- A new chain, explorer, price provider or built-in token is added to `docs/supported.md`. The README shows at most 5 of each, the most popular.
 
 ## Related documents
 
