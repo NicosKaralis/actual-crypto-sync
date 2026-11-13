@@ -78,7 +78,17 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64:
 ghcr.io/nicoskaralis/actual-crypto-sync:1
 ```
 
-The `1` tag follows the latest 1.x version. Use a full version, for example `1.0.0`, to update only when you choose.
+Each release has these tags:
+
+| Tag            | Points to                                                |
+| -------------- | -------------------------------------------------------- |
+| `1`            | The latest 1.x.x version.                                |
+| `1.0`          | The latest 1.0.x version, so only bug fixes.             |
+| `1.0.0`        | Exactly this version.                                    |
+| `sha-<commit>` | The image built from that commit.                        |
+| `latest`       | The latest version. Use a version tag instead, as above. |
+
+Use a full version, for example `1.0.0`, to update only when you choose.
 
 To run it from source with Node.js, see [docs/development.md](docs/development.md).
 
