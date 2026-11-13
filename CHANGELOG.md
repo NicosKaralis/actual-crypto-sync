@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.1](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.0...v1.1.1) (2026-11-13)
+
+This release fixes how the Docker image is published. The tool itself does not change. Tested with Actual server 26.11.0.
+
+### Bug Fixes
+
+- **The same image on GHCR and Docker Hub:** the release builds the multi-arch image once on GHCR, and copies it to Docker Hub as it is. Both registries now have the same digest for each tag. In 1.1.0, the two digests were different, but the amd64 and arm64 images in them were the same. ([#43](https://github.com/NicosKaralis/actual-crypto-sync/pull/43), [097aed5](https://github.com/NicosKaralis/actual-crypto-sync/commit/097aed509b97b53735d2a48bd92bcd7c4b0533fa))
+- **The correct commit in the image labels:** the `org.opencontainers.image.revision` label and the `sha-<commit>` tag now come from the commit of the release tag. The 1.1.0 image was built by hand from a later commit of `main`, so it has the label and tag `sha-9865c12`, not `sha-a0f78a8`. Its code is the code of `v1.1.0`. ([#43](https://github.com/NicosKaralis/actual-crypto-sync/pull/43), [7970ea4](https://github.com/NicosKaralis/actual-crypto-sync/commit/7970ea4116cf01df5aa068c9a15cc8387e600c2b))
+- **Text links on Docker Hub:** Docker Hub shows each badge of the README on its own line. Its overview now has one line of text links in place of the badges: GitHub, Releases, Changelog, Docs and Image on GHCR. The README on GitHub does not change. ([#45](https://github.com/NicosKaralis/actual-crypto-sync/pull/45), [a83306f](https://github.com/NicosKaralis/actual-crypto-sync/commit/a83306f85a3d0a1518d3d7248adccfd7aeddbc94))
+
+### For contributors
+
+- **The release jobs are separate from the release pull request:** in 1.1.0, a failure in the release pull request step stopped the image build. Now the release job runs alone, and the image, the milestone and the merge back depend only on it. The Release workflow can also run by hand for an existing tag. ([#39](https://github.com/NicosKaralis/actual-crypto-sync/pull/39), [ac827b6](https://github.com/NicosKaralis/actual-crypto-sync/commit/ac827b610a8c5fc8fc7e68dd740d98f4cbc93975))
+
+See the [README](https://github.com/NicosKaralis/actual-crypto-sync#readme) to get started, and the [docs](https://github.com/NicosKaralis/actual-crypto-sync/tree/main/docs) for each setting.
+
 ## [1.1.0](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.0.0...v1.1.0) (2026-11-13)
 
 This release adds more TRON tokens, a second price provider and a JSON Schema for the config. The image is now also on Docker Hub. Tested with Actual server 26.11.0.
