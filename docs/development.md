@@ -197,13 +197,24 @@ The unit tests of `src/tokens.yml` check its rules, for example that each contra
 
 1. The work for the next version collects in `develop`. See [Branches](../CONTRIBUTING.md#branches).
 2. When it is time for a release, the maintainer merges `develop` into `main` with a pull request, or a `release/<version>` branch if the release needs changes first.
-3. Each merge to `main` updates a release pull request. It has the next version and the changelog.
-4. The maintainer merges the release pull request.
+3. Each merge to `main` updates a release pull request. It has the next version and the changelog. Release Please opens it with the token of a GitHub App, so its checks run like on any other pull request. The `release` environment holds the app's `RELEASE_APP_CLIENT_ID` variable and `RELEASE_APP_PRIVATE_KEY` secret.
+4. The maintainer merges the release pull request. A release that has only Actual updates merges by itself. See [Actual updates](#actual-updates).
 5. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 and pushes it to GHCR and Docker Hub. It also copies `README.md` to the Docker Hub overview.
 6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone.
 7. A workflow merges `main` back into `develop`, so `develop` gets the new version number and the changelog. If the merge has a conflict, the workflow fails, and the maintainer merges by hand.
 
 An urgent fix goes on a `hotfix/<name>` branch from `main`, with a pull request into `main`. Then the same steps from step 3 make a patch release, and step 7 brings the fix into `develop`.
+
+### Actual updates
+
+The tool is tested with one Actual version, and `@actual-app/api` must match the server. So each new Actual version becomes a patch release, with no manual step:
+
+1. Renovate opens a pull request into `main` when the new version is 1 day old. It changes `@actual-app/api`, the `actual-server` image of the dev stack and the end-to-end tests, and the Actual version in the README (the badge and the "tested with" line). Its commit is a `fix(deps):` commit, so the release is a patch version.
+2. Renovate merges the pull request when the checks pass. The end-to-end tests run against the new server.
+3. Release Please updates the release pull request. The release has only Actual updates, so the workflow turns on auto-merge, and the release pull request merges when its checks pass.
+4. Steps 5 to 7 above follow. The merge back brings the new Actual version into `develop`.
+
+Renovate updates the Actual version only on `main`, and every other dependency only on `develop`. If a check fails, nothing merges, and the maintainer fixes the update on a `hotfix/<name>` branch.
 
 The work that is planned for a version is on its [milestone](https://github.com/NicosKaralis/actual-crypto-sync/milestones). See [ROADMAP.md](../ROADMAP.md#how-a-request-is-planned).
 
