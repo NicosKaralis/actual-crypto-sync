@@ -1,9 +1,12 @@
 import type { Currency } from './types.ts';
 
 // The quote (price per token) keeps at most 4 decimals in notes, whatever the
-// currency's minor units: 0.297 EUR/TRX needs more than 2. Change it here if a
-// token ever needs more, e.g. one quoted at 0.00001234 EUR.
+// currency's minor units: 0.297 EUR/TRX needs more than 2. A quote below 0.1
+// gets more decimals to keep 4 significant digits: 0.0000002928 EUR/BTT.
 export const QUOTE_DECIMALS = 4;
+export const QUOTE_SIGNIFICANT_DIGITS = 4;
+// Enough for any real price; below 1e-32 the quote shows as 0.
+export const QUOTE_MAX_DECIMALS = 32;
 
 /**
  * Raw on-chain units (sun, satoshi, token units) to a number. The one place a
@@ -88,7 +91,8 @@ export function currencyDecimals(currency: Currency): number {
  * The note on a sync transaction:
  * "156.9193 TRX (Δ +2.009071 @ 0.297 EUR/TRX, 46.61 EUR)".
  * Balance and delta use the token's display decimals, the quote
- * QUOTE_DECIMALS, the value the currency's minor units; none has trailing zeros.
+ * QUOTE_DECIMALS (more below 0.1, for QUOTE_SIGNIFICANT_DIGITS), the value the
+ * currency's minor units; none has trailing zeros.
  */
 export function buildNote(note: {
   symbol: string;
@@ -102,12 +106,25 @@ export function buildNote(note: {
   const code = currency.toUpperCase();
   const shownBalance = formatDecimals(balance, displayDecimals);
   const shownDelta = formatDelta(delta, displayDecimals);
-  const quote = formatDecimals(price, QUOTE_DECIMALS);
+  const quote = formatDecimals(price, quoteDecimals(price));
   // Rounded to cents the same way as the amount written to Actual, so the note
   // never shows a value a cent off from the account.
   const valueCents = Math.round(balance * price * 100);
   const value = formatDecimals(valueCents / 100, currencyDecimals(currency));
   return `${shownBalance} ${symbol} (Δ ${shownDelta} @ ${quote} ${code}/${symbol}, ${value} ${code})`;
+}
+
+/** QUOTE_DECIMALS, or more for a price below 0.1, up to QUOTE_MAX_DECIMALS. */
+function quoteDecimals(price: number): number {
+  if (!(price > 0)) {
+    return QUOTE_DECIMALS;
+  }
+  // The place of the first significant digit: 0.00068 -> 4.
+  const leadingPlace = -Math.floor(Math.log10(price));
+  return Math.min(
+    Math.max(QUOTE_DECIMALS, leadingPlace + QUOTE_SIGNIFICANT_DIGITS - 1),
+    QUOTE_MAX_DECIMALS,
+  );
 }
 
 const NUMBER = String.raw`\d+(?:\.\d+)?`;
