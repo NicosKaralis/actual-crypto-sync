@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <img src="docs/images/screenshot.png" alt="An off-budget TRX account in Actual Budget, with one transaction per day written by actual-crypto-sync" width="720" />
+</p>
+
+<p align="center">
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/ci.yml"><img src="https://github.com/NicosKaralis/actual-crypto-sync/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/releases/latest"><img src="https://img.shields.io/github/v/release/NicosKaralis/actual-crypto-sync?sort=semver" alt="Latest release" /></a>
   <a href="https://github.com/NicosKaralis/actual-crypto-sync/pkgs/container/actual-crypto-sync"><img src="https://img.shields.io/badge/image-ghcr.io-blue?logo=docker&logoColor=white" alt="Docker image on GHCR" /></a>
