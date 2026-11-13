@@ -41,6 +41,7 @@ Type stripping removes the types and does nothing else. Thus:
 | --------------------- | -------------------------------------------------- |
 | `npm test`            | Checks the types, then runs all the unit tests.    |
 | `npm run test:e2e`    | Runs the end-to-end tests in Docker.               |
+| `npm run test:live`   | Runs the live checks against the real services.    |
 | `npm run typecheck`   | Checks the types.                                  |
 | `npm run lint`        | Runs the Biome checks without changes, as CI does. |
 | `npm run format`      | Formats the code and fixes what Biome can fix.     |
@@ -98,6 +99,20 @@ The tests call `run()` from `src/main.ts` with the same setup as the CLI, but wi
 
 The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not run it.
 
+### Live checks
+
+`npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes about half a minute and needs no keys.
+
+- **Tokens:** the decimals of each contract on chain are the decimals in `src/tokens.yml`. The CoinGecko id of each token belongs to the same contract on CoinGecko.
+- **Explorers:** each explorer reads the public exchange wallets of its chain. The read must give a balance for each token. A balance of 0 is correct, because any wallet can be emptied.
+- **Price providers:** each provider gives a price for each token that has an id for it. A normal run stops at the first provider that gives a price. The live checks ask every provider.
+
+The checks take the chains, explorers, providers and tokens from the registries and `src/tokens.yml`, so a new one is checked without a change to the test. The test reads only the wallets in `test/live/registries.live.ts`, and test names show them as short addresses.
+
+The `Live checks` workflow runs them every Monday, on demand, and on pull requests that change the tokens, a chain, a price provider or the checks. It is not a required check: a service that is down for a short time must not block other work. A failed weekly run tells you that a contract, an API or a price id changed.
+
+The file ends in `.live.ts`, so `npm test` and the image build do not run it.
+
 ### Record a fixture
 
 1. Call the API with one of the public exchange wallets. Use only these wallets:
@@ -129,7 +144,8 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 4. Add the native token, and popular tokens, to `src/tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
-7. Add the chain to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 chains.
+7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a reader of contract decimals to `CONTRACT_DECIMALS`, and the CoinGecko platform id to `COINGECKO_PLATFORMS`. The [live checks](#live-checks) fail until you do.
+8. Add the chain to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 chains.
 
 ## Add an explorer
 
@@ -167,8 +183,9 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 3. Find the id at each price provider. On CoinGecko, check that the contract on the token page is the same contract.
 4. Add the token to `src/tokens.yml`. Put the links that you checked in the pull request.
 5. Add the token to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 tokens.
+6. Run `npm run test:live`. It checks the decimals on chain and the CoinGecko id of the new token. The pull request runs it too.
 
-The tests of `src/tokens.yml` check its rules, for example that each contract is a valid address and each token has a CoinGecko id. They do not check its contents, so a new token needs no new test.
+The unit tests of `src/tokens.yml` check its rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) check its contents against the real services, so a new token needs no new test.
 
 A new built-in token can break a config that already defines a token with the same symbol in `tokens:`. The changelog must tell users. See [Breaking changes](../CODE_REVIEW_GUIDELINES.md#breaking-changes).
 
