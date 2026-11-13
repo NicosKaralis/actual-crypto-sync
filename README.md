@@ -28,24 +28,7 @@ The note of each transaction shows the balance, the change since the last run an
 
 The tool runs once and exits. Run it on a schedule, for example with cron or a Kubernetes CronJob. [What the tool writes](docs/configuration.md#what-the-tool-writes) tells you more about the transactions.
 
-If you want to contribute, read [CONTRIBUTING.md](CONTRIBUTING.md). We would love to have you.
-
-Want to say thanks? Click the ⭐ at the top of the page.
-
-## Key Links
-
-- [Installation](docs/installation.md): the image tags, and how to run the tool with cron, Docker Compose or Kubernetes.
-- [Configuration](docs/configuration.md): each setting, and the errors that you can see.
-- [Authentication](docs/authentication.md): how the tool logs in to Actual.
-- [Supported](docs/supported.md): all the chains, tokens, block explorers and price providers.
-- [Development](docs/development.md): set up the project, test it, and add a chain, explorer, price provider or token.
-- [Logs, metrics and traces](docs/monitoring.md): the log format, the metrics and the traces, for monitoring and alerts.
-- [Discussions](https://github.com/NicosKaralis/actual-crypto-sync/discussions/categories/q-a) for questions.
-- [Issues](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) for bugs and requests.
-- [Milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) for the work planned for each version, and the [roadmap](ROADMAP.md) for the ideas for later.
-- [Actual Budget documentation](https://actualbudget.org/docs).
-
-## Supported
+### Supported
 
 Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
 
@@ -106,6 +89,19 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64. [d
 
 Set `TZ` to your time zone. The date of the transaction is "today" in that time zone, and the image uses UTC if you do not set it.
 
+## Key Links
+
+- [Installation](docs/installation.md): the image tags, and how to run the tool with cron, Docker Compose or Kubernetes.
+- [Configuration](docs/configuration.md): each setting, and the errors that you can see.
+- [Authentication](docs/authentication.md): how the tool logs in to Actual.
+- [Supported](docs/supported.md): all the chains, tokens, block explorers and price providers.
+- [Development](docs/development.md): set up the project, test it, and add a chain, explorer, price provider or token.
+- [Logs, metrics and traces](docs/monitoring.md): the log format, the metrics and the traces, for monitoring and alerts.
+- [Discussions](https://github.com/NicosKaralis/actual-crypto-sync/discussions/categories/q-a) for questions.
+- [Issues](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) for bugs and requests.
+- [Milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) for the work planned for each version, and the [roadmap](ROADMAP.md) for the ideas for later.
+- [Actual Budget documentation](https://actualbudget.org/docs).
+
 ## Getting Help
 
 - **A question:** ask in [Discussions](https://github.com/NicosKaralis/actual-crypto-sync/discussions/categories/q-a).
@@ -132,10 +128,12 @@ All participants must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 To ask for a new feature, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To ask for a new chain, block explorer, price provider or token, open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form. The [milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) show the work planned for each version, and the [roadmap](ROADMAP.md) shows the ideas for later. To show that you want an existing request, add a 👍 reaction to its first comment.
 
-## AI Use
+### AI Use
 
 This project is built with a lot of help from AI, mostly Claude Code, and AI-assisted contributions are welcome. See [AI, Claude Code and other agents](CONTRIBUTING.md#ai-claude-code-and-other-agents) for what that means.
 
 ## License
 
 [MIT](LICENSE)
+
+Want to say thanks? Click the ⭐ at the top of the page.
