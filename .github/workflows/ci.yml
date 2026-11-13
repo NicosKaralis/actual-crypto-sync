@@ -90,6 +90,16 @@ jobs:
           cache-from: type=gha,scope=test
           cache-to: type=gha,scope=test,mode=max
 
+  # A real Actual server and a mock of the explorers and price provider, in the throwaway
+  # stack of test/e2e/compose.yml. The same command runs it locally.
+  e2e:
+    name: End-to-end tests
+    needs: test
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: npm run test:e2e
+
   image:
     name: Image (${{ matrix.arch }})
     strategy:
