@@ -31,6 +31,36 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # The milestone of a version, for example v1.0.0, holds the issues planned for it.
+  milestone:
+    name: Close the milestone
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-26.04
+    permissions:
+      issues: write
+    steps:
+      - name: Close the milestone of the released version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          # $ENV.TAG is read by jq, not by the shell.
+          # shellcheck disable=SC2016
+          milestone=$(gh api "repos/$GH_REPO/milestones?state=open&per_page=100" \
+            --jq '.[] | select(.title == $ENV.TAG) | "\(.number) \(.open_issues)"')
+          if [ -z "$milestone" ]; then
+            echo "No open milestone $TAG."
+            exit 0
+          fi
+          read -r number open <<< "$milestone"
+          if [ "$open" -gt 0 ]; then
+            echo "::warning::Milestone $TAG has $open open issues. Move them to another milestone."
+          fi
+          gh api -X PATCH "repos/$GH_REPO/milestones/$number" -f state=closed --silent
+          echo "Closed milestone $TAG."
+
   # A tag pushed with GITHUB_TOKEN doesn't start other workflows, so the image is built from here.
   image:
     name: Image
