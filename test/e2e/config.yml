@@ -1,5 +1,5 @@
 # The e2e budget, seeded by test/e2e/run.e2e.ts with dev/seed.ts. The explorers
-# and the price provider point at the test's mock server through api_url.
+# and the price providers point at the test's mock server through api_url.
 # The wallets are public exchange wallets, the same as in the unit tests.
 
 actual:
@@ -13,6 +13,8 @@ prices:
   providers:
     - coingecko:
         api_url: ${MOCK_URL}/coingecko
+    - coinpaprika:
+        api_url: ${MOCK_URL}/coinpaprika
 
 chains:
   tron:

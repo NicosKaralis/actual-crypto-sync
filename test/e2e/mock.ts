@@ -1,4 +1,4 @@
-// A stand-in for TronGrid, mempool.space and CoinGecko, run inside the e2e
+// A stand-in for TronGrid, mempool.space, CoinGecko and CoinPaprika, run inside the e2e
 // test process. It answers from the recorded responses in test/fixtures/, and
 // the tests change its state between runs. The e2e config points each
 // explorer and provider at it through api_url: <url>/trongrid, and so on.
@@ -13,7 +13,16 @@ export interface MockState {
   extraSun: number;
   /** When set, CoinGecko answers with this HTTP status and its rate-limit body. */
   coingeckoStatus: number | null;
+  /** When set, CoinPaprika answers with this HTTP status and its error body. */
+  coinpaprikaStatus: number | null;
 }
+
+/** CoinPaprika's EUR price of each id it knows; other ids answer 404. */
+export const COINPAPRIKA_PRICES: Record<string, number> = {
+  'trx-tron': 0.2836451012079849,
+  'usdt-tether': 0.9042,
+  'btc-bitcoin': 62519,
+};
 
 export interface Mock {
   /** The base URL, reachable from the test process and the processes it starts. */
@@ -25,7 +34,7 @@ export interface Mock {
 }
 
 export async function startMock(): Promise<Mock> {
-  const state: MockState = { extraSun: 0, coingeckoStatus: null };
+  const state: MockState = { extraSun: 0, coingeckoStatus: null, coinpaprikaStatus: null };
   const requests: string[] = [];
 
   const server = createServer((request, response) => {
@@ -64,6 +73,24 @@ function answer(path: string, state: MockState): [number, unknown] {
     return state.coingeckoStatus === null
       ? [200, fixture('coingecko/simple-price.json')]
       : [state.coingeckoStatus, { status: { error_code: state.coingeckoStatus } }];
+  }
+  if (path.startsWith('/coinpaprika/tickers/')) {
+    if (state.coinpaprikaStatus !== null) {
+      return [state.coinpaprikaStatus, { error: 'you have reached maximum request limit' }];
+    }
+    const id = decodeURIComponent(path.slice('/coinpaprika/tickers/'.length));
+    const price = COINPAPRIKA_PRICES[id];
+    if (price === undefined) {
+      return [404, { error: 'id not found' }];
+    }
+    // The recorded ticker, with this id's price.
+    const body = structuredClone(fixture('coinpaprika/ticker.json')) as {
+      id: string;
+      quotes: { EUR: { price: number } };
+    };
+    body.id = id;
+    body.quotes.EUR.price = price;
+    return [200, body];
   }
   return [404, { error: `no mock for ${path}` }];
 }
