@@ -25,6 +25,7 @@ const CURRENCIES = new Set(
 export const coinpaprika: PriceProvider = {
   id: ID,
   supportsCurrency: (currency) => CURRENCIES.has(currency),
+  settingKeys: ['api_url'],
   // The API allows 10 requests a second.
   serialIntervalMs: 100,
   rateLimitAdvice(error) {

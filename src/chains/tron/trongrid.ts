@@ -12,6 +12,7 @@ const DEFAULT_API_URL = 'https://api.trongrid.io';
 export const trongrid: Explorer = {
   id: ID,
   supportsContracts: true,
+  settingKeys: ['api_url', 'api_key'],
   // Without a key TronGrid allows one request a second, and suspends a caller
   // that sends more for 5 s.
   serialIntervalMs: 1000,

@@ -141,6 +141,7 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
    - its explorers, and the default explorer list.
 2. Add at least one explorer. See [Add an explorer](#add-an-explorer).
 3. Register the chain in `src/chains/index.ts`.
+   Add it to `config.schema.json`: under `chains`, to the chains of `accounts`, and to the chains of `tokens` if it has tokens. The schema tests fail until you do.
 4. Add the native token, and popular tokens, to `src/tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
@@ -154,10 +155,12 @@ Open an issue with the [new explorer form](https://github.com/NicosKaralis/actua
 1. Create `src/chains/<chain>/<explorer>.ts`. Export an `Explorer` (see `src/types.ts`):
    - `getBalances` reads all the tokens of one wallet, in one request if the API allows it. It returns raw integer balances as `bigint`, by token symbol. The response is `unknown`: check each field before you use it.
    - `supportsContracts` is `true` only if the explorer reads contract tokens.
+   - `settingKeys` lists its settings in the config, for example `api_url`. The config refuses any other setting.
    - `serialIntervalMs` is the wait after each request in serial mode. Use the rate limit of the API without a key.
    - `rateLimitAdvice` tells the user what to do when the API limits requests, or returns `null` for other errors.
 2. Use `getJson`, `apiUrl` and `ApiError` from `src/http.ts`. Errors must never show the URL, the headers or the body, because they can hold a wallet address or a key.
 3. Register the explorer in the `explorers` of its chain.
+   Add it, with its settings, to the `explorers` of its chain in `config.schema.json`. The schema tests fail until you do.
 4. Record fixtures, and test the parse of the response, each error, and `rateLimitAdvice`.
 5. Add the explorer to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 explorers.
 
@@ -168,8 +171,9 @@ Open an issue with the [new price provider form](https://github.com/NicosKaralis
 1. Create `src/prices/<provider>.ts`. Export a `PriceProvider` (see `src/types.ts`):
    - `supportsCurrency` says which currencies the provider has prices in. The currency is a lowercase ISO 4217 code. If the API names currencies in another way, map them here.
    - `getQuotes` gets the prices of all the tokens in one request if the API allows it. It leaves out the tokens without a price.
-   - `serialIntervalMs` and `rateLimitAdvice`, as for an explorer.
+   - `settingKeys`, `serialIntervalMs` and `rateLimitAdvice`, as for an explorer.
 2. Register the provider in `src/prices/index.ts`.
+   Add it, with its settings, to `providers` and `price_ids` in `config.schema.json`. The schema tests fail until you do.
 3. Add the id of each built-in token at the provider to `price_ids` in `src/tokens.yml`.
 4. Record fixtures, and test the currency mapping, the parse of the response and each error.
 5. Add the provider to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
@@ -186,8 +190,6 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 6. Run `npm run test:live`. It checks the decimals on chain and the CoinGecko id of the new token. The pull request runs it too.
 
 The unit tests of `src/tokens.yml` check its rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) check its contents against the real services, so a new token needs no new test.
-
-A new built-in token can break a config that already defines a token with the same symbol in `tokens:`. The changelog must tell users. See [Breaking changes](../CODE_REVIEW_GUIDELINES.md#breaking-changes).
 
 ## How a release happens
 

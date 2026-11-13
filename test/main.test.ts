@@ -30,6 +30,7 @@ function explorer(id: string, calls: string[], failFor: string[] = []): Explorer
   return {
     id,
     supportsContracts: true,
+    settingKeys: [],
     serialIntervalMs: 0,
     rateLimitAdvice: () => null,
     getBalances: async ({ wallet, tokens }) => {
@@ -52,6 +53,7 @@ function provider(
   return {
     id,
     supportsCurrency: () => true,
+    settingKeys: [],
     serialIntervalMs: 0,
     rateLimitAdvice: () => null,
     getQuotes: async ({ tokens, currency }) => {

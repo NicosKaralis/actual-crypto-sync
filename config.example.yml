@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json
 # actual-crypto-sync config. Every key is shown; the commented ones are optional.
 #
 # Secrets never go in this file: write ${NAME} and the value is read from the
@@ -59,7 +60,7 @@ chains:                                        # optional, settings per chain
 
 tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
-    symbol: WTRX                               # what accounts use as token:; can't reuse a built-in name
+    symbol: WTRX                               # what accounts use as token:; replaces a built-in token of that name
     contract: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR  # the token's contract address
     decimals: 6                                # the contract's decimals
     # display_decimals: 8                      # decimals shown in notes (default: decimals, at most 8)

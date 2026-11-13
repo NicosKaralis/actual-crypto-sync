@@ -12,6 +12,20 @@ The tool reads the config from the first of these:
 2. The `CONFIG_FILE` environment variable.
 3. `/config/config.yml`.
 
+## Check the file in your editor
+
+[`config.schema.json`](../config.schema.json) is a JSON Schema for the config. An editor with YAML support uses it to check the file and to complete the keys while you type. It knows the chains, the explorers, the price providers and the settings of each one. An account can name any token: the tool checks that its chain has it.
+
+For VS Code, install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) by Red Hat. Then put this line at the top of your config file, as in `config.example.yml`:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json
+```
+
+Other editors that use the YAML language server read the same line, for example Neovim and Zed. JetBrains IDEs can map the schema to the file in their JSON Schema settings.
+
+The schema checks the shape of the file. The tool checks more when it starts: the `${VAR}` values, the addresses, the tokens of accounts, the currency and duplicates. So a file that the editor accepts can still give an error. The schema on `main` is for the latest release.
+
 ## Secrets and `${VAR}`
 
 Do not write secrets in the config file. Write `${NAME}`, and the tool reads the value from the environment variable `NAME` when it starts.
@@ -170,6 +184,8 @@ Each explorer and provider also has its own settings:
 | `coingecko`     | Price provider   | `pro_api_key`  |                                    | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`. |
 | `coinpaprika`   | Price provider   | `api_url`      | `https://api.coinpaprika.com/v1`   | The CoinPaprika API.                                                                                          |
 
+Any other setting is an error, so a misspelled setting cannot be ignored without a message.
+
 CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind with its own header, and a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
 
 In serial mode, the wait after each request is:
@@ -222,7 +238,7 @@ tokens:
 | `display_decimals` | No       | `decimals`, but at most 8 | The decimals in the notes. At most `decimals`.                              |
 | `price_ids`        | Yes      |                           | The id of the token at each price provider. At least one.                   |
 
-A token in `tokens` cannot use the symbol of a built-in token on the same chain. Thus, a token cannot get the price of the real token by mistake. Two tokens on one chain cannot have the same symbol or the same contract.
+A token in `tokens` can have the symbol of a built-in token on the same chain. It then replaces the built-in token in your config, with its own contract, decimals and price ids. Two tokens in `tokens` on one chain cannot have the same symbol or the same contract.
 
 ### Add a token safely
 
@@ -311,25 +327,25 @@ The tool checks all of the config before it connects to Actual. If the config ha
 
 These are the errors that you can see most often:
 
-| Error                                                                                   | What to do                                                                  |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `config: can't read /config/config.yml (ENOENT)`                                        | Mount the file at that path, or set `--config` or `CONFIG_FILE`.            |
-| `<path>: unknown key; expected ...`                                                     | Correct the spelling of the key. The error lists the correct keys.          |
-| `<path>: required`                                                                      | Add the key.                                                                |
-| `<path>: environment variable NAME is not set`                                          | Set the variable for the tool, for example in your Secret or env file.      |
-| `actual.auth: set one of session, password, api_key`                                    | Add one login method. See [docs/authentication.md](authentication.md).      |
-| `actual.auth: set only one of session, password, api_key; found ...`                    | Remove all methods but one.                                                 |
-| `actual.auth.<method>: use ${VAR}, never the secret itself`                             | Put the secret in an environment variable, and write `${NAME}` in the file. |
-| `prices.currency: "..." isn't an ISO 4217 currency code`                                | Use a 3-letter code, for example `eur`.                                     |
-| `prices.currency: "..." isn't supported by ...`                                         | Use another currency, or add a provider that supports it.                   |
-| `<path>: unknown explorer "..." for tron; supported: ...`                               | Use one of the listed explorers.                                            |
-| `<path>: unknown price provider "..."; supported: ...`                                  | Use one of the listed providers.                                            |
-| `accounts[N].token: "..." isn't built in on tron; define it in tokens:`                 | Add the token to `tokens`, or correct the symbol.                           |
-| `tokens[N].symbol: "..." is built in on tron; remove it from tokens:`                   | Remove the entry. Accounts can use the built-in token by its symbol.        |
-| `accounts[N].token: none of the listed price providers (...) has a price id for ...`    | Add a `price_ids` entry for one of your providers.                          |
-| `accounts[N].wallets[0]: not a valid tron address`                                      | Correct the address. The error does not show it.                            |
-| `accounts[N].wallets: several wallets per account isn't supported yet (see ROADMAP.md)` | Use one wallet per account. See the [roadmap](../ROADMAP.md).               |
-| `accounts[N].name: "..." is already used by accounts[M]`                                | Each account can be in the list one time only.                              |
+| Error                                                                                   | What to do                                                                                      |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `config: can't read /config/config.yml (ENOENT)`                                        | Mount the file at that path, or set `--config` or `CONFIG_FILE`.                                |
+| `<path>: unknown key; expected ...`                                                     | Correct the spelling of the key. The error lists the correct keys.                              |
+| `<path>: unknown setting; expected ...`                                                 | Correct the spelling of the setting. The error lists the settings of that explorer or provider. |
+| `<path>: required`                                                                      | Add the key.                                                                                    |
+| `<path>: environment variable NAME is not set`                                          | Set the variable for the tool, for example in your Secret or env file.                          |
+| `actual.auth: set one of session, password, api_key`                                    | Add one login method. See [docs/authentication.md](authentication.md).                          |
+| `actual.auth: set only one of session, password, api_key; found ...`                    | Remove all methods but one.                                                                     |
+| `actual.auth.<method>: use ${VAR}, never the secret itself`                             | Put the secret in an environment variable, and write `${NAME}` in the file.                     |
+| `prices.currency: "..." isn't an ISO 4217 currency code`                                | Use a 3-letter code, for example `eur`.                                                         |
+| `prices.currency: "..." isn't supported by ...`                                         | Use another currency, or add a provider that supports it.                                       |
+| `<path>: unknown explorer "..." for tron; supported: ...`                               | Use one of the listed explorers.                                                                |
+| `<path>: unknown price provider "..."; supported: ...`                                  | Use one of the listed providers.                                                                |
+| `accounts[N].token: "..." isn't built in on tron; define it in tokens:`                 | Add the token to `tokens`, or correct the symbol.                                               |
+| `accounts[N].token: none of the listed price providers (...) has a price id for ...`    | Add a `price_ids` entry for one of your providers.                                              |
+| `accounts[N].wallets[0]: not a valid tron address`                                      | Correct the address. The error does not show it.                                                |
+| `accounts[N].wallets: several wallets per account isn't supported yet (see ROADMAP.md)` | Use one wallet per account. See the [roadmap](../ROADMAP.md).                                   |
+| `accounts[N].name: "..." is already used by accounts[M]`                                | Each account can be in the list one time only.                                                  |
 
 Errors from the login and the budget download are in [docs/authentication.md](authentication.md#troubleshooting).
 

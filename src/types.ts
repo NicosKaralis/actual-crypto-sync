@@ -38,6 +38,7 @@ export interface EntrySettings {
 export interface Explorer {
   id: string; // 'trongrid', 'mempool-space'
   supportsContracts: boolean; // a native-only explorer is skipped for contract tokens
+  settingKeys: readonly string[]; // its own settings in the config; label and serial work on all
   serialIntervalMs: number; // in serial mode, the wait after each request before the next
   /** When `error` is this API's rate limit, what the user can do about it; null for any other error. */
   rateLimitAdvice(error: unknown, entry: EntrySettings): string | null;
@@ -60,6 +61,7 @@ export interface Quote {
 export interface PriceProvider {
   id: string; // 'coingecko'
   supportsCurrency(currency: Currency): boolean;
+  settingKeys: readonly string[]; // its own settings in the config; label and serial work on all
   serialIntervalMs: number; // in serial mode, the wait after each request before the next
   /** When `error` is this API's rate limit, what the user can do about it; null for any other error. */
   rateLimitAdvice(error: unknown, entry: EntrySettings): string | null;
