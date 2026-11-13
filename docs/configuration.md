@@ -72,7 +72,9 @@ actual:
 prices:
   currency: eur
   providers:
-    - coingecko
+    - coingecko:
+        demo_api_key: ${COINGECKO_API_KEY}
+    - coinpaprika
 ```
 
 | Key         | Required | What it is                                                                              |
@@ -158,20 +160,26 @@ These settings work on all entries:
 
 Each explorer and provider also has its own settings:
 
-| Id              | Kind             | Setting   | Default                            | What it is                                                      |
-| --------------- | ---------------- | --------- | ---------------------------------- | --------------------------------------------------------------- |
-| `trongrid`      | TRON explorer    | `api_url` | `https://api.trongrid.io`          | The TronGrid API.                                               |
-| `trongrid`      | TRON explorer    | `api_key` |                                    | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`. |
-| `mempool-space` | Bitcoin explorer | `api_url` | `https://mempool.space/api`        | Any mempool or Esplora API, for example your own instance.      |
-| `coingecko`     | Price provider   | `api_url` | `https://api.coingecko.com/api/v3` | The CoinGecko API.                                              |
+| Id              | Kind             | Setting        | Default                            | What it is                                                                                                    |
+| --------------- | ---------------- | -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `trongrid`      | TRON explorer    | `api_url`      | `https://api.trongrid.io`          | The TronGrid API.                                                                                             |
+| `trongrid`      | TRON explorer    | `api_key`      |                                    | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`.                                               |
+| `mempool-space` | Bitcoin explorer | `api_url`      | `https://mempool.space/api`        | Any mempool or Esplora API, for example your own instance.                                                    |
+| `coingecko`     | Price provider   | `api_url`      | `https://api.coingecko.com/api/v3` | The CoinGecko API.                                                                                            |
+| `coingecko`     | Price provider   | `demo_api_key` |                                    | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                        |
+| `coingecko`     | Price provider   | `pro_api_key`  |                                    | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`. |
+| `coinpaprika`   | Price provider   | `api_url`      | `https://api.coinpaprika.com/v1`   | The CoinPaprika API.                                                                                          |
+
+CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind with its own header, and a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
 
 In serial mode, the wait after each request is:
 
-| Id              | Wait |
-| --------------- | ---- |
-| `trongrid`      | 1 s  |
-| `mempool-space` | 1 s  |
-| `coingecko`     | 6 s  |
+| Id              | Wait  |
+| --------------- | ----- |
+| `trongrid`      | 1 s   |
+| `mempool-space` | 1 s   |
+| `coingecko`     | 6 s   |
+| `coinpaprika`   | 0.1 s |
 
 ### Rate limits
 
@@ -179,7 +187,8 @@ When an API limits your requests, the tool logs a warning one time for each entr
 
 - TronGrid: add an `api_key`, or set `serial: true`.
 - mempool.space: set `serial: true`, or set `api_url` to your own mempool instance.
-- CoinGecko: run less often, or add another provider after it.
+- CoinGecko: add a free Demo key with `demo_api_key`, run less often, or add another provider after it.
+- CoinPaprika: run less often, or add another provider after it.
 
 The run then continues with the next explorer or provider.
 

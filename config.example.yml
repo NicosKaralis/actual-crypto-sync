@@ -33,9 +33,12 @@ prices:
   providers:                                   # required; tried in order, each a name, or a name with its settings
     - coingecko
     # - coingecko:
+    #     demo_api_key: ${COINGECKO_API_KEY}   # a free Demo key raises the rate limit
+    #     # pro_api_key: ${COINGECKO_API_KEY}  # or a paid Pro key (uses the Pro API); not both
     #     api_url: https://api.coingecko.com/api/v3  # the default
     #     label: coingecko-main                # the name in logs, spans and metric labels (default: the id)
     #     serial: true                         # one request at a time, 6 s apart, if it rate-limits you
+    - coinpaprika                              # asked for the prices that CoinGecko didn't give
 
 chains:                                        # optional, settings per chain
   tron:
