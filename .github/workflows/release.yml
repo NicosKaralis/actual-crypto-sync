@@ -56,6 +56,9 @@ jobs:
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
+          # The commit of the checked-out tag, not the one the workflow runs on (they differ on a
+          # run by hand), for the revision label.
+          context: git
           images: ${{ env.IMAGE }}
           tags: type=semver,pattern={{version}},value=${{ env.TAG }}
       - id: build
@@ -100,6 +103,12 @@ jobs:
           path: ${{ runner.temp }}/digests
           pattern: digest-*
           merge-multiple: true
+      # For the tag's commit: revision and sha-<commit> come from it, as in the build jobs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          sparse-checkout: README.md
+          sparse-checkout-cone-mode: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
@@ -113,6 +122,7 @@ jobs:
           # GHCR reads org.opencontainers.image.source there to link the package to the repo.
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
+          context: git
           images: ${{ env.IMAGE }}
           # <version>, <major>.<minor>, <major>, sha-<commit> and latest (latest only for stable versions).
           tags: |
