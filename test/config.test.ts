@@ -819,11 +819,17 @@ describe('loadConfig: tokens', () => {
     );
   });
 
-  test("a tokens: entry can't reuse a built-in symbol", () => {
-    assertConfigError(
-      () => load((raw) => Object.assign(raw, { tokens: [{ ...customToken, symbol: 'USDT' }] })),
-      'tokens[0].symbol: "USDT" is built in on tron; remove it from tokens:',
+  test('a tokens: entry with a built-in symbol replaces the built-in token', () => {
+    // Even with the built-in contract: only the custom tokens must differ.
+    const usdt = { ...customToken, symbol: 'USDT', contract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' };
+    const config = load((raw) =>
+      Object.assign(raw, {
+        tokens: [usdt],
+        accounts: [{ name: 'USDT', chain: 'tron', token: 'USDT', wallets: '${TRON_WALLET}' }],
+      }),
     );
+    assert.deepEqual(config.accounts[0]?.token.priceIds, { coingecko: 'xyz-token' });
+    assert.equal(config.accounts[0]?.token.decimals, 18);
   });
 
   test('symbols are upper-case letters and digits, as notes need', () => {
@@ -884,7 +890,7 @@ describe('loadConfig: tokens', () => {
 describe('config.example.yml', () => {
   test('loads, with the env it names set', async () => {
     const text = await readFile(new URL('../config.example.yml', import.meta.url), 'utf8');
-    // The real registries: a tokens: entry there must not reuse a built-in symbol.
+    // The real registries, as the tool loads it.
     const config = loadConfig(text, {
       ACTUAL_BUDGET_SYNC_ID: ENV.SYNC_ID,
       ACTUAL_SESSION_TOKEN: SESSION,

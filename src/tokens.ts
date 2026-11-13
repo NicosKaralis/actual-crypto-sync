@@ -167,9 +167,10 @@ export function resolveToken(
   customTokens: readonly Token[],
   builtins: readonly Token[] = BUILTIN_TOKENS,
 ): Token {
+  // A custom token with a built-in symbol replaces the built-in one.
   const token =
-    findBuiltinToken(chain, symbol, builtins) ??
-    customTokens.find((custom) => custom.chain === chain && custom.symbol === symbol);
+    customTokens.find((custom) => custom.chain === chain && custom.symbol === symbol) ??
+    findBuiltinToken(chain, symbol, builtins);
   if (!token) {
     throw new Error(`"${symbol}" isn't built in on ${chain}; define it in tokens:`);
   }

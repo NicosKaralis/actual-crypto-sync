@@ -220,6 +220,11 @@ describe('resolveToken', () => {
     assert.equal(resolveToken('tron', 'XYZ', [CUSTOM], fakeTokens), CUSTOM);
   });
 
+  test('a custom token with a built-in symbol wins over the built-in one', () => {
+    const usdt: Token = { ...CUSTOM, symbol: 'USDT' };
+    assert.equal(resolveToken('tron', 'USDT', [usdt], fakeTokens), usdt);
+  });
+
   test("a symbol on another chain isn't found", () => {
     assert.throws(
       () => resolveToken('bitcoin', 'USDT', [CUSTOM], fakeTokens),
