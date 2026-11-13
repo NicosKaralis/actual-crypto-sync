@@ -37,7 +37,7 @@ The tool runs once and exits. Run it on a schedule, for example with cron or a K
 Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
 
 - **Chains:** TRON (TRX), Bitcoin (BTC)
-- **Built-in tokens:** TRX, USDT, BTC
+- **Built-in tokens:** USDT, WBTC, WETH, USDD, SUNDOG [and more](docs/supported.md#built-in-tokens)
 - **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance)
 - **Price providers:** CoinGecko
 

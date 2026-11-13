@@ -197,11 +197,11 @@ To use another token, add it to `tokens`:
 ```yaml
 tokens:
   - chain: tron
-    symbol: SUNDOG
-    contract: TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT
-    decimals: 18
+    symbol: WTRX
+    contract: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR
+    decimals: 6
     price_ids:
-      coingecko: sundog
+      coingecko: wrapped-tron
 ```
 
 | Key                | Required | Default                   | What it is                                                                  |
@@ -221,7 +221,7 @@ Many fake tokens copy the name and symbol of a real token. Before you add a toke
 
 1. Find the contract on a block explorer, for example [Tronscan](https://tronscan.org) for TRON. Make sure that it is the real token, not a copy.
 2. Copy the decimals from the contract page.
-3. Find the token on CoinGecko. Make sure that the contract on the CoinGecko page is the same contract. The id is in the URL of the page, for example `sundog` in `coingecko.com/en/coins/sundog`.
+3. Find the token on CoinGecko. Make sure that the contract on the CoinGecko page is the same contract. The id is in the URL of the page, for example `wrapped-tron` in `coingecko.com/en/coins/wrapped-tron`.
 
 If you think that other users want the token, ask for it to be built in with the [new token form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-token.yml).
 
@@ -240,7 +240,7 @@ accounts:
 | --------- | -------- | ----------------------------------------------------------------------------------------- |
 | `name`    | Yes      | The Actual account, by its name or its id. Each account can be in the list one time only. |
 | `chain`   | Yes      | `tron` or `bitcoin`.                                                                      |
-| `token`   | Yes      | A built-in token, or a token from `tokens`.                                               |
+| `token`   | Yes      | The chain's coin (TRX or BTC), a built-in token, or a token from `tokens`.                |
 | `wallets` | Yes      | The wallet address. In v1.0, one wallet per account.                                      |
 
 The account in Actual must be open and off budget. Each account holds one token on one chain. For TRX and USDT on the same wallet, make two accounts.
