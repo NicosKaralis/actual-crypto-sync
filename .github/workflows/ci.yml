@@ -26,7 +26,8 @@ jobs:
       - run: npx biome ci .
       - run: npx tsc
 
-  # Git flow: main only takes develop, a release or hotfix branch, or Release Please's PR.
+  # Git flow: main only takes develop, a release or hotfix branch, Release Please's PR, or
+  # Renovate's Actual update (renovate/main-*; Renovate updates nothing else on main).
   # GitHub opens pull requests against main, the default branch, so this catches the rest.
   base:
     name: Base branch
@@ -44,7 +45,7 @@ jobs:
           fi
           if [ "$SAME_REPO" = true ]; then
             case "$HEAD" in
-              develop | release/* | hotfix/* | release-please--*) exit 0 ;;
+              develop | release/* | hotfix/* | release-please--* | renovate/main-*) exit 0 ;;
             esac
           fi
           echo "::error::Pull requests go into develop. Change the base branch of this pull request to develop."

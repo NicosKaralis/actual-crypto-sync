@@ -7,7 +7,7 @@
     "docker:pinDigests",
     ":semanticCommits"
   ],
-  "baseBranchPatterns": ["develop"],
+  "baseBranchPatterns": ["develop", "main"],
   "labels": ["dependencies"],
   "packageRules": [
     {
@@ -16,14 +16,44 @@
       "groupName": "Node.js"
     },
     {
-      "description": "@actual-app/api and the actual-server image (dev stack, e2e) move together; the README names the supported version",
+      "description": "@actual-app/api and the actual-server image (dev stack, e2e) move together, with the Actual version in the README",
       "matchPackageNames": [
         "@actual-app/api",
         "actualbudget/actual-server",
         "docker.io/actualbudget/actual-server"
       ],
-      "groupName": "Actual",
-      "automerge": false
+      "groupName": "Actual"
+    },
+    {
+      "description": "main gets only the Actual updates; everything else goes to develop",
+      "matchBaseBranches": ["main"],
+      "enabled": false
+    },
+    {
+      "description": "Each new Actual version goes straight to main as a fix, so Release Please releases it as a patch version. Renovate opens the PR once the version is 1 day old, and merges it when the checks pass",
+      "matchBaseBranches": ["main"],
+      "matchPackageNames": [
+        "@actual-app/api",
+        "actualbudget/actual-server",
+        "docker.io/actualbudget/actual-server"
+      ],
+      "enabled": true,
+      "automerge": true,
+      "automergeStrategy": "merge-commit",
+      "minimumReleaseAge": "1 day",
+      "internalChecksFilter": "strict",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "develop gets the Actual updates from main, when the patch release merges back",
+      "matchBaseBranches": ["develop"],
+      "matchPackageNames": [
+        "@actual-app/api",
+        "actualbudget/actual-server",
+        "docker.io/actualbudget/actual-server"
+      ],
+      "enabled": false
     },
     {
       "description": "OpenTelemetry packages require matching versions of each other (api, SDK, exporters, instrumentations), so they move together",
@@ -48,6 +78,18 @@
       "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
       "matchStrings": ["runner:\\s*(?<depName>ubuntu)-(?<currentValue>\\d+\\.\\d+)"],
       "datasourceTemplate": "github-runners"
+    },
+    {
+      "customType": "regex",
+      "description": "The Actual version in the README: the badge (URL and alt text) and the tested-with line",
+      "managerFilePatterns": ["/^README\\.md$/"],
+      "matchStrings": [
+        "img\\.shields\\.io/badge/Actual-(?<currentValue>\\d+\\.\\d+\\.\\d+)-",
+        "alt=\"Actual server (?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
+        "tested with Actual server \\*\\*(?<currentValue>\\d+\\.\\d+\\.\\d+)\\*\\*"
+      ],
+      "depNameTemplate": "@actual-app/api",
+      "datasourceTemplate": "npm"
     }
   ]
 }
