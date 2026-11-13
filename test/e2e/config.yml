@@ -1,0 +1,41 @@
+# The e2e budget, seeded by test/e2e/run.e2e.ts with dev/seed.ts. The explorers
+# and the price provider point at the test's mock server through api_url.
+# The wallets are public exchange wallets, the same as in the unit tests.
+
+actual:
+  server_url: ${ACTUAL_SERVER_URL}
+  sync_id: ${ACTUAL_BUDGET_SYNC_ID}
+  auth:
+    session: ${ACTUAL_SESSION_TOKEN}
+
+prices:
+  currency: eur
+  providers:
+    - coingecko:
+        api_url: ${MOCK_URL}/coingecko
+
+chains:
+  tron:
+    explorers:
+      - trongrid:
+          api_url: ${MOCK_URL}/trongrid
+  bitcoin:
+    explorers:
+      - mempool-space:
+          api_url: ${MOCK_URL}/mempool-space
+
+accounts:
+  - name: "TRON: TRX"
+    chain: tron
+    token: TRX
+    wallets: TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
+
+  - name: "TRON: USDT"
+    chain: tron
+    token: USDT
+    wallets: TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
+
+  - name: Bitcoin
+    chain: bitcoin
+    token: BTC
+    wallets: bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v
