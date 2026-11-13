@@ -41,6 +41,8 @@ export interface Explorer {
   serialIntervalMs: number; // in serial mode, the wait after each request before the next
   /** When `error` is this API's rate limit, what the user can do about it; null for any other error. */
   rateLimitAdvice(error: unknown, entry: EntrySettings): string | null;
+  /** Optional: a problem with the entry's settings, as a config error; null when they're fine. */
+  checkSettings?(settings: Record<string, string>): string | null;
   /** One wallet, one request where the API allows it; raw integer balances keyed by token symbol. */
   getBalances(req: {
     wallet: Wallet;
@@ -61,6 +63,8 @@ export interface PriceProvider {
   serialIntervalMs: number; // in serial mode, the wait after each request before the next
   /** When `error` is this API's rate limit, what the user can do about it; null for any other error. */
   rateLimitAdvice(error: unknown, entry: EntrySettings): string | null;
+  /** Optional: a problem with the entry's settings, as a config error; null when they're fine. */
+  checkSettings?(settings: Record<string, string>): string | null;
   /** Every token in one call where the API allows it; tokens it can't price are left out. */
   getQuotes(req: {
     tokens: Token[]; // only tokens with a priceIds entry for this provider

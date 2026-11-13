@@ -12,64 +12,78 @@ tron:
     decimals: 6
     price_ids:
       coingecko: tron
+      coinpaprika: trx-tron
   - symbol: USDT
     contract: TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
     decimals: 6
     price_ids:
       coingecko: tether
+      coinpaprika: usdt-tether
   - symbol: USDD
     contract: TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz
     decimals: 18
     price_ids:
       coingecko: usdd
+      coinpaprika: usdd-usdd
   - symbol: TUSD
     contract: TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4
     decimals: 18
     price_ids:
       coingecko: true-usd
+      coinpaprika: tusd-trueusd
   - symbol: USD1
     contract: TPFqcBAaaUMCSVRCqPaQ9QnzKhmuoLR6Rc
     decimals: 18
     price_ids:
       coingecko: usd1-wlfi
+      coinpaprika: usd1-usd1
   - symbol: WBTC
     contract: TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9
     decimals: 8
     price_ids:
       coingecko: bitcoin-trc20
+      coinpaprika: btct-bitcoin-trc20
   - symbol: WETH
     contract: THb4CqiFdwNHsWsQCs4JhzwjMWys4aqCbF
     decimals: 18
     price_ids:
       coingecko: weth
+      # CoinPaprika has no TRON contract for WETH: its general WETH, as CoinGecko's weth.
+      coinpaprika: weth-weth
   - symbol: JST
     contract: TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9
     decimals: 18
     price_ids:
       coingecko: just
+      coinpaprika: jst-just
   - symbol: SUN
     contract: TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S
     decimals: 18
     price_ids:
       coingecko: sun-token
+      coinpaprika: sun-sun
   - symbol: BTT
     contract: TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4
     decimals: 18
     price_ids:
       coingecko: bittorrent
+      coinpaprika: bttc-bittorrent-chain
   - symbol: WIN
     contract: TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7
     decimals: 6
     price_ids:
       coingecko: wink
+      coinpaprika: win-winklink
   - symbol: SUNDOG
     contract: TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT
     decimals: 18
     price_ids:
       coingecko: sundog
+      coinpaprika: sundog-sundog
 
 bitcoin:
   - symbol: BTC
     decimals: 8
     price_ids:
       coingecko: bitcoin
+      coinpaprika: btc-bitcoin

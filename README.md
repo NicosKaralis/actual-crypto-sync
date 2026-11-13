@@ -39,7 +39,7 @@ Popular tokens are built in, so you need only their symbol in the config. Any ot
 - **Chains:** TRON (TRX), Bitcoin (BTC)
 - **Built-in tokens:** USDT, WBTC, WETH, USDD, SUNDOG [and more](docs/supported.md#built-in-tokens)
 - **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance)
-- **Price providers:** CoinGecko
+- **Price providers:** CoinGecko, CoinPaprika
 
 The [full list](docs/supported.md) has the ids, the contracts and the currencies.
 

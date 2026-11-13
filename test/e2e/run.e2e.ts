@@ -25,7 +25,7 @@ import { parseNote } from '../../src/format.ts';
 import { createLog } from '../../src/log.ts';
 import { run } from '../../src/main.ts';
 import { startTelemetry } from '../../src/telemetry.ts';
-import { type Mock, startMock } from './mock.ts';
+import { COINPAPRIKA_PRICES, type Mock, startMock } from './mock.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CONFIG = join(ROOT, 'test/e2e/config.yml');
@@ -230,9 +230,33 @@ describe('e2e', () => {
     assert.equal(accounts.get('TRON: USDT')?.[1]?.amount, 0, 'no change, no amount');
   });
 
-  test('a price provider failure exits 1 and changes nothing', async () => {
+  test('when CoinGecko is rate limited, CoinPaprika gives the prices', async () => {
+    mock.state.coingeckoStatus = 429;
+    try {
+      const { code, entries } = await sync({ now: DAY3, dryRun: true });
+      assert.equal(code, 0);
+      assert.ok(
+        entries.some(
+          (e) => e.level === 'warn' && String(e.msg).startsWith('coingecko is rate limiting'),
+        ),
+      );
+      const writes = messages(entries, 'dry run: would create a transaction');
+      assert.equal(writes.length, ACCOUNTS.length);
+      assert.ok(writes.every((e) => e.source === 'coinpaprika'));
+      const usdt = writes.find((e) => e.account === 'TRON: USDT');
+      assert.match(
+        String(usdt?.note),
+        new RegExp(`@ ${COINPAPRIKA_PRICES['usdt-tether']} EUR/USDT`),
+      );
+    } finally {
+      mock.state.coingeckoStatus = null;
+    }
+  });
+
+  test('every price provider failing exits 1 and changes nothing', async () => {
     const before = await budget();
     mock.state.coingeckoStatus = 429;
+    mock.state.coinpaprikaStatus = 429;
     try {
       const { code, entries } = await sync({ now: DAY3 });
       assert.equal(code, 1);
@@ -243,6 +267,7 @@ describe('e2e', () => {
       );
     } finally {
       mock.state.coingeckoStatus = null;
+      mock.state.coinpaprikaStatus = null;
     }
     assert.deepEqual(await budget(), before);
   });

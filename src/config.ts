@@ -254,7 +254,7 @@ class Loader {
    * and one-key maps of name to settings. Repeats are labelled `id#2`, `id#3`
    * unless they set `label`. `serial` puts the entry in serial mode (C27).
    */
-  entries<T>(
+  entries<T extends Pick<PriceProvider, 'checkSettings'>>(
     value: unknown,
     path: string,
     noun: string,
@@ -297,6 +297,10 @@ class Loader {
         id = this.nonEmpty(entry, entryPath);
       }
       const item = lookup(id, entryPath);
+      const problem = item.checkSettings?.(settings);
+      if (problem) {
+        throw new ConfigError(`${entryPath}.${id}`, problem);
+      }
       if (
         result.some(
           (other) =>
