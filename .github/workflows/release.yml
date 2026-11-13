@@ -22,7 +22,8 @@ permissions:
   contents: read
 
 env:
-  # The build jobs push here by digest; the manifest job copies them to each registry.
+  # The build jobs push here by digest; the manifest job builds the index here, and the
+  # dockerhub job copies it to Docker Hub.
   IMAGE: ghcr.io/nicoskaralis/actual-crypto-sync
   TAG: ${{ inputs.tag || github.ref_name }}
 
@@ -55,6 +56,9 @@ jobs:
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
+          # The commit of the checked-out tag, not the one the workflow runs on (they differ on a
+          # run by hand), for the revision label.
+          context: git
           images: ${{ env.IMAGE }}
           tags: type=semver,pattern={{version}},value=${{ env.TAG }}
       - id: build
@@ -82,45 +86,35 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # One multi-arch index per registry, in parallel: both start from the digests on GHCR,
-  # so a failure on Docker Hub doesn't stop GHCR.
+  # The multi-arch index, built once on GHCR from the per-arch digests.
   manifest:
-    name: Multi-arch manifest (${{ matrix.registry }})
+    name: Multi-arch manifest
     needs: build
     runs-on: ubuntu-26.04
-    # Holds the Docker Hub credentials; only main and v* tags can use it.
-    environment: release
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - registry: GHCR
-            target: ghcr.io/nicoskaralis/actual-crypto-sync
-          - registry: Docker Hub
-            target: docker.io/nicoskaralis/actual-crypto-sync
-    env:
-      TARGET: ${{ matrix.target }}
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+      tags: ${{ steps.push.outputs.tags }}
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: ${{ runner.temp }}/digests
           pattern: digest-*
           merge-multiple: true
+      # For the tag's commit: revision and sha-<commit> come from it, as in the build jobs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          sparse-checkout: README.md
+          sparse-checkout-cone-mode: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - if: matrix.registry == 'Docker Hub'
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
-        with:
-          registry: docker.io
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         env:
@@ -128,14 +122,16 @@ jobs:
           # GHCR reads org.opencontainers.image.source there to link the package to the repo.
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
-          images: ${{ env.TARGET }}
+          context: git
+          images: ${{ env.IMAGE }}
           # <version>, <major>.<minor>, <major>, sha-<commit> and latest (latest only for stable versions).
           tags: |
             type=semver,pattern={{version}},value=${{ env.TAG }}
             type=semver,pattern={{major}}.{{minor}},value=${{ env.TAG }}
             type=semver,pattern={{major}},value=${{ env.TAG }}
             type=sha
-      - name: Create and push the manifest
+      - id: push
+        name: Create and push the manifest
         working-directory: ${{ runner.temp }}/digests
         run: |
           mapfile -t tags < <(jq -r '.tags[] | "--tag=" + .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
@@ -143,16 +139,62 @@ jobs:
           sources=()
           for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
           docker buildx imagetools create "${tags[@]}" "${annotations[@]}" "${sources[@]}"
+          digest=$(docker buildx imagetools inspect "$IMAGE:$DOCKER_METADATA_OUTPUT_VERSION" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          # The tags without the image name, such as 1.1.0 and latest.
+          echo "tags=$(jq -r '[.tags[] | split(":") | last] | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")" >> "$GITHUB_OUTPUT"
       - name: Inspect
-        run: docker buildx imagetools inspect "$TARGET:$DOCKER_METADATA_OUTPUT_VERSION"
-      - if: matrix.registry == 'Docker Hub'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        run: docker buildx imagetools inspect "$IMAGE:$DOCKER_METADATA_OUTPUT_VERSION"
+
+  # Docker Hub gets a copy of the GHCR index, so both registries have the same digest. A failure
+  # here doesn't touch GHCR.
+  dockerhub:
+    name: Copy to Docker Hub
+    needs: manifest
+    runs-on: ubuntu-26.04
+    # Holds the Docker Hub credentials; only main and v* tags can use it.
+    environment: release
+    permissions:
+      contents: read
+      packages: read
+    env:
+      TARGET: docker.io/nicoskaralis/actual-crypto-sync
+      DIGEST: ${{ needs.manifest.outputs.digest }}
+      TAGS: ${{ needs.manifest.outputs.tags }}
+    steps:
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Copy the index
+        run: |
+          args=()
+          for tag in $TAGS; do args+=("--tag=$TARGET:$tag"); done
+          # One source and no annotations: the index is copied as it is, with the same digest.
+          docker buildx imagetools create "${args[@]}" "$IMAGE@$DIGEST"
+      - name: Check the digest
+        run: |
+          for tag in $TAGS; do
+            copied=$(docker buildx imagetools inspect "$TARGET:$tag" --format '{{json .Manifest}}' | jq -r .digest)
+            if [ "$copied" != "$DIGEST" ]; then
+              echo "::error::$TARGET:$tag is $copied, not $DIGEST as on GHCR."
+              exit 1
+            fi
+          done
+          echo "Docker Hub has $DIGEST, as GHCR."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TAG }}
           sparse-checkout: README.md
           sparse-checkout-cone-mode: false
-      - if: matrix.registry == 'Docker Hub'
-        name: Sync the Docker Hub overview from the README
+      - name: Sync the Docker Hub overview from the README
         uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
