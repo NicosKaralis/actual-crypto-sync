@@ -20,6 +20,7 @@
     "typecheck": "tsc",
     "test": "tsc && node --test \"test/**/*.test.ts\"",
     "test:e2e": "docker compose -f test/e2e/compose.yml up --build --abort-on-container-exit --exit-code-from e2e; code=$?; docker compose -f test/e2e/compose.yml down -v; exit $code",
+    "test:live": "node --test \"test/live/**/*.live.ts\"",
     "lint": "biome ci .",
     "format": "biome check --write .",
     "dev:up": "docker compose -f dev/compose.yml up -d --wait",
