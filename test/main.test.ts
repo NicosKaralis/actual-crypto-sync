@@ -123,6 +123,18 @@ function config(
 
 const WRITES = ['create', 'update', 'clear', 'delete', 'sync'];
 
+const TRX_NOTE = '150 TRX (Δ +0 @ 0.3 EUR/TRX, 1 EUR)';
+
+function syncTx(
+  id: string,
+  date: string,
+  amount: number,
+  notes: string,
+  { cleared = false, reconciled = false } = {},
+): PlanTransaction {
+  return { id, date, amount, notes, cleared, reconciled };
+}
+
 /** A fake opened budget: three accounts, `txs` per account, a balance of `balances` cents. */
 function fakeActual(
   txs: Record<string, PlanTransaction[]> = {},
@@ -287,6 +299,7 @@ describe('run', () => {
       { value: 0, action: 'updated' },
       { value: 0, action: 'cleared' },
       { value: 0, action: 'deleted' },
+      { value: 0, action: 'skipped' },
     ]);
     assert.ok(values('errors').every((entry) => entry.value === 0));
     assert.deepEqual(
@@ -320,10 +333,10 @@ describe('run', () => {
     const actual = fakeActual(
       {
         'acc-trx': [
-          { id: 't-b', date: TODAY, amount: 10, notes: note('150'), cleared: false },
-          { id: 't-a', date: TODAY, amount: 20, notes: note('150'), cleared: false },
-          { id: 'y', date: YESTERDAY, amount: 4000, notes: note('150'), cleared: false },
-          { id: 'old', date: '2026-11-01', amount: 100, notes: note('100'), cleared: true },
+          syncTx('t-b', TODAY, 10, note('150')),
+          syncTx('t-a', TODAY, 20, note('150')),
+          syncTx('y', YESTERDAY, 4000, note('150')),
+          syncTx('old', '2026-11-01', 100, note('100'), { cleared: true }),
         ],
       },
       { 'acc-trx': 4100 },
@@ -337,8 +350,72 @@ describe('run', () => {
     assert.ok(!calls.some((call) => call.startsWith('create acc-trx')));
     assert.deepEqual(
       values('transactions').map((entry) => entry.value),
-      [2, 1, 1, 1],
+      [2, 1, 1, 1, 0],
     );
+  });
+
+  // The TRX wallet is worth 4661 cents and the account has 4000, so today's entry should be 661.
+  const reconciledToday = (amount: number) =>
+    fakeActual(
+      {
+        'acc-trx': [
+          syncTx('r', TODAY, amount, TRX_NOTE, { cleared: true, reconciled: true }),
+          syncTx('dup', TODAY, 20, TRX_NOTE),
+          syncTx('y', YESTERDAY, 4000, TRX_NOTE),
+        ],
+      },
+      { 'acc-trx': 4000 },
+    );
+  const trxWrites = (calls: string[]) =>
+    calls.filter((call) => /^(create acc-trx|update|delete|clear) /.test(call));
+
+  test('a reconciled entry today with another amount skips the account with a warning', async () => {
+    const { code, calls, entries, values } = await runWith({ actual: reconciledToday(500) });
+    assert.equal(code, 0);
+    assert.deepEqual(trxWrites(calls), [], 'nothing written to the account');
+    assert.ok(
+      calls.some((call) => call.startsWith('create acc-usdt')),
+      'other accounts sync',
+    );
+    const warnings = entries().filter((entry) => entry.level === 'warn');
+    assert.deepEqual(
+      warnings.map((entry) => [entry.msg, entry.account]),
+      [["today's sync transaction is reconciled; skipped until tomorrow", 'TRX']],
+    );
+    assert.deepEqual(values('transactions').at(-1), { value: 1, action: 'skipped' });
+    assert.deepEqual(
+      values('errors').filter((entry) => entry.value !== 0),
+      [],
+    );
+  });
+
+  test('a reconciled entry today with the right amount is kept, with no warning', async () => {
+    const { code, calls, entries, values } = await runWith({ actual: reconciledToday(661) });
+    assert.equal(code, 0);
+    assert.deepEqual(trxWrites(calls), ['delete dup', 'clear y']);
+    assert.ok(!entries().some((entry) => entry.level === 'warn'));
+    assert.ok(
+      entries().some(
+        (entry) => entry.msg === "kept today's reconciled transaction" && entry.account === 'TRX',
+      ),
+    );
+    assert.deepEqual(values('transactions').at(-1), { value: 0, action: 'skipped' });
+  });
+
+  test('--dry-run says when it would skip or keep a reconciled entry', async () => {
+    for (const [amount, level, msg] of [
+      [500, 'warn', "dry run: would skip, today's sync transaction is reconciled"],
+      [661, 'info', "dry run: would keep today's reconciled transaction"],
+    ] as const) {
+      const { code, calls, entries } = await runWith({
+        actual: reconciledToday(amount),
+        dryRun: true,
+      });
+      assert.equal(code, 0);
+      assert.deepEqual(trxWrites(calls), []);
+      const entry = entries().find((e) => e.account === 'TRX' && String(e.msg).startsWith('dry'));
+      assert.deepEqual([entry?.level, entry?.msg], [level, msg]);
+    }
   });
 
   test('--dry-run reads everything and calls no write method', async () => {
@@ -350,6 +427,7 @@ describe('run', () => {
           amount: 1,
           notes: '1 TRX (Δ +1 @ 0.3 EUR/TRX, 0.3 EUR)',
           cleared: false,
+          reconciled: false,
         },
       ],
     });

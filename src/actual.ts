@@ -195,7 +195,7 @@ async function call<T>(name: string, fn: () => Promise<T>): Promise<T> {
   }
 }
 
-const PLAN_FIELDS = ['id', 'date', 'amount', 'notes', 'cleared'];
+const PLAN_FIELDS = ['id', 'date', 'amount', 'notes', 'cleared', 'reconciled'];
 // Newest first, then by id, the order planAccount sorts in too (C16).
 const PLAN_ORDER = [{ date: 'desc' }, 'id'];
 
@@ -276,7 +276,10 @@ function opened(api: ActualApi): Actual {
   };
 }
 
-/** The rows of an ActualQL result, checked: `{ data: [{ id, date, amount, notes, cleared }] }`. */
+/**
+ * The rows of an ActualQL result, checked:
+ * `{ data: [{ id, date, amount, notes, cleared, reconciled }] }`.
+ */
 function planTransactions(result: unknown): PlanTransaction[] {
   const data =
     typeof result === 'object' && result !== null && 'data' in result ? result.data : undefined;
@@ -291,7 +294,8 @@ function planTransactions(result: unknown): PlanTransaction[] {
       !('date' in row && typeof row.date === 'string') ||
       !('amount' in row && Number.isSafeInteger(row.amount)) ||
       !('notes' in row && (row.notes === null || typeof row.notes === 'string')) ||
-      !('cleared' in row && typeof row.cleared === 'boolean')
+      !('cleared' in row && typeof row.cleared === 'boolean') ||
+      !('reconciled' in row && typeof row.reconciled === 'boolean')
     ) {
       throw new Error('Actual returned a transaction of an unexpected shape');
     }
@@ -301,6 +305,7 @@ function planTransactions(result: unknown): PlanTransaction[] {
       amount: row.amount as number,
       notes: row.notes,
       cleared: row.cleared,
+      reconciled: row.reconciled,
     };
   });
 }

@@ -294,6 +294,13 @@ For each account, the tool writes one transaction per day:
 
 The tool never changes or deletes a transaction that you added. If two runs write a transaction for the same day, the next run deletes the extra one.
 
+The tool also never changes or deletes a reconciled transaction. If you reconcile the account in Actual, today's sync transaction can be part of the reconciliation. A later run on the same day then keeps it as it is:
+
+- If the value of the wallet did not change, the reconciled transaction already has the right amount, and the run does not change it.
+- If the value changed, the run skips the account and logs the warning `today's sync transaction is reconciled; skipped until tomorrow`. The run still exits with 0.
+
+The first run of the next day writes a new transaction, so the account shows the value of the wallet again.
+
 To find the change since the last sync, the tool reads the note of the last sync transaction. It searches the last 50 transactions of the account before today. If there are more than 50 other transactions between two syncs, the change counts from zero. Uncleared sync transactions older than those 50 stay uncleared.
 
 "Today" is the date in the time zone of the tool. Set the `TZ` environment variable, for example `TZ=Europe/Lisbon`. The Docker image uses UTC if you do not set it.

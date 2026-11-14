@@ -59,9 +59,11 @@ The tool sets each metric one time per run. All metrics are gauges.
 | `actual_crypto_sync_balance`                        | `chain`, `symbol`, `account`, `explorer` | The balance of the wallet, in tokens.                                                    |
 | `actual_crypto_sync_price`                          | `symbol`, `currency`, `source`           | The price of one token.                                                                  |
 | `actual_crypto_sync_value`                          | `chain`, `symbol`, `account`, `currency` | The value of the wallet in the currency.                                                 |
-| `actual_crypto_sync_transactions`                   | `action`                                 | Transactions `created`, `updated`, `cleared` and `deleted`.                              |
+| `actual_crypto_sync_transactions`                   | `action`                                 | Transactions `created`, `updated`, `cleared` and `deleted`; accounts `skipped`.          |
 | `actual_crypto_sync_errors`                         | `stage`                                  | Errors at each stage: `config`, `wallet`, `quotes`, `actual`, `account`.                 |
 | `actual_crypto_sync_provider_errors`                | `kind`, `id`                             | Failed requests to each explorer (`kind="explorer"`) or price provider (`kind="price"`). |
+
+`skipped` counts the accounts that the run did not update, because today's sync transaction is reconciled in Actual and the value of the wallet changed. These accounts show the reconciled value until the next day. See [What the tool writes](configuration.md#what-the-tool-writes).
 
 An alert on `actual_crypto_sync_last_success_timestamp_seconds` tells you when the sync stops working. For example, alert when it is more than one day old.
 
