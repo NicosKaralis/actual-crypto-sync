@@ -37,14 +37,19 @@ const PASSWORD = 'e2e-password';
 const DAY1 = new Date(2026, 10, 20, 9);
 const DAY2 = new Date(2026, 10, 21, 9);
 const DAY3 = new Date(2026, 10, 22, 9);
+// A day of its own for the reconciled test, after the tests that sync DAY2 again.
+const DAY4 = new Date(2026, 10, 23, 9);
 
 const api: ActualApi = await import('@actual-app/api');
+// The whole module, for what the tool itself never does, such as reconciling.
+const fullApi = await import('@actual-app/api');
 
 interface Tx {
   date: string;
   amount: number;
   notes: string;
   cleared: boolean;
+  reconciled: boolean;
   imported_payee: string;
 }
 type Entry = Record<string, unknown>;
@@ -116,7 +121,7 @@ async function budget(): Promise<Map<string, Tx[]>> {
         api
           .q('transactions')
           .filter({ account: account.id })
-          .select(['date', 'amount', 'notes', 'cleared', 'imported_payee']),
+          .select(['date', 'amount', 'notes', 'cleared', 'reconciled', 'imported_payee']),
       );
       const rows = (result as { data: Tx[] }).data;
       byAccount.set(
@@ -125,6 +130,32 @@ async function budget(): Promise<Map<string, Tx[]>> {
       );
     }
     return byAccount;
+  } finally {
+    await api.shutdown();
+  }
+}
+
+/** Reconciles an account's transactions on a date, as Actual's reconcile does: cleared and locked. */
+async function reconcile(accountName: string, date: string): Promise<void> {
+  await api.init({
+    serverURL: SERVER_URL,
+    dataDir: freshDir(),
+    password: PASSWORD,
+    verbose: false,
+  });
+  try {
+    await api.downloadBudget(env.ACTUAL_BUDGET_SYNC_ID ?? '', {});
+    const account = (await api.getAccounts()).find((a) => a.name === accountName);
+    assert.ok(account, accountName);
+    const result = await api.aqlQuery(
+      api.q('transactions').filter({ account: account.id, date }).select(['id']),
+    );
+    const rows = (result as { data: { id: string }[] }).data;
+    assert.ok(rows.length > 0, `${accountName} has a transaction on ${date}`);
+    for (const { id } of rows) {
+      await fullApi.updateTransaction(id, { cleared: true, reconciled: true });
+    }
+    await api.sync();
   } finally {
     await api.shutdown();
   }
@@ -304,6 +335,38 @@ describe('e2e', () => {
     );
     assert.ok(!output.includes(token));
     assert.deepEqual(await budget(), before);
+  });
+
+  test('a reconciled transaction today is never changed; the account waits for tomorrow', async () => {
+    const DATE = '2026-11-23';
+    assert.equal((await sync({ now: DAY4 })).code, 0);
+    await reconcile('TRON: TRX', DATE);
+    const reconciled = await budget();
+    const locked = reconciled.get('TRON: TRX')?.find((tx) => tx.date === DATE);
+    assert.equal(locked?.reconciled, true);
+
+    // The wallet changes: the TRX account is skipped with a warning, the others update.
+    mock.state.extraSun += 5_000_000;
+    try {
+      const { code, entries } = await sync({ now: DAY4 });
+      assert.equal(code, 0);
+      const warnings = entries.filter((e) => e.level === 'warn');
+      assert.deepEqual(
+        warnings.map((e) => [e.msg, e.account]),
+        [["today's sync transaction is reconciled; skipped until tomorrow", 'TRON: TRX']],
+      );
+      assert.equal(messages(entries, 'updated a transaction').length, ACCOUNTS.length - 1);
+      assert.deepEqual(await budget().then((b) => b.get('TRON: TRX')), reconciled.get('TRON: TRX'));
+    } finally {
+      mock.state.extraSun -= 5_000_000;
+    }
+
+    // Back to the reconciled value: nothing to change and no warning.
+    const { code, entries } = await sync({ now: DAY4 });
+    assert.equal(code, 0);
+    assert.ok(!entries.some((e) => e.level === 'warn'));
+    assert.equal(messages(entries, "kept today's reconciled transaction").length, 1);
+    assert.deepEqual(await budget().then((b) => b.get('TRON: TRX')), reconciled.get('TRON: TRX'));
   });
 
   test.todo('an API key login syncs too (needs an Actual server with API keys; 26.11.0 has none)');

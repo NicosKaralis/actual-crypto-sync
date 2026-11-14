@@ -7,11 +7,23 @@ const TODAY = '2026-11-12';
 const YESTERDAY = '2026-11-11';
 
 function syncTx(id: string, date: string, balance: string, cleared = false): PlanTransaction {
-  return { id, date, amount: 0, notes: `${balance} TRX (Δ +0 @ 0.3 EUR/TRX, 1 EUR)`, cleared };
+  return {
+    id,
+    date,
+    amount: 0,
+    notes: `${balance} TRX (Δ +0 @ 0.3 EUR/TRX, 1 EUR)`,
+    cleared,
+    reconciled: false,
+  };
+}
+
+/** A sync entry the user reconciled in Actual: reconciled is always cleared too. */
+function reconciledTx(id: string, date: string, amount: number): PlanTransaction {
+  return { ...syncTx(id, date, '150', true), amount, reconciled: true };
 }
 
 function manualTx(id: string, date: string, amount: number, notes: string | null = 'coffee') {
-  return { id, date, amount, notes, cleared: false } satisfies PlanTransaction;
+  return { id, date, amount, notes, cleared: false, reconciled: false } satisfies PlanTransaction;
 }
 
 function plan(txs: PlanTransaction[], overrides: Partial<Parameters<typeof planAccount>[0]> = {}) {
@@ -69,6 +81,7 @@ describe('planAccount', () => {
         amount: 0,
         notes: '1000 USDT (Δ +0 @ 0.93 EUR/USDT, 930 EUR)',
         cleared: false,
+        reconciled: false,
       },
       manualTx('m', YESTERDAY, -500, '5 TRX (Δ fee)'),
       syncTx('f', '2026-11-13', '1'),
@@ -82,6 +95,7 @@ describe('planAccount', () => {
     const result = plan([syncTx('a', TODAY, '150'), syncTx('b', YESTERDAY, '150', true)]);
     assert.equal(result.existingId, 'a');
     assert.deepEqual(result.toDelete, []);
+    assert.equal(result.reconciled, null);
   });
 
   test('two entries today: the lowest id is kept and the other deleted, in any order', () => {
@@ -124,6 +138,57 @@ describe('planAccount', () => {
     assert.deepEqual([...result.toClear].sort(), ['old', 'y']);
   });
 
+  test('a reconciled entry today with another amount: skip, and nothing to write', () => {
+    // The value is 4661 cents and 4000 are there, so today's entry should be 661.
+    const result = plan([
+      reconciledTx('r', TODAY, 500),
+      syncTx('dup', TODAY, '150'),
+      syncTx('y', YESTERDAY, '150'),
+    ]);
+    assert.equal(result.reconciled, 'skip');
+    assert.equal(result.existingId, null);
+    assert.deepEqual(result.toDelete, []);
+    assert.deepEqual(result.toClear, []);
+  });
+
+  test('a reconciled entry today with the right amount is kept as it is', () => {
+    const result = plan([
+      reconciledTx('r', TODAY, 661),
+      syncTx('dup', TODAY, '150'),
+      syncTx('y', YESTERDAY, '150'),
+    ]);
+    assert.equal(result.reconciled, 'kept');
+    assert.equal(result.existingId, null, 'not updated');
+    assert.deepEqual(result.toDelete, ['dup'], 'the duplicate is not reconciled, so it goes');
+    assert.deepEqual(result.toClear, ['y']);
+  });
+
+  test('two reconciled entries today count together, and neither is deleted', () => {
+    const txs = [reconciledTx('r1', TODAY, 600), reconciledTx('r2', TODAY, 61)];
+    for (const order of [txs, [...txs].reverse()]) {
+      const result = plan(order);
+      assert.equal(result.reconciled, 'kept');
+      assert.deepEqual(result.toDelete, []);
+    }
+    assert.equal(
+      plan([reconciledTx('r1', TODAY, 600), reconciledTx('r2', TODAY, 1)]).reconciled,
+      'skip',
+    );
+  });
+
+  test('a reconciled entry is never updated, deleted or cleared', () => {
+    // Uncleared and reconciled can't happen in Actual; the guard holds anyway.
+    const earlier = { ...reconciledTx('old', YESTERDAY, 100), cleared: false };
+    for (const amount of [661, 500]) {
+      const result = plan([reconciledTx('r', TODAY, amount), earlier]);
+      assert.notEqual(result.existingId, 'r');
+      for (const id of ['r', 'old']) {
+        assert.ok(!result.toDelete.includes(id), `${id} in toDelete`);
+        assert.ok(!result.toClear.includes(id), `${id} in toClear`);
+      }
+    }
+  });
+
   test('applying a plan and planning again gives the same amount (idempotent)', () => {
     const before = [syncTx('b', YESTERDAY, '154.910229'), manualTx('m', TODAY, 300)];
     const first = plan(before);
@@ -131,7 +196,14 @@ describe('planAccount', () => {
 
     const after = [
       ...before,
-      { id: 'new', date: TODAY, amount: first.amountCents, notes: first.note, cleared: false },
+      {
+        id: 'new',
+        date: TODAY,
+        amount: first.amountCents,
+        notes: first.note,
+        cleared: false,
+        reconciled: false,
+      },
     ];
     const second = plan(after);
     assert.equal(second.existingId, 'new');

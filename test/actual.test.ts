@@ -265,12 +265,26 @@ describe('the opened budget', () => {
   });
 
   test("transactionsForPlan: today's, and the last N before today", async () => {
-    const today = { id: 'b', date: '2026-11-12', amount: 100, notes: 'x', cleared: false };
-    const before = { id: 'a', date: '2026-11-10', amount: -5, notes: null, cleared: true };
+    const today = {
+      id: 'b',
+      date: '2026-11-12',
+      amount: 100,
+      notes: 'x',
+      cleared: true,
+      reconciled: true,
+    };
+    const before = {
+      id: 'a',
+      date: '2026-11-10',
+      amount: -5,
+      notes: null,
+      cleared: true,
+      reconciled: false,
+    };
     const { actual, calls } = await opened({ rows: [[today], [before]] });
     const txs = await actual.transactionsForPlan('acc-trx', '2026-11-12');
     assert.deepEqual(txs, [today, before]);
-    const fields = ['id', 'date', 'amount', 'notes', 'cleared'];
+    const fields = ['id', 'date', 'amount', 'notes', 'cleared', 'reconciled'];
     const order = [{ date: 'desc' }, 'id'];
     assert.deepEqual(
       calls.map((call) => call.args[0]),
@@ -294,10 +308,13 @@ describe('the opened budget', () => {
   });
 
   test('transactionsForPlan rejects rows of the wrong shape', async () => {
-    const { actual } = await opened({ rows: [[{ id: 'a', date: 5 }], []] });
-    await assert.rejects(actual.transactionsForPlan('acc-trx', '2026-11-12'), {
-      message: 'Actual returned a transaction of an unexpected shape',
-    });
+    const row = { id: 'a', date: '2026-11-12', amount: 1, notes: null, cleared: true };
+    for (const bad of [{ id: 'a', date: 5 }, row, { ...row, reconciled: 1 }]) {
+      const { actual } = await opened({ rows: [[bad], []] });
+      await assert.rejects(actual.transactionsForPlan('acc-trx', '2026-11-12'), {
+        message: 'Actual returned a transaction of an unexpected shape',
+      });
+    }
   });
 
   test('balanceThrough asks for the balance through that local date', async () => {
