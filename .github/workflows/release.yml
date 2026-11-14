@@ -1,17 +1,10 @@
 name: Release
 
-# Runs on a tag pushed by hand, from release-please.yml when it creates a release, or by hand
-# for an existing tag when that run failed.
+# Runs only from release-please.yml, when it creates a release: images come only from a release.
+# A failed run is re-run from that workflow's run ("Re-run failed jobs"); a bug in this file is
+# fixed on develop and shipped in a patch release, since a re-run uses the file of the tagged commit.
 on:
-  push:
-    tags: ["v*"]
   workflow_call:
-    inputs:
-      tag:
-        description: The release tag, such as v1.0.0
-        required: true
-        type: string
-  workflow_dispatch:
     inputs:
       tag:
         description: The release tag, such as v1.0.0
@@ -25,7 +18,7 @@ env:
   # The build jobs push here by digest; the manifest job builds the index here, and the
   # dockerhub job copies it to Docker Hub.
   IMAGE: ghcr.io/nicoskaralis/actual-crypto-sync
-  TAG: ${{ inputs.tag || github.ref_name }}
+  TAG: ${{ inputs.tag }}
 
 jobs:
   build:
@@ -56,8 +49,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          # The commit of the checked-out tag, not the one the workflow runs on (they differ on a
-          # run by hand), for the revision label.
+          # The commit of the checked-out tag, for the revision label.
           context: git
           images: ${{ env.IMAGE }}
           tags: type=semver,pattern={{version}},value=${{ env.TAG }}
