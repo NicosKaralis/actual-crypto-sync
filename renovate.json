@@ -56,8 +56,8 @@
       "enabled": false
     },
     {
-      "description": "OpenTelemetry packages require matching versions of each other (api, SDK, exporters, instrumentations), so they move together",
-      "matchPackageNames": ["@opentelemetry/**"],
+      "description": "OpenTelemetry packages require matching versions of each other (api, SDK, exporters, instrumentations), so they move together; @grpc/grpc-js too, since the gRPC exporters share it with the tool",
+      "matchPackageNames": ["@opentelemetry/**", "@grpc/grpc-js"],
       "groupName": "OpenTelemetry"
     },
     {
