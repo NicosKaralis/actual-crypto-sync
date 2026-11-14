@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.1.2](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.1...v1.1.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* keep a reconciled sync transaction as it is ([0eb7e7f](https://github.com/NicosKaralis/actual-crypto-sync/commit/0eb7e7f27dc37b3e55a8f26da8bbfb8406be7e53))
+* keep a reconciled sync transaction as it is ([126ae9a](https://github.com/NicosKaralis/actual-crypto-sync/commit/126ae9a9f6f2f42cdaedd4ba886a119c5362e4d6)), closes [#57](https://github.com/NicosKaralis/actual-crypto-sync/issues/57)
+* pass the release secrets to the image workflow ([ccee077](https://github.com/NicosKaralis/actual-crypto-sync/commit/ccee0777f19c7d786eac4466139fe83d56c61652))
+* pass the release secrets to the image workflow ([9f60ff3](https://github.com/NicosKaralis/actual-crypto-sync/commit/9f60ff3612c123ec7908f2dd51f2cdd49bb989c9)), closes [#48](https://github.com/NicosKaralis/actual-crypto-sync/issues/48)
+
+
+### Image and releases
+
+* add the image tags and digest to the release notes ([e2d33c6](https://github.com/NicosKaralis/actual-crypto-sync/commit/e2d33c61403072cc5409435358fd8b22b64153ab))
+* list image and release changes in the changelog ([0e7f911](https://github.com/NicosKaralis/actual-crypto-sync/commit/0e7f9117b310e40980855bbf2316c2775a711054))
+* list image and release changes in the changelog ([0d1b147](https://github.com/NicosKaralis/actual-crypto-sync/commit/0d1b14731aead986ee86a6703215a3dedf52c461)), closes [#55](https://github.com/NicosKaralis/actual-crypto-sync/issues/55)
+
+
+### Documentation
+
+* explain how reconciled sync transactions are kept ([4f1922c](https://github.com/NicosKaralis/actual-crypto-sync/commit/4f1922cac265977f1aafa1a14ccf52e27ca300ce))
+* explain the awaiting release label workflow ([5d78f3b](https://github.com/NicosKaralis/actual-crypto-sync/commit/5d78f3bb83ac23ce5b6f28da9b2d9ad12ad1ffae))
+* explain the build commit type and the image table ([f41d8de](https://github.com/NicosKaralis/actual-crypto-sync/commit/f41d8de3ea656a5c974d6aabbbdee64e578fb37e))
+* say that a release removes the awaiting release label ([ccf50e1](https://github.com/NicosKaralis/actual-crypto-sync/commit/ccf50e1516a3cd51d23742bdb075724097a91407))
+* say who labels breaking changes from forks ([3b8ad8a](https://github.com/NicosKaralis/actual-crypto-sync/commit/3b8ad8a8ccdc4f309d67a26342abe2102f205f64))
+
 ## [1.1.1](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.0...v1.1.1) (2026-11-13)
 
 This release fixes how the Docker image is published. The tool itself does not change. Tested with Actual server 26.11.0.
