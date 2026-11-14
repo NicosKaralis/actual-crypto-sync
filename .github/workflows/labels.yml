@@ -1,9 +1,9 @@
 name: Labels
 
-# pull_request_target, so the token can label pull requests from forks too. It checks out no
-# code and reads the title and commit messages only as data.
+# The jobs check out no code, and read titles, descriptions and commit messages only as data.
+# Not pull_request_target: GitHub blocks it on public repositories from December 2, 2026.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, reopened, synchronize]
   # A merged pull request is a push to its base branch.
   push:
@@ -15,7 +15,10 @@ permissions:
 jobs:
   breaking-change:
     name: Breaking change label
-    if: github.event_name == 'pull_request_target'
+    # A pull request from a fork gets a read-only token, so the maintainer labels it by hand.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-26.04
     permissions:
       pull-requests: write
