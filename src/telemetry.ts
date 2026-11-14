@@ -1,13 +1,40 @@
-// Traces and metrics over OTLP/HTTP. Each exporter exists only when an endpoint
-// is set for it (otlpEndpoint), so a run with none sends nothing. Exports time out after
-// OTEL_EXPORTER_OTLP_TIMEOUT (5 s by default), so a telemetry endpoint that's
-// down never holds up a run for long.
+// Traces and metrics over OTLP, with the settings from otel-env.ts. Each
+// exporter exists only when an endpoint is set for it, so a run with none
+// sends nothing. Exports time out (5 s by default), so a telemetry endpoint
+// that's down never holds up a run for long, and a failed export is a warning,
+// never a failed run.
 
-import { context, type Gauge, type Tracer } from '@opentelemetry/api';
+import { credentials as grpcCredentials, Metadata } from '@grpc/grpc-js';
+import {
+  type Context,
+  context,
+  type Gauge,
+  propagation,
+  type Span,
+  type TextMapPropagator,
+  type TextMapSetter,
+  type Tracer,
+  trace,
+} from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import {
+  CompositePropagator,
+  ExportResultCode,
+  W3CBaggagePropagator,
+  W3CTraceContextPropagator,
+} from '@opentelemetry/core';
+import { OTLPMetricExporter as GrpcMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
+import {
+  AggregationTemporalityPreference,
+  OTLPMetricExporter as JsonMetricExporter,
+} from '@opentelemetry/exporter-metrics-otlp-http';
+import { OTLPMetricExporter as ProtoMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
+import { OTLPTraceExporter as GrpcTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter as JsonTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPTraceExporter as ProtoTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
+import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
+import { B3InjectEncoding, B3Propagator } from '@opentelemetry/propagator-b3';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import {
   MeterProvider,
@@ -15,18 +42,31 @@ import {
   type PushMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 import {
+  AlwaysOffSampler,
+  AlwaysOnSampler,
   BatchSpanProcessor,
+  ParentBasedSampler,
+  type Sampler,
   SimpleSpanProcessor,
   type SpanExporter,
   type SpanProcessor,
+  TraceIdRatioBasedSampler,
   TracerProvider,
 } from '@opentelemetry/sdk-trace';
 
 import { redactUrl } from './format.ts';
+import type { Log } from './log.ts';
+import {
+  type ExporterSettings,
+  type OtelSettings,
+  type PropagatorName,
+  type SamplerName,
+  SERVICE_NAME,
+  type Signal,
+  TELEMETRY_OFF,
+} from './otel-env.ts';
 
-export const SERVICE_NAME = 'actual-crypto-sync';
-
-const DEFAULT_EXPORT_TIMEOUT_MS = 5000;
+export { SERVICE_NAME };
 
 /** The gauges, all set once per run. Names and labels are public: alerts use them. */
 const GAUGES = {
@@ -46,6 +86,8 @@ export type GaugeName = keyof typeof GAUGES;
 export interface Telemetry {
   tracer: Tracer;
   gauges: Record<GaugeName, Gauge>;
+  /** Requests to this URL's origin (the Actual server) get the propagation headers. */
+  propagateTo(url: string): void;
   /** Flushes and stops the exporters. */
   shutdown(): Promise<void>;
 }
@@ -55,52 +97,94 @@ export interface Telemetry {
 let contextManager: AsyncLocalStorageContextManager | undefined;
 
 /**
+ * The global propagator, registered once like the context manager. It injects
+ * only for spans marked as requests to the Actual server, so explorers and
+ * price providers never get trace headers; each startTelemetry sets its inner
+ * propagator and marked spans.
+ */
+class ActualOnlyPropagator implements TextMapPropagator {
+  inner: TextMapPropagator | undefined;
+  marked = new WeakSet<Span>();
+
+  inject(ctx: Context, carrier: unknown, setter: TextMapSetter): void {
+    const span = trace.getSpan(ctx);
+    if (this.inner && span && this.marked.has(span)) {
+      this.inner.inject(ctx, carrier, setter);
+    }
+  }
+
+  // The tool receives no requests, so there's nothing to extract.
+  extract(ctx: Context): Context {
+    return ctx;
+  }
+
+  fields(): string[] {
+    return this.inner?.fields() ?? [];
+  }
+}
+let propagator: ActualOnlyPropagator | undefined;
+
+/**
  * Starts tracing and metrics. Tests pass in-memory exporters; otherwise the
- * OTLP ones are used for each signal with an endpoint (otlpEndpoint). `instrumentFetch` adds a span
- * for every request, with wallet addresses in its URL shortened.
+ * OTLP ones are used for each signal with settings. `instrumentFetch` adds a
+ * span for every request, with wallet addresses in its URL shortened. `log`
+ * gets a warning for each failed export.
  */
 export function startTelemetry({
-  env,
+  settings = TELEMETRY_OFF,
   spanExporter,
   metricExporter,
   instrumentFetch = true,
+  log = () => {},
 }: {
-  env: Record<string, string | undefined>;
+  settings?: OtelSettings;
   spanExporter?: SpanExporter;
   metricExporter?: PushMetricExporter;
   instrumentFetch?: boolean;
+  log?: Log;
 }): Telemetry {
   if (contextManager === undefined) {
     contextManager = new AsyncLocalStorageContextManager().enable();
     context.setGlobalContextManager(contextManager);
   }
+  if (propagator === undefined) {
+    propagator = new ActualOnlyPropagator();
+    propagation.setGlobalPropagator(propagator);
+  }
+  const marked = new WeakSet<Span>();
+  propagator.inner = innerPropagator(settings.propagators);
+  propagator.marked = marked;
+  let actualOrigin: string | undefined;
 
-  const timeoutMillis = exportTimeout(env.OTEL_EXPORTER_OTLP_TIMEOUT);
-  // Only service.name: no host, process or SDK version, so series don't change between runs.
-  const resource = resourceFromAttributes({ 'service.name': SERVICE_NAME });
-
-  const tracesEndpoint = otlpEndpoint(env, 'traces');
-  const metricsEndpoint = otlpEndpoint(env, 'metrics');
+  const resource = resourceFromAttributes(settings.resource);
 
   const spanProcessors: SpanProcessor[] = [];
   if (spanExporter) {
     spanProcessors.push(new SimpleSpanProcessor({ exporter: spanExporter }));
-  } else if (tracesEndpoint) {
+  } else if (settings.traces) {
     spanProcessors.push(
       new BatchSpanProcessor({
-        exporter: new OTLPTraceExporter({
-          url: tracesEndpoint,
-          timeoutMillis,
-        }),
-        exportTimeoutMillis: timeoutMillis,
+        exporter: reportFailures(traceExporter(settings.traces), settings.traces, 'traces', log),
+        exportTimeoutMillis: settings.traces.timeoutMillis,
       }),
     );
   }
-  const tracerProvider = new TracerProvider({ resource, spanProcessors });
+  const tracerProvider = new TracerProvider({
+    resource,
+    sampler: sampler(settings.sampler),
+    spanProcessors,
+  });
 
   const metricsExporter =
     metricExporter ??
-    (metricsEndpoint ? new OTLPMetricExporter({ url: metricsEndpoint, timeoutMillis }) : undefined);
+    (settings.metrics
+      ? reportFailures(
+          metricsOtlpExporter(settings.metrics, settings.temporality),
+          settings.metrics,
+          'metrics',
+          log,
+        )
+      : undefined);
   const meterProvider = new MeterProvider({
     resource,
     readers: metricsExporter
@@ -109,7 +193,7 @@ export function startTelemetry({
           new PeriodicExportingMetricReader({
             exporter: metricsExporter,
             exportIntervalMillis: 24 * 60 * 60 * 1000,
-            exportTimeoutMillis: timeoutMillis,
+            exportTimeoutMillis: settings.metrics?.timeoutMillis ?? 5000,
           }),
         ]
       : [],
@@ -132,6 +216,12 @@ export function startTelemetry({
           'url.query': '',
         };
       },
+      // Runs before the propagation headers are injected.
+      requestHook: (span, request) => {
+        if (actualOrigin !== undefined && originOf(request.origin) === actualOrigin) {
+          marked.add(span);
+        }
+      },
     });
     fetchInstrumentation.setTracerProvider(tracerProvider);
   }
@@ -139,6 +229,9 @@ export function startTelemetry({
   return {
     tracer: tracerProvider.getTracer(SERVICE_NAME),
     gauges,
+    propagateTo: (url) => {
+      actualOrigin = originOf(url);
+    },
     shutdown: async () => {
       fetchInstrumentation?.disable();
       await Promise.allSettled([tracerProvider.shutdown(), meterProvider.shutdown()]);
@@ -146,25 +239,150 @@ export function startTelemetry({
   };
 }
 
-/**
- * Where a signal is exported, as the OpenTelemetry spec reads the env:
- * OTEL_EXPORTER_OTLP_TRACES_ENDPOINT (or _METRICS_) is the full URL, used as is;
- * otherwise OTEL_EXPORTER_OTLP_ENDPOINT is a base URL, with /v1/traces (or
- * /v1/metrics) added. Undefined when neither is set.
- */
-export function otlpEndpoint(
-  env: Record<string, string | undefined>,
-  signal: 'traces' | 'metrics',
-): string | undefined {
-  const specific = env[`OTEL_EXPORTER_OTLP_${signal.toUpperCase()}_ENDPOINT`];
-  if (specific) {
-    return specific;
+function originOf(url: string | URL): string | undefined {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return undefined;
   }
-  const base = env.OTEL_EXPORTER_OTLP_ENDPOINT;
-  return base ? `${base.replace(/\/+$/, '')}/v1/${signal}` : undefined;
 }
 
-function exportTimeout(value: string | undefined): number {
-  const ms = Number(value);
-  return value !== undefined && Number.isInteger(ms) && ms > 0 ? ms : DEFAULT_EXPORT_TIMEOUT_MS;
+function innerPropagator(names: PropagatorName[]): TextMapPropagator | undefined {
+  const create: Record<PropagatorName, () => TextMapPropagator> = {
+    tracecontext: () => new W3CTraceContextPropagator(),
+    baggage: () => new W3CBaggagePropagator(),
+    b3: () => new B3Propagator({ injectEncoding: B3InjectEncoding.SINGLE_HEADER }),
+    b3multi: () => new B3Propagator({ injectEncoding: B3InjectEncoding.MULTI_HEADER }),
+  };
+  const propagators = names.map((name) => create[name]());
+  return propagators.length > 0 ? new CompositePropagator({ propagators }) : undefined;
+}
+
+function sampler({ name, ratio }: OtelSettings['sampler']): Sampler {
+  const root: Record<SamplerName, () => Sampler> = {
+    always_on: () => new AlwaysOnSampler(),
+    always_off: () => new AlwaysOffSampler(),
+    traceidratio: () => new TraceIdRatioBasedSampler(ratio),
+    parentbased_always_on: () => new ParentBasedSampler({ root: new AlwaysOnSampler() }),
+    parentbased_always_off: () => new ParentBasedSampler({ root: new AlwaysOffSampler() }),
+    parentbased_traceidratio: () =>
+      new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(ratio) }),
+  };
+  return root[name]();
+}
+
+// The exporters also read the OTEL_* headers from process.env, under the ones
+// passed here. In production `env` is process.env, so it changes nothing; in
+// tests, a shell's OTEL_EXPORTER_OTLP_HEADERS would reach the test collector.
+
+/** The options both HTTP exporters (protobuf and JSON) take. */
+function httpOptions(settings: ExporterSettings) {
+  return {
+    url: settings.url,
+    headers: settings.headers,
+    timeoutMillis: settings.timeoutMillis,
+    compression: compression(settings),
+    httpAgentOptions: { keepAlive: true, ...settings.tls },
+  };
+}
+
+/** The options both gRPC exporters take. */
+function grpcOptions(settings: ExporterSettings) {
+  const metadata = new Metadata();
+  for (const [key, value] of Object.entries(settings.headers)) {
+    metadata.set(key, value);
+  }
+  const { ca, key, cert } = settings.tls;
+  const plaintext =
+    settings.url.startsWith('http://') ||
+    (settings.insecure && !settings.url.startsWith('https://'));
+  return {
+    url: settings.url,
+    metadata,
+    credentials: plaintext
+      ? grpcCredentials.createInsecure()
+      : grpcCredentials.createSsl(ca ?? null, key ?? null, cert ?? null),
+    timeoutMillis: settings.timeoutMillis,
+    compression: compression(settings),
+  };
+}
+
+function compression(settings: ExporterSettings): CompressionAlgorithm {
+  return settings.compression === 'gzip' ? CompressionAlgorithm.GZIP : CompressionAlgorithm.NONE;
+}
+
+function traceExporter(settings: ExporterSettings): SpanExporter {
+  switch (settings.protocol) {
+    case 'grpc':
+      return new GrpcTraceExporter(grpcOptions(settings));
+    case 'http/protobuf':
+      return new ProtoTraceExporter(httpOptions(settings));
+    case 'http/json':
+      return new JsonTraceExporter(httpOptions(settings));
+  }
+}
+
+function metricsOtlpExporter(
+  settings: ExporterSettings,
+  temporality: OtelSettings['temporality'],
+): PushMetricExporter {
+  const temporalityPreference = {
+    cumulative: AggregationTemporalityPreference.CUMULATIVE,
+    delta: AggregationTemporalityPreference.DELTA,
+    lowmemory: AggregationTemporalityPreference.LOWMEMORY,
+  }[temporality];
+  switch (settings.protocol) {
+    case 'grpc':
+      return new GrpcMetricExporter({ ...grpcOptions(settings), temporalityPreference });
+    case 'http/protobuf':
+      return new ProtoMetricExporter({ ...httpOptions(settings), temporalityPreference });
+    case 'http/json':
+      return new JsonMetricExporter({ ...httpOptions(settings), temporalityPreference });
+  }
+}
+
+/**
+ * Wraps an exporter to log a warning when an export fails. The warning has the
+ * endpoint without credentials, and the error without anything URL-like that
+ * could carry them.
+ */
+function reportFailures<T extends SpanExporter | PushMetricExporter>(
+  exporter: T,
+  settings: ExporterSettings,
+  signal: Signal,
+  log: Log,
+): T {
+  const wrapped = Object.create(exporter) as T;
+  wrapped.export = (items: never, done: Parameters<T['export']>[1]) => {
+    exporter.export(items, (result) => {
+      if (result.code !== ExportResultCode.SUCCESS) {
+        log('warn', `couldn't send the ${signal} to the OpenTelemetry endpoint`, {
+          stage: 'telemetry',
+          signal,
+          protocol: settings.protocol,
+          endpoint: settings.displayUrl,
+          error: exportError(result.error),
+        });
+      }
+      done(result);
+    });
+  };
+  return wrapped;
+}
+
+/** An export error's message, with the collector's reply when there is one. */
+export function exportError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'unknown error';
+  }
+  const { code, data } = error as Error & { code?: unknown; data?: unknown };
+  const parts = [error.message || error.name];
+  if (typeof code === 'number') {
+    parts.push(`(HTTP ${code})`);
+  }
+  if (typeof data === 'string' && data.trim() !== '') {
+    parts.push(`: ${data.trim().slice(0, 300)}`);
+  }
+  // A URL in an error could hold the endpoint's user and password.
+  return parts.join(' ').replace(/([a-z][a-z0-9+.-]*:\/\/)[^/\s@]*@/gi, '$1');
 }
