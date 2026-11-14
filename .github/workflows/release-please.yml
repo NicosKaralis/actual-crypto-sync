@@ -156,3 +156,6 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
+    # The called workflow's dockerhub job reads DOCKERHUB_TOKEN from the release environment.
+    # A called workflow gets no secrets unless they're passed, even with environment: set.
+    secrets: inherit
