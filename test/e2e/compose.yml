@@ -19,6 +19,15 @@ services:
       timeout: 5s
       retries: 30
 
+  # Takes OTLP metrics as protobuf only, like the backend in #58's report.
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.156.0@sha256:da8a90ac0912f16589be2b96a6441a2fca4bca415c83783d972d92e3b5b66970
+    command: [-search.latencyOffset=0s]
+
+  # Takes OTLP traces over gRPC on 4317; its query API is on 16686.
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0@sha256:3823829974ccfc2485d2e48b165579091f32295022ae80ca49704e2f4834116e
+
   e2e:
     build:
       context: ../..
@@ -26,6 +35,12 @@ services:
     depends_on:
       actual:
         condition: service_healthy
+      victoriametrics:
+        condition: service_started
+      jaeger:
+        condition: service_started
     environment:
       ACTUAL_SERVER_URL: http://actual:5006
+      VICTORIAMETRICS_URL: http://victoriametrics:8428
+      JAEGER_URL: http://jaeger
     command: [node, --test, test/e2e/run.e2e.ts]

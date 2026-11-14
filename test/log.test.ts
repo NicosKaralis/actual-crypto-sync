@@ -40,7 +40,6 @@ describe('log', () => {
 
   test('trace_id and span_id come from the active span', async () => {
     const telemetry = startTelemetry({
-      env: {},
       spanExporter: new InMemorySpanExporter(),
       instrumentFetch: false,
     });

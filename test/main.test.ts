@@ -182,7 +182,7 @@ function fakeActual(
 function fakeTelemetry() {
   const recorded: { gauge: GaugeName; value: number; attributes: Attributes }[] = [];
   const spanExporter = new InMemorySpanExporter();
-  const real = startTelemetry({ env: {}, spanExporter, instrumentFetch: false });
+  const real = startTelemetry({ spanExporter, instrumentFetch: false });
   const gauges = new Proxy({} as Telemetry['gauges'], {
     get: (_target, gauge: GaugeName) => ({
       record: (value: number, attributes: Attributes = {}) =>
@@ -662,7 +662,7 @@ describe('secrets', () => {
   for (const [auth, format] of auths.flatMap((a) => LOG_FORMATS.map((f) => [a, f] as const))) {
     test(`a failing ${auth.kind} login never shows the secret in ${format} logs`, async () => {
       const spanExporter = new InMemorySpanExporter();
-      const telemetry = startTelemetry({ env: {}, spanExporter, instrumentFetch: false });
+      const telemetry = startTelemetry({ spanExporter, instrumentFetch: false });
       const written: string[] = [];
       const log = createLog({ debug: true, format, write: (line) => written.push(line) });
       // Anything else written to stdout or stderr during the run.
@@ -731,5 +731,57 @@ describe('main', () => {
       written[0] ?? '',
       /^\S+ ERROR LOG_FORMAT: use text or json, not "xml" stage=config\n$/,
     );
+  });
+
+  /** main's code and log lines; the config file doesn't exist, so a run that starts ends there. */
+  async function mainWith(env: Record<string, string>) {
+    const written: string[] = [];
+    const stdoutWrite = process.stdout.write;
+    process.stdout.write = ((chunk: unknown) => {
+      written.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    try {
+      const code = await main(['--config', '/nonexistent/config.yml'], env);
+      return { code, written };
+    } finally {
+      process.stdout.write = stdoutWrite;
+    }
+  }
+
+  test('an invalid OTEL value exits 1 before reading the config', async () => {
+    const { code, written } = await mainWith({ OTEL_EXPORTER_OTLP_PROTOCOL: 'http' });
+    assert.equal(code, 1);
+    assert.equal(written.length, 1);
+    assert.match(
+      written[0] ?? '',
+      /^\S+ ERROR OTEL_EXPORTER_OTLP_PROTOCOL: use grpc, http\/protobuf, http\/json, not "http" stage=config\n$/,
+    );
+  });
+
+  test('with TELEMETRY_DISABLED_ON_ERROR=true, an invalid OTEL value turns telemetry off and the run goes on', async () => {
+    const { written } = await mainWith({
+      OTEL_EXPORTER_OTLP_PROTOCOL: 'http',
+      TELEMETRY_DISABLED_ON_ERROR: 'true',
+    });
+    assert.match(
+      written[0] ?? '',
+      /ERROR OTEL_EXPORTER_OTLP_PROTOCOL: .*; telemetry is off for this run stage=config/,
+    );
+    // The run went on to read the config.
+    assert.ok(written.slice(1).some((line) => line.includes('/nonexistent/config.yml')));
+  });
+
+  test('unused OTEL variables get one warning line, unless TELEMETRY_IGNORE_UNUSED_ENV=true', async () => {
+    const env = { OTEL_LOGS_EXPORTER: 'otlp', OTEL_PROPAGATORS: 'tracecontext,jaeger' };
+    const { written } = await mainWith(env);
+    const warnings = written.filter((line) => line.includes(' WARN '));
+    assert.equal(warnings.length, 1);
+    assert.match(
+      warnings[0] ?? '',
+      /OTEL variables set but not used .* unused="OTEL_LOGS_EXPORTER \(logs go to stdout only\), OTEL_PROPAGATORS=jaeger \(not available\)"/,
+    );
+    const quiet = await mainWith({ ...env, TELEMETRY_IGNORE_UNUSED_ENV: 'true' });
+    assert.ok(!quiet.written.some((line) => line.includes(' WARN ')));
   });
 });

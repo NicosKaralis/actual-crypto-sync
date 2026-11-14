@@ -91,11 +91,13 @@ Unit tests never call a real explorer, price provider or Actual server. Explorer
 The command starts a throwaway stack from `test/e2e/compose.yml`, runs the tests, and then removes the stack and its data. The stack has no ports and no volumes, so it does not change the dev stack.
 
 - **`actual`** is the same Actual server version as the dev stack.
+- **`victoriametrics`** takes OTLP metrics as protobuf only. The tests check that the metrics arrive, and that JSON metrics give a warning.
+- **`jaeger`** takes OTLP traces over gRPC. The tests check that the trace arrives.
 - **`e2e`** is the `test` stage of the Docker image. It runs `test/e2e/run.e2e.ts`.
 
 The test seeds the server with `dev/seed.ts`. A mock server in the test process (`test/e2e/mock.ts`) answers as TronGrid, mempool.space and CoinGecko, with the responses in `test/fixtures/`. `test/e2e/config.yml` points each explorer and the price provider at the mock with `api_url`. The tests change the mock between runs, for example a new balance, or a price provider that fails. To test a new response, add it to `test/fixtures/`.
 
-The tests call `run()` from `src/main.ts` with the same setup as the CLI, but with their own clock. Thus, they can sync on several days without a change to the tool. One test runs the real CLI.
+The tests call `run()` from `src/main.ts` with the same setup as the CLI, but with their own clock. Thus, they can sync on several days without a change to the tool. The last tests run the real CLI: one dry run, and the telemetry tests against VictoriaMetrics and Jaeger.
 
 The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not run it.
 
@@ -203,7 +205,10 @@ The unit tests of `src/tokens.yml` check its rules, for example that each contra
 6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone. The closed issues lose the `awaiting release` label, because their work is now released.
 7. A workflow merges `main` back into `develop`, so `develop` gets the new version number and the changelog. If the merge has a conflict, the workflow fails, and the maintainer merges by hand.
 
-If the image build did not run for a release, the maintainer runs the Release workflow by hand: **Actions → Release → Run workflow**, with the tag, for example `v1.1.0`. It builds the image from the tag.
+Images come only from a release that Release Please creates. There is no way to build one by hand for another tag or commit. If the image build fails for a release:
+
+- **A temporary failure**, for example a registry that did not answer: open the Release Please run of that release in **Actions**, and select **Re-run failed jobs**.
+- **A bug in `release.yml`**: fix it on `develop`, and ship a patch release. A re-run uses the workflow file of the tagged commit, so it would fail again.
 
 An urgent fix goes on a `hotfix/<name>` branch from `main`, with a pull request into `main`. Then the same steps from step 3 make a patch release, and step 7 brings the fix into `develop`.
 
