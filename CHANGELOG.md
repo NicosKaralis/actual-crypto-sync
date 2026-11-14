@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.3](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.2...v1.1.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* support the standard OpenTelemetry configuration ([47d1d1d](https://github.com/NicosKaralis/actual-crypto-sync/commit/47d1d1d3151776366014d20f10cad66ec9ee67aa))
+* support the standard OpenTelemetry configuration ([93b5a2c](https://github.com/NicosKaralis/actual-crypto-sync/commit/93b5a2ca23b5efde57e0f5dea946982dadeda645)), closes [#58](https://github.com/NicosKaralis/actual-crypto-sync/issues/58)
+
+
+### Image and releases
+
+* build images only from a Release Please release ([825aae8](https://github.com/NicosKaralis/actual-crypto-sync/commit/825aae8d9b104d2f755f782f7b3a6e1c1eb40599))
+* build images only from a Release Please release ([bc2b805](https://github.com/NicosKaralis/actual-crypto-sync/commit/bc2b80588e1fbc9d8d44e72de7c56b81ce5fd993)), closes [#60](https://github.com/NicosKaralis/actual-crypto-sync/issues/60)
+
+
+### Documentation
+
+* add the OpenTelemetry configuration guide ([1554b73](https://github.com/NicosKaralis/actual-crypto-sync/commit/1554b7322246113200fbb3aa98075d22adb16239))
+* replace the manual image build with the recovery path ([2c17184](https://github.com/NicosKaralis/actual-crypto-sync/commit/2c171845c3311aafa6459a09addbe0366a4dcc49))
+
 ## [1.1.2](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.1...v1.1.2) (2026-11-14)
 
 This release keeps reconciled transactions as they are, and publishes the image to Docker Hub again at each release. The release notes now also show the tags and the digest of the image. Tested with Actual server 26.11.0.
