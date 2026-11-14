@@ -2,23 +2,29 @@
 
 ## [1.1.3](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.2...v1.1.3) (2026-11-14)
 
+This release sends metrics and traces with the standard OpenTelemetry configuration, and as protobuf by default, so backends that take only protobuf get them. The image is now built only from a release. Tested with Actual server 26.11.0.
 
 ### Bug Fixes
 
-* support the standard OpenTelemetry configuration ([47d1d1d](https://github.com/NicosKaralis/actual-crypto-sync/commit/47d1d1d3151776366014d20f10cad66ec9ee67aa))
-* support the standard OpenTelemetry configuration ([93b5a2c](https://github.com/NicosKaralis/actual-crypto-sync/commit/93b5a2ca23b5efde57e0f5dea946982dadeda645)), closes [#58](https://github.com/NicosKaralis/actual-crypto-sync/issues/58)
+- **Metrics and traces as protobuf, with the standard OpenTelemetry configuration:** the tool sent metrics and traces only as JSON over HTTP. Backends that take only protobuf, such as VictoriaMetrics, refused each export, and the tool did not log it. Now the default protocol is `http/protobuf`, as the OpenTelemetry specification says, and the tool reads the standard `OTEL_*` variables:
+  - The protocols `http/protobuf`, `http/json` and `grpc`, and the endpoint, headers (for example an API key), timeout, compression and TLS certificates. Each one can be set for traces and metrics together, or for one of them. Before, the timeout for one signal had no effect.
+  - `OTEL_SDK_DISABLED`, and `OTEL_TRACES_EXPORTER` or `OTEL_METRICS_EXPORTER` set to `none`, to send nothing or only one signal.
+  - `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES`, to tell installations apart. The default stays `service.name=actual-crypto-sync`, so your dashboards and alerts do not change.
+  - `OTEL_TRACES_SAMPLER`, to trace only some runs.
+  - `OTEL_PROPAGATORS`: the trace headers go only to your Actual server, never to the block explorers or price providers.
 
+  When an export fails, the tool logs a warning, and the run still exits with 0. When an `OTEL_*` variable is set but has no effect, the tool logs one warning line; `TELEMETRY_IGNORE_UNUSED_ENV=true` hides it. An invalid value, such as a typo in the protocol, stops the tool at startup; with `TELEMETRY_DISABLED_ON_ERROR=true`, the tool turns telemetry off for that run and still syncs. The image is 10 MB larger. ([#67](https://github.com/NicosKaralis/actual-crypto-sync/pull/67), [93b5a2c](https://github.com/NicosKaralis/actual-crypto-sync/commit/93b5a2ca23b5efde57e0f5dea946982dadeda645))
 
 ### Image and releases
 
-* build images only from a Release Please release ([825aae8](https://github.com/NicosKaralis/actual-crypto-sync/commit/825aae8d9b104d2f755f782f7b3a6e1c1eb40599))
-* build images only from a Release Please release ([bc2b805](https://github.com/NicosKaralis/actual-crypto-sync/commit/bc2b80588e1fbc9d8d44e72de7c56b81ce5fd993)), closes [#60](https://github.com/NicosKaralis/actual-crypto-sync/issues/60)
-
+- **Images only from a release:** the release workflow builds the image only when Release Please creates a release. It no longer runs on a tag pushed by hand, or by hand from the Actions tab. ([#68](https://github.com/NicosKaralis/actual-crypto-sync/pull/68), [bc2b805](https://github.com/NicosKaralis/actual-crypto-sync/commit/bc2b80588e1fbc9d8d44e72de7c56b81ce5fd993))
 
 ### Documentation
 
-* add the OpenTelemetry configuration guide ([1554b73](https://github.com/NicosKaralis/actual-crypto-sync/commit/1554b7322246113200fbb3aa98075d22adb16239))
-* replace the manual image build with the recovery path ([2c17184](https://github.com/NicosKaralis/actual-crypto-sync/commit/2c171845c3311aafa6459a09addbe0366a4dcc49))
+- **Sending metrics and traces:** a new page, [Sending metrics and traces](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/docs/opentelemetry.md), tells you how to connect the tool to your OpenTelemetry backend. It has each variable, examples for an OpenTelemetry Collector, VictoriaMetrics and Jaeger, and a troubleshooting table. ([#67](https://github.com/NicosKaralis/actual-crypto-sync/pull/67), [1554b73](https://github.com/NicosKaralis/actual-crypto-sync/commit/1554b7322246113200fbb3aa98075d22adb16239))
+- **When an image build fails:** [How a release happens](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/docs/development.md#how-a-release-happens) tells the maintainer what to do: re-run the failed jobs, or fix the workflow and make a patch release. ([#68](https://github.com/NicosKaralis/actual-crypto-sync/pull/68), [2c17184](https://github.com/NicosKaralis/actual-crypto-sync/commit/2c171845c3311aafa6459a09addbe0366a4dcc49))
+
+See the [README](https://github.com/NicosKaralis/actual-crypto-sync#readme) to get started, and the [docs](https://github.com/NicosKaralis/actual-crypto-sync/tree/main/docs) for each setting.
 
 ## [1.1.2](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.1...v1.1.2) (2026-11-14)
 
