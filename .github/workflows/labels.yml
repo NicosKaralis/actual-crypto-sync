@@ -1,10 +1,13 @@
 name: Labels
 
 # pull_request_target, so the token can label pull requests from forks too. It checks out no
-# code and reads the title, the description and the commit messages only as data.
+# code and reads the title and commit messages only as data.
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize, closed]
+    types: [opened, edited, reopened, synchronize]
+  # A merged pull request is a push to its base branch.
+  push:
+    branches: [develop, main]
 
 permissions:
   contents: read
@@ -12,7 +15,7 @@ permissions:
 jobs:
   breaking-change:
     name: Breaking change label
-    if: github.event.action != 'closed'
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-26.04
     permissions:
       pull-requests: write
@@ -43,16 +46,14 @@ jobs:
             gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/breaking%20change" > /dev/null
           fi
 
-  # The issues that a merged pull request closes are done, but not released yet: `planned`
-  # becomes `awaiting release`. The release removes the label (release-please.yml).
+  # The issues that pushed commits close are done, but not released yet: `planned` becomes
+  # `awaiting release`. The release removes the label (release-please.yml).
   awaiting-release:
     name: Awaiting release label
-    if: >-
-      github.event.action == 'closed' && github.event.pull_request.merged &&
-      (github.base_ref == 'develop' || github.base_ref == 'main') &&
-      !startsWith(github.head_ref, 'release-please--')
+    if: github.event_name == 'push'
     runs-on: ubuntu-26.04
     permissions:
+      contents: read
       issues: write
       pull-requests: read
     steps:
@@ -60,16 +61,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-          BASE: ${{ github.base_ref }}
-          BODY: ${{ github.event.pull_request.body }}
+          BASE: ${{ github.ref_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
           # GitHub links "Closes #N" only in pull requests into the default branch, so the
-          # keywords are read from the description and the commit messages.
+          # keywords are read from the pushed commits and the merged pull request's description.
           keyword='(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+'
-          messages=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/commits" --jq '.[].commit.message')
+          messages=$(gh api --paginate "repos/$GH_REPO/compare/$BEFORE...$AFTER" \
+            --jq '.commits[].commit.message')
+          bodies=$(gh api "repos/$GH_REPO/commits/$AFTER/pulls" --jq '.[]
+            | select(.merged_at != null and (.head.ref | startswith("release-please--") | not))
+            | .body // ""')
           # grep exits 1 when nothing matches, which pipefail makes fatal.
-          numbers=$(printf '%s\n%s\n' "$BODY" "$messages" \
+          numbers=$(printf '%s\n%s\n' "$bodies" "$messages" \
             | { grep -oiE "$keyword" || true; } | { grep -oE '[0-9]+$' || true; } | sort -nu)
           for n in $numbers; do
             if ! issue=$(gh api "repos/$GH_REPO/issues/$n" 2> /dev/null); then
