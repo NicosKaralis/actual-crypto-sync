@@ -76,15 +76,18 @@ In the issue, we agree on the approach before you write the code. Thus, you do n
 
 All commits use [Conventional Commits](https://www.conventionalcommits.org). [Release Please](https://github.com/googleapis/release-please) reads the commit messages. It writes the changelog from them. It also sets the next version from them. Thus, the commit type is important.
 
-| Type        | Use                                          | Release |
-| ----------- | -------------------------------------------- | ------- |
-| `feat:`     | A new feature                                | Minor   |
-| `fix:`      | A bug fix                                    | Patch   |
-| `docs:`     | Documentation only                           | None    |
-| `test:`     | Tests only                                   | None    |
-| `refactor:` | A code change that does not change behaviour | None    |
-| `chore:`    | Maintenance, dependencies or tooling         | None    |
-| `ci:`       | The GitHub workflows                         | None    |
+| Type        | Use                                                                    | Changelog section  | Release |
+| ----------- | ---------------------------------------------------------------------- | ------------------ | ------- |
+| `feat:`     | A new feature                                                          | Features           | Minor   |
+| `fix:`      | A bug fix                                                              | Bug Fixes          | Patch   |
+| `build:`    | A change to the Docker image or the release that users notice          | Image and releases | Patch   |
+| `docs:`     | Documentation only                                                     | Documentation      | Patch   |
+| `test:`     | Tests only                                                             | None               | None    |
+| `refactor:` | A code change that does not change behaviour                           | None               | None    |
+| `chore:`    | Maintenance, dependencies or tooling                                   | None               | None    |
+| `ci:`       | A change to the GitHub workflows that users don't notice               | None               | None    |
+
+`build:` is for changes such as a new registry, the image tags or labels, the Docker Hub overview and the release notes. `ci:` is for the checks, the labels and other workflows that only contributors see.
 
 This is an example of a commit message with a body:
 
