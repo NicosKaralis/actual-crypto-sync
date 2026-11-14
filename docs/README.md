@@ -4,13 +4,14 @@ These pages tell you how to install, configure and run actual-crypto-sync, and h
 
 ## Use the tool
 
-| Page                                      | What it tells you                                                                                                  |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [Installation](installation.md)           | The Docker image and its tags, and how to run the tool: command line, cron, Docker Compose and Kubernetes.         |
-| [Configuration](configuration.md)         | Each key of the config file and its default, what the tool writes to Actual, the environment variables and errors. |
-| [Authentication](authentication.md)       | Which login method to use, how to get its secret, when a session expires, and how to fix login errors.             |
-| [Supported](supported.md)                 | All the chains, block explorers, price providers and built-in tokens, with their ids.                              |
-| [Logs, metrics and traces](monitoring.md) | The log format, the metrics and the traces, for monitoring and alerts.                                             |
+| Page                                           | What it tells you                                                                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| [Installation](installation.md)                | The Docker image and its tags, and how to run the tool: command line, cron, Docker Compose and Kubernetes.             |
+| [Configuration](configuration.md)              | Each key of the config file and its default, what the tool writes to Actual, the environment variables and errors.     |
+| [Authentication](authentication.md)            | Which login method to use, how to get its secret, when a session expires, and how to fix login errors.                 |
+| [Supported](supported.md)                      | All the chains, block explorers, price providers and built-in tokens, with their ids.                                  |
+| [Logs, metrics and traces](monitoring.md)      | The log format, the metrics and the traces, for monitoring and alerts.                                                 |
+| [Sending metrics and traces](opentelemetry.md) | How to connect the tool to your OpenTelemetry backend: protocols, endpoints, authentication, TLS, sampling and errors. |
 
 ## Work on the tool
 

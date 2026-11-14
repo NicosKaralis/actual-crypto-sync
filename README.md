@@ -122,6 +122,7 @@ Set `TZ` to your time zone. The date of the transaction is "today" in that time 
 - [Supported](docs/supported.md): all the chains, tokens, block explorers and price providers.
 - [Development](docs/development.md): set up the project, test it, and add a chain, explorer, price provider or token.
 - [Logs, metrics and traces](docs/monitoring.md): the log format, the metrics and the traces, for monitoring and alerts.
+- [Sending metrics and traces](docs/opentelemetry.md): how to connect the tool to your OpenTelemetry backend.
 - [Discussions](https://github.com/NicosKaralis/actual-crypto-sync/discussions/categories/q-a) for questions.
 - [Issues](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) for bugs and requests.
 - [Milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) for the work planned for each version, and the [roadmap](ROADMAP.md) for the ideas for later.

@@ -45,7 +45,9 @@ With `LOG_FORMAT=json`, each line is one JSON object. It has the same fields as 
 
 ## Metrics and traces
 
-Metrics and traces go to an OpenTelemetry collector over OTLP/HTTP. Set `OTEL_EXPORTER_OTLP_ENDPOINT`, for example `http://otel-collector:4318`. Without an endpoint, the tool sends nothing. If the collector does not answer, the run still succeeds, and the export stops after the timeout.
+Metrics and traces go to an OpenTelemetry collector or backend over OTLP: `http/protobuf` by default, or `http/json` or `grpc`. Set `OTEL_EXPORTER_OTLP_ENDPOINT`, for example `http://otel-collector:4318`. Without an endpoint, the tool sends nothing. If an export fails, the tool logs a warning, and the run still succeeds.
+
+To connect the tool to your backend (protocols, authentication, TLS, sampling and the other settings), see [Sending metrics and traces](opentelemetry.md).
 
 ### Metrics
 
@@ -70,3 +72,5 @@ An alert on `actual_crypto_sync_last_success_timestamp_seconds` tells you when t
 ### Traces
 
 Each run is one trace, with the root span `actual-crypto-sync.run`. Its child spans are `actual.download`, `wallet <chain> <short address>`, `quotes`, `price <provider>` and `account <name>`, and one span for each HTTP request.
+
+The requests to your Actual server carry the trace ID in a `traceparent` header, so a future Actual version that sends traces can join the trace. The requests to block explorers and price providers never carry it. See [Propagation](opentelemetry.md#propagation).

@@ -3,8 +3,8 @@
 // throwaway stack in test/e2e/compose.yml; it never runs with `npm test`.
 //
 // The tests call run() from src/main.ts with the same wiring as the CLI, but
-// with their own clock, so they can sync on several days. One test runs the
-// real CLI.
+// with their own clock, so they can sync on several days. The last tests run
+// the real CLI, the telemetry ones against VictoriaMetrics and Jaeger.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -76,7 +76,6 @@ async function sync({
   const lines: string[] = [];
   const log = createLog({ format: 'json', write: (line) => lines.push(line) });
   const telemetry = startTelemetry({
-    env: {},
     spanExporter: new InMemorySpanExporter(),
     instrumentFetch: false,
   });
@@ -382,5 +381,101 @@ describe('e2e', () => {
       lines.filter((line) => line.includes(' INFO  dry run: would ')).length,
       ACCOUNTS.length,
     );
+  });
+
+  describe('telemetry', () => {
+    const VICTORIAMETRICS_URL = processEnv.VICTORIAMETRICS_URL ?? '';
+    const JAEGER_URL = processEnv.JAEGER_URL ?? '';
+
+    /** A dry run of the real CLI with the OTEL variables; its stdout. */
+    async function cli(otel: Record<string, string>): Promise<string> {
+      const { stdout } = await promisify(execFile)(
+        process.execPath,
+        ['src/main.ts', '--config', CONFIG, '--dry-run'],
+        { cwd: ROOT, env: { ...processEnv, ...env, ACTUAL_DATA_DIR: freshDir(), ...otel } },
+      );
+      return stdout;
+    }
+
+    /** Calls `check` until it returns something, for up to 15 s: backends store data with a delay. */
+    async function eventually<T>(check: () => Promise<T | undefined>): Promise<T | undefined> {
+      for (let i = 0; i < 30; i++) {
+        const result = await check();
+        if (result !== undefined) {
+          return result;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      return undefined;
+    }
+
+    /**
+     * The labels of each last-run gauge in VictoriaMetrics, if there are any;
+     * the resource's attributes are labels, service.name included.
+     */
+    async function lastRunLabels(): Promise<Record<string, string>[] | undefined> {
+      const query = encodeURIComponent('actual_crypto_sync_last_run_timestamp_seconds');
+      const response = await fetch(`${VICTORIAMETRICS_URL}/api/v1/query?query=${query}`);
+      const body = (await response.json()) as {
+        data: { result: { metric: Record<string, string> }[] };
+      };
+      const labels = body.data.result.map((series) => series.metric);
+      return labels.length > 0 ? labels : undefined;
+    }
+
+    // The backends start with the stack, but may not listen yet on a slow runner.
+    before(async () => {
+      const ready = (url: string) => async () =>
+        (await fetch(url).then(
+          (response) => response.ok,
+          () => false,
+        )) || undefined;
+      assert.ok(VICTORIAMETRICS_URL && JAEGER_URL, 'run the e2e tests with npm run test:e2e');
+      assert.ok(
+        await eventually(ready(`${VICTORIAMETRICS_URL}/health`)),
+        'VictoriaMetrics is down',
+      );
+      assert.ok(await eventually(ready(`${JAEGER_URL}:16686/api/v3/services`)), 'Jaeger is down');
+    });
+
+    test('metrics as protobuf (the default) reach a protobuf-only backend', async () => {
+      const stdout = await cli({
+        OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: `${VICTORIAMETRICS_URL}/opentelemetry/v1/metrics`,
+        OTEL_SERVICE_NAME: 'e2e-protobuf',
+      });
+      assert.ok(!stdout.includes(' WARN '), stdout);
+      const labels = await eventually(lastRunLabels);
+      assert.ok(
+        labels?.some((series) => series['service.name'] === 'e2e-protobuf'),
+        `no metrics in VictoriaMetrics: ${JSON.stringify(labels)}`,
+      );
+    });
+
+    test('JSON metrics refused by the backend log a warning; the run still exits 0', async () => {
+      const stdout = await cli({
+        OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: `${VICTORIAMETRICS_URL}/opentelemetry/v1/metrics`,
+        OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: 'http/json',
+      });
+      assert.match(
+        stdout,
+        /WARN {2}couldn't send the metrics to the OpenTelemetry endpoint .*json encoding isn't supported/,
+      );
+    });
+
+    test('traces over gRPC reach the backend', async () => {
+      const stdout = await cli({
+        OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: `${JAEGER_URL}:4317`,
+        OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: 'grpc',
+        OTEL_SERVICE_NAME: 'e2e-grpc',
+      });
+      assert.ok(!stdout.includes(' WARN '), stdout);
+      // Jaeger 2 answers only its v3 API.
+      const traces = await eventually(async () => {
+        const response = await fetch(`${JAEGER_URL}:16686/api/v3/services`);
+        const body = (await response.json()) as { services?: string[] };
+        return body.services?.includes('e2e-grpc') ? body.services : undefined;
+      });
+      assert.ok(traces, 'no trace in Jaeger');
+    });
   });
 });

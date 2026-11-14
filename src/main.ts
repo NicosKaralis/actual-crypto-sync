@@ -16,6 +16,7 @@ import { type Config, ConfigError, loadConfig } from './config.ts';
 import { redactUrl, toUnits } from './format.ts';
 import type { Sleep } from './http.ts';
 import { createLog, errorMessage, type Log, type LogFormat, parseLogFormat } from './log.ts';
+import { OtelEnvError, parseTelemetryEnv, TELEMETRY_OFF, type TelemetryEnv } from './otel-env.ts';
 import { planAccount } from './plan.ts';
 import { collectQuotes } from './quotes.ts';
 import { startTelemetry, type Telemetry } from './telemetry.ts';
@@ -410,17 +411,23 @@ export async function main(
     return 1;
   }
 
-  const telemetry = startTelemetry({ env });
+  const log = createLog({ debug, format });
+  const telemetryEnv = readTelemetryEnv(env, log);
+  if (telemetryEnv === undefined) {
+    return 1;
+  }
+  const telemetry = startTelemetry({ settings: telemetryEnv.settings, log });
   try {
     return await run({
       readConfig: () => loadConfig(readConfigFile(configFile), env),
       openActual: async (options) => {
         prepareDataDir(options.dataDir);
+        telemetry.propagateTo(options.serverURL);
         return openBudget(await actualApi(), options);
       },
       fetch: globalThis.fetch,
       telemetry,
-      log: createLog({ debug, format }),
+      log,
       now: () => new Date(),
       dryRun,
       dataDir: env.ACTUAL_DATA_DIR || DEFAULT_DATA_DIR,
@@ -428,6 +435,41 @@ export async function main(
   } finally {
     await telemetry.shutdown();
   }
+}
+
+/**
+ * The telemetry settings, with the unused-variables warning logged. An invalid
+ * value stops the run (undefined), unless TELEMETRY_DISABLED_ON_ERROR turns
+ * telemetry off for this run instead.
+ */
+function readTelemetryEnv(
+  env: Record<string, string | undefined>,
+  log: Log,
+): TelemetryEnv | undefined {
+  let telemetryEnv: TelemetryEnv;
+  try {
+    telemetryEnv = parseTelemetryEnv(env);
+  } catch (error) {
+    if (!(error instanceof OtelEnvError) || !disabledOnError(env)) {
+      log('error', errorMessage(error), { stage: 'config' });
+      return undefined;
+    }
+    log('error', `${errorMessage(error)}; telemetry is off for this run`, { stage: 'config' });
+    return { settings: TELEMETRY_OFF, unused: [], ignoreUnused: true, disabledOnError: true };
+  }
+  const { unused, ignoreUnused } = telemetryEnv;
+  if (unused.length > 0 && !ignoreUnused) {
+    log('warn', 'OTEL variables set but not used (TELEMETRY_IGNORE_UNUSED_ENV=true hides this)', {
+      stage: 'config',
+      unused: unused.map(({ name, reason }) => `${name} (${reason})`).join(', '),
+    });
+  }
+  return telemetryEnv;
+}
+
+/** TELEMETRY_DISABLED_ON_ERROR, read on its own when the rest failed. */
+function disabledOnError(env: Record<string, string | undefined>): boolean {
+  return env.TELEMETRY_DISABLED_ON_ERROR?.trim().toLowerCase() === 'true';
 }
 
 if (import.meta.url === pathToFileURL(argv[1] ?? '').href) {
