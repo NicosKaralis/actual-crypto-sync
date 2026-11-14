@@ -17,7 +17,7 @@ To propose an idea, open an issue with the [feature request form](https://github
 4. When an item on this page gets a version, the maintainer adds its issue to the milestone and removes it from this page.
 5. When a pull request merges into `develop`, a workflow replaces `planned` with `awaiting release` on each issue that the pull request closes. It finds them in the description and in the commit messages, as `Closes #12`, `Fixes #12` or `Resolves #12`. The issue stays open until the next release brings the work to `main`, which closes it.
 
-When a version is released, its milestone closes automatically.
+When a version is released, its milestone closes automatically, and its closed issues lose the `awaiting release` label.
 
 ## Later
 
