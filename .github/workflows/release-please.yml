@@ -117,6 +117,29 @@ jobs:
           gh api -X PATCH "repos/$GH_REPO/milestones/$number" -f state=closed --silent
           echo "Closed milestone $TAG."
 
+  # The release brings the work to main, which closes its issues, so they're released now.
+  # Open issues keep the label: their work is only on develop. Its own job, so that a failure
+  # here never stops the milestone.
+  labels:
+    name: Remove the awaiting release label
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-26.04
+    permissions:
+      issues: write
+    steps:
+      - name: Remove the label from the closed issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          numbers=$(gh issue list --state closed --label 'awaiting release' --limit 200 \
+            --json number --jq '.[].number')
+          for n in $numbers; do
+            gh api -X DELETE "repos/$GH_REPO/issues/$n/labels/awaiting%20release" --silent
+            echo "#$n: released"
+          done
+
   # Brings the release commit, and any hotfix or release branch, into develop. It pushes with
   # a deploy key, because deploy keys are the only bypass of the develop ruleset that a
   # workflow can use. On a conflict it fails, and the maintainer merges main into develop.
