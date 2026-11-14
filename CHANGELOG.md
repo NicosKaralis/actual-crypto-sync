@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.1.2](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.1...v1.1.2) (2026-11-14)
+
+This release keeps reconciled transactions as they are, and publishes the image to Docker Hub again at each release. The release notes now also show the tags and the digest of the image. Tested with Actual server 26.11.0.
+
+### Bug Fixes
+
+- **Reconciled transactions stay as they are:** the tool never changes, deletes or clears a reconciled transaction. Before, if you reconciled an account in Actual, a later run on the same day changed the amount of today's sync transaction and made it uncleared again. Then the reconciled balance in Actual was wrong. Now, if the value of the wallet changed after the reconciliation, the run skips the account and logs the warning `today's sync transaction is reconciled; skipped until tomorrow`. The run still exits with 0. The first run of the next day writes a new transaction, so the account shows the value of the wallet again. The metric `actual_crypto_sync_transactions` counts the skipped accounts with `action="skipped"`. ([#61](https://github.com/NicosKaralis/actual-crypto-sync/pull/61), [126ae9a](https://github.com/NicosKaralis/actual-crypto-sync/commit/126ae9a9f6f2f42cdaedd4ba886a119c5362e4d6))
+
+### Image and releases
+
+- **The image on Docker Hub at each release:** the 1.1.1 release did not copy the image to Docker Hub, because the release workflow did not get the Docker Hub token. The maintainer copied 1.1.0 and 1.1.1 to Docker Hub by hand. Now the release workflow gets the token. It copies each image to Docker Hub with the same digest, and writes the Docker Hub overview with the text links of 1.1.1. ([#59](https://github.com/NicosKaralis/actual-crypto-sync/pull/59), [9f60ff3](https://github.com/NicosKaralis/actual-crypto-sync/commit/9f60ff3612c123ec7908f2dd51f2cdd49bb989c9))
+- **The image in the release notes:** the release notes on GitHub end with a table of the image. It shows the tags and the digest on GHCR and Docker Hub, and the `docker pull` command. The changelog does not have the table, because it is written before the image is built. ([#64](https://github.com/NicosKaralis/actual-crypto-sync/pull/64), [e2d33c6](https://github.com/NicosKaralis/actual-crypto-sync/commit/e2d33c61403072cc5409435358fd8b22b64153ab))
+- **Image and release changes in the changelog:** the changelog has a section for the changes to the image and the release, such as this one, and a section for the docs. ([#64](https://github.com/NicosKaralis/actual-crypto-sync/pull/64), [0d1b147](https://github.com/NicosKaralis/actual-crypto-sync/commit/0d1b14731aead986ee86a6703215a3dedf52c461))
+
+### Documentation
+
+- **Reconciled transactions:** [What the tool writes](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/docs/configuration.md#what-the-tool-writes) tells you what the tool does with a reconciled transaction. The [metrics](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/docs/monitoring.md#metrics) list the `skipped` value. ([#61](https://github.com/NicosKaralis/actual-crypto-sync/pull/61), [4f1922c](https://github.com/NicosKaralis/actual-crypto-sync/commit/4f1922cac265977f1aafa1a14ccf52e27ca300ce))
+
+### For contributors
+
+- **The labels of planned work change by themselves:** when a pull request merges into `develop`, each issue that it closes gets the `awaiting release` label in place of `planned`. A release removes the label from the closed issues. [ROADMAP.md](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/ROADMAP.md#how-a-request-is-planned) tells you the steps. ([#62](https://github.com/NicosKaralis/actual-crypto-sync/pull/62), [2a0dda2](https://github.com/NicosKaralis/actual-crypto-sync/commit/2a0dda2c44b2ebd0266079d3834caf410b1afa8f), [3f5cfc2](https://github.com/NicosKaralis/actual-crypto-sync/commit/3f5cfc2d08041f0967327b055bdbc9ed2bbdca8d))
+- **The breaking change label after December 2, 2026:** the label workflow runs on `pull_request`, because GitHub blocks `pull_request_target` on public repositories from that date. The maintainer labels a pull request from a fork by hand. ([#62](https://github.com/NicosKaralis/actual-crypto-sync/pull/62), [275422e](https://github.com/NicosKaralis/actual-crypto-sync/commit/275422ece386f49d150e60d6162b1142d3dae0c7))
+- **The `build:` commit type:** use it for the changes to the image or the release that users notice. [CONTRIBUTING.md](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/CONTRIBUTING.md#commit-messages) lists the changelog section of each commit type. ([#64](https://github.com/NicosKaralis/actual-crypto-sync/pull/64), [f41d8de](https://github.com/NicosKaralis/actual-crypto-sync/commit/f41d8de3ea656a5c974d6aabbbdee64e578fb37e))
+
+See the [README](https://github.com/NicosKaralis/actual-crypto-sync#readme) to get started, and the [docs](https://github.com/NicosKaralis/actual-crypto-sync/tree/main/docs) for each setting.
+
 ## [1.1.1](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.0...v1.1.1) (2026-11-13)
 
 This release fixes how the Docker image is published. The tool itself does not change. Tested with Actual server 26.11.0.
