@@ -162,7 +162,7 @@ Before you open a pull request, do these checks:
 5. `npm run lint`, `npm run typecheck` and `npm test` pass.
 6. There are no API keys, passwords, session tokens or real wallet addresses in the code, the tests, the fixtures or the description.
 
-The pull request template has the same checklist. For a breaking change, tell users in the description what they must do. A workflow adds the `breaking change` label from the commit marks.
+The pull request template has the same checklist. For a breaking change, tell users in the description what they must do. A workflow adds the `breaking change` label from the commit marks. GitHub doesn't let it label a pull request from a fork, so the maintainer adds the label there.
 
 ## AI, Claude Code and other agents
 
