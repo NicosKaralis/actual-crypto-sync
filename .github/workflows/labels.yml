@@ -1,10 +1,10 @@
 name: Labels
 
 # pull_request_target, so the token can label pull requests from forks too. It checks out no
-# code and reads the title and commit messages only as data.
+# code and reads the title, the description and the commit messages only as data.
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize, closed]
 
 permissions:
   contents: read
@@ -12,6 +12,7 @@ permissions:
 jobs:
   breaking-change:
     name: Breaking change label
+    if: github.event.action != 'closed'
     runs-on: ubuntu-26.04
     permissions:
       pull-requests: write
@@ -41,3 +42,55 @@ jobs:
           elif [ "$breaking" = false ] && [ "$LABELED" = true ]; then
             gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/breaking%20change" > /dev/null
           fi
+
+  # The issues that a merged pull request closes are done, but not released yet: `planned`
+  # becomes `awaiting release`. The release removes the label (release-please.yml).
+  awaiting-release:
+    name: Awaiting release label
+    if: >-
+      github.event.action == 'closed' && github.event.pull_request.merged &&
+      (github.base_ref == 'develop' || github.base_ref == 'main') &&
+      !startsWith(github.head_ref, 'release-please--')
+    runs-on: ubuntu-26.04
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Label the closed issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.base_ref }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # GitHub links "Closes #N" only in pull requests into the default branch, so the
+          # keywords are read from the description and the commit messages.
+          keyword='(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+'
+          messages=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/commits" --jq '.[].commit.message')
+          # grep exits 1 when nothing matches, which pipefail makes fatal.
+          numbers=$(printf '%s\n%s\n' "$BODY" "$messages" \
+            | { grep -oiE "$keyword" || true; } | { grep -oE '[0-9]+$' || true; } | sort -nu)
+          for n in $numbers; do
+            if ! issue=$(gh api "repos/$GH_REPO/issues/$n" 2> /dev/null); then
+              echo "#$n: not found"
+              continue
+            fi
+            if jq -e '.pull_request' <<< "$issue" > /dev/null; then
+              echo "#$n: a pull request"
+              continue
+            fi
+            # Closed before a merge into develop: closed by hand, or already released. A merge
+            # into main closes its issues itself, and the release removes the label.
+            if [ "$(jq -r .state <<< "$issue")" = closed ] && [ "$BASE" = develop ]; then
+              echo "#$n: closed"
+              continue
+            fi
+            if ! jq -e '.labels | any(.name == "awaiting release")' <<< "$issue" > /dev/null; then
+              gh api -X POST "repos/$GH_REPO/issues/$n/labels" -f 'labels[]=awaiting release' > /dev/null
+            fi
+            if jq -e '.labels | any(.name == "planned")' <<< "$issue" > /dev/null; then
+              gh api -X DELETE "repos/$GH_REPO/issues/$n/labels/planned" > /dev/null
+            fi
+            echo "#$n: awaiting release"
+          done
