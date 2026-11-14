@@ -8,6 +8,8 @@ export interface PlanTransaction {
   amount: number;
   notes: string | null;
   cleared: boolean;
+  /** Locked by a reconciliation in Actual: never updated, deleted or cleared. */
+  reconciled: boolean;
 }
 
 export interface AccountPlan {
@@ -22,6 +24,12 @@ export interface AccountPlan {
   toDelete: string[];
   /** Sync transactions from earlier days still uncleared. */
   toClear: string[];
+  /**
+   * Today's reconciled sync transactions, if any. `kept`: together they hold the
+   * amount, so nothing is created or updated. `skip`: they don't, and nothing is
+   * written to the account this run; the next day's transaction catches up.
+   */
+  reconciled: 'kept' | 'skip' | null;
 }
 
 /**
@@ -35,7 +43,8 @@ export interface AccountPlan {
  *
  * Only sync transactions (notes for this symbol) are updated, deleted or
  * cleared. Manual transactions dated today count towards the amount, so the
- * account still ends at the wallet's value.
+ * account still ends at the wallet's value. A reconciled sync transaction is
+ * never changed: see `reconciled`.
  */
 export function planAccount(input: {
   txs: readonly PlanTransaction[];
@@ -59,6 +68,8 @@ export function planAccount(input: {
   const isSync = (tx: PlanTransaction) => isSyncNote(tx.notes, symbol);
 
   const syncToday = txs.filter((tx) => tx.date === today && isSync(tx));
+  const reconciledToday = syncToday.filter((tx) => tx.reconciled);
+  const openToday = syncToday.filter((tx) => !tx.reconciled);
   const manualTodayCents = txs
     .filter((tx) => tx.date === today && !isSync(tx))
     .reduce((sum, tx) => sum + tx.amount, 0);
@@ -69,20 +80,40 @@ export function planAccount(input: {
   const previous = txs.find((tx) => tx.date < today && isSync(tx));
   const previousBalance = previous ? (parseNote(previous.notes)?.balance ?? 0) : 0;
 
+  const reconciledCents = reconciledToday.reduce((sum, tx) => sum + tx.amount, 0);
+  const reconciled =
+    reconciledToday.length === 0 ? null : reconciledCents === amountCents ? 'kept' : 'skip';
+
+  const note = buildNote({
+    symbol,
+    displayDecimals,
+    balance,
+    delta: balance - previousBalance,
+    price,
+    currency,
+  });
+  if (reconciled === 'skip') {
+    return {
+      amountCents,
+      valueCents,
+      note,
+      existingId: null,
+      toDelete: [],
+      toClear: [],
+      reconciled,
+    };
+  }
+
   return {
     amountCents,
     valueCents,
-    note: buildNote({
-      symbol,
-      displayDecimals,
-      balance,
-      delta: balance - previousBalance,
-      price,
-      currency,
-    }),
-    existingId: syncToday[0]?.id ?? null,
-    toDelete: syncToday.slice(1).map((tx) => tx.id),
-    toClear: txs.filter((tx) => tx.date < today && isSync(tx) && !tx.cleared).map((tx) => tx.id),
+    note,
+    existingId: reconciled === null ? (openToday[0]?.id ?? null) : null,
+    toDelete: (reconciled === null ? openToday.slice(1) : openToday).map((tx) => tx.id),
+    toClear: txs
+      .filter((tx) => tx.date < today && isSync(tx) && !tx.cleared && !tx.reconciled)
+      .map((tx) => tx.id),
+    reconciled,
   };
 }
 

@@ -37,7 +37,8 @@ const DEFAULT_DATA_DIR = '/cache';
 
 const STAGES = ['config', 'wallet', 'quotes', 'actual', 'account'] as const;
 type Stage = (typeof STAGES)[number];
-const ACTIONS = ['created', 'updated', 'cleared', 'deleted'] as const;
+// skipped: an account left as it is, because today's transaction is reconciled.
+const ACTIONS = ['created', 'updated', 'cleared', 'deleted', 'skipped'] as const;
 type Action = (typeof ACTIONS)[number];
 
 export interface RunOptions {
@@ -73,7 +74,7 @@ export async function run(options: RunOptions): Promise<number> {
   const started = now();
   const tally: Tally = {
     errors: { config: 0, wallet: 0, quotes: 0, actual: 0, account: 0 },
-    transactions: { created: 0, updated: 0, cleared: 0, deleted: 0 },
+    transactions: { created: 0, updated: 0, cleared: 0, deleted: 0, skipped: 0 },
     providerErrors: new Map(),
   };
 
@@ -265,19 +266,36 @@ async function syncAccounts(
           source: quote.source,
         };
 
+        // A reconciled transaction is locked in Actual, so the account waits for
+        // tomorrow's transaction. Not an error: the user did it on purpose.
+        if (plan.reconciled === 'skip') {
+          const msg = "today's sync transaction is reconciled";
+          if (dryRun) {
+            log('warn', `dry run: would skip, ${msg}`, fields);
+          } else {
+            tally.transactions.skipped += 1;
+            log('warn', `${msg}; skipped until tomorrow`, fields);
+          }
+          return true;
+        }
+
         if (dryRun) {
           log(
             'info',
-            plan.existingId === null
-              ? 'dry run: would create a transaction'
-              : 'dry run: would update a transaction',
+            plan.reconciled === 'kept'
+              ? "dry run: would keep today's reconciled transaction"
+              : plan.existingId === null
+                ? 'dry run: would create a transaction'
+                : 'dry run: would update a transaction',
             { ...fields, delete: plan.toDelete.length, clear: plan.toClear.length },
           );
           return true;
         }
 
         const tx = { amount: plan.amountCents, notes: plan.note };
-        if (plan.existingId === null) {
+        if (plan.reconciled === 'kept') {
+          log('info', "kept today's reconciled transaction", fields);
+        } else if (plan.existingId === null) {
           await actual.createTransaction(id, { date: today, ...tx });
           tally.transactions.created += 1;
           log('info', 'created a transaction', fields);

@@ -219,3 +219,46 @@ jobs:
           repository: nicoskaralis/actual-crypto-sync
           short-description: ${{ github.event.repository.description }}
           enable-url-completion: true
+
+  # The image's tags and digest exist only after the build, so the changelog, written before,
+  # can't have them. The GitHub release gets them instead, as a table at the end of its notes.
+  notes:
+    name: Image in the release notes
+    needs: [manifest, dockerhub]
+    # GHCR has the image even when the Docker Hub copy failed.
+    if: ${{ !cancelled() && needs.manifest.result == 'success' }}
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: Add the image table to the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DIGEST: ${{ needs.manifest.outputs.digest }}
+          TAGS: ${{ needs.manifest.outputs.tags }}
+          DOCKERHUB: ${{ needs.dockerhub.result }}
+        run: |
+          marker='<!-- image -->'
+          # The backticks are Markdown code, not a command.
+          # shellcheck disable=SC2016
+          tags=$(sed -E 's/[^ ]+/`&`/g; s/ /, /g' <<< "$TAGS")
+          rows="| \`ghcr.io/nicoskaralis/actual-crypto-sync\` | $tags | \`$DIGEST\` |"
+          if [ "$DOCKERHUB" = success ]; then
+            rows+=$'\n'"| \`docker.io/nicoskaralis/actual-crypto-sync\` | $tags | \`$DIGEST\` |"
+          fi
+          # A re-run replaces the table: the notes are kept up to the marker.
+          gh release view "$TAG" --json body --jq .body | sed "/^$marker\$/,\$d" > "$RUNNER_TEMP/notes.md"
+          cat >> "$RUNNER_TEMP/notes.md" <<NOTES
+          $marker
+          ### Docker image
+
+          | Registry | Tags | Digest |
+          | --- | --- | --- |
+          $rows
+
+          \`\`\`sh
+          docker pull ghcr.io/nicoskaralis/actual-crypto-sync:${TAG#v}
+          \`\`\`
+          NOTES
+          gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
