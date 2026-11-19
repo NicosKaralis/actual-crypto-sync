@@ -90,6 +90,7 @@ describe('startTelemetry', () => {
       account: 'TRX',
       explorer: 'trongrid',
     });
+    gauges.accountBalance.record(156.9193, { chain: 'tron', symbol: 'TRX', account: 'TRX' });
     gauges.price.record(0.297, { symbol: 'TRX', currency: 'eur', source: 'coingecko' });
     gauges.value.record(46.6, { chain: 'tron', symbol: 'TRX', account: 'TRX', currency: 'eur' });
     gauges.transactions.record(1, { action: 'created' });
@@ -105,6 +106,7 @@ describe('startTelemetry', () => {
         .map((metric) => [metric.descriptor.name, metric.dataPoints]),
     );
     assert.deepEqual([...exported.keys()].sort(), [
+      'actual_crypto_sync_account_balance',
       'actual_crypto_sync_balance',
       'actual_crypto_sync_build_info',
       'actual_crypto_sync_errors',

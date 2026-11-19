@@ -25,6 +25,8 @@ export interface Chain {
   nativeSymbol: string;
   supportsTokens: boolean;
   isValidAddress(address: string): boolean;
+  /** One spelling for one wallet (bech32 is case-insensitive), so a wallet is never read or summed twice. */
+  normalizeAddress(address: string): string;
   explorers: Record<string, Explorer>;
   defaultExplorers: string[]; // used when the config doesn't list any
 }

@@ -74,7 +74,8 @@ const GAUGES = {
   lastRun: 'actual_crypto_sync_last_run_timestamp_seconds',
   lastSuccess: 'actual_crypto_sync_last_success_timestamp_seconds',
   runDuration: 'actual_crypto_sync_run_duration_seconds',
-  balance: 'actual_crypto_sync_balance', // {chain, symbol, account, explorer}
+  balance: 'actual_crypto_sync_balance', // {chain, symbol, account, explorer}: each explorer's part
+  accountBalance: 'actual_crypto_sync_account_balance', // {chain, symbol, account}: the total
   price: 'actual_crypto_sync_price', // {symbol, currency, source}
   value: 'actual_crypto_sync_value', // {chain, symbol, account, currency}
   transactions: 'actual_crypto_sync_transactions', // {action}

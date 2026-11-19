@@ -43,4 +43,8 @@ describe('tron', () => {
       assert.equal(tron.isValidAddress(address), false, JSON.stringify(address));
     }
   });
+
+  test('normalizeAddress keeps the address as it is: base58 is case-sensitive', () => {
+    assert.equal(tron.normalizeAddress(TRON_WALLET), TRON_WALLET);
+  });
 });

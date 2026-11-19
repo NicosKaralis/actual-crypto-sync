@@ -6,7 +6,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { fixture } from '../fakes.ts';
+import { fixture, TRON_WALLET_2 } from '../fakes.ts';
 
 export interface MockState {
   /** Added to the recorded TRX balance, in sun. */
@@ -15,7 +15,16 @@ export interface MockState {
   coingeckoStatus: number | null;
   /** When set, CoinPaprika answers with this HTTP status and its error body. */
   coinpaprikaStatus: number | null;
+  /** Addresses that TronGrid answers with HTTP 500. */
+  failingWallets: Set<string>;
 }
+
+/**
+ * TronGrid's TRX balance of TRON_WALLET_2, in sun, with nothing frozen and no
+ * tokens. Other addresses get the recorded account; this one differs, so a sum
+ * of two wallets is not twice one.
+ */
+export const TRON_WALLET_2_SUN = 5_000_000;
 
 /** CoinPaprika's EUR price of each id it knows; other ids answer 404. */
 export const COINPAPRIKA_PRICES: Record<string, number> = {
@@ -34,7 +43,12 @@ export interface Mock {
 }
 
 export async function startMock(): Promise<Mock> {
-  const state: MockState = { extraSun: 0, coingeckoStatus: null, coinpaprikaStatus: null };
+  const state: MockState = {
+    extraSun: 0,
+    coingeckoStatus: null,
+    coinpaprikaStatus: null,
+    failingWallets: new Set(),
+  };
   const requests: string[] = [];
 
   const server = createServer((request, response) => {
@@ -57,10 +71,19 @@ export async function startMock(): Promise<Mock> {
 
 function answer(path: string, state: MockState): [number, unknown] {
   if (path.startsWith('/trongrid/v1/accounts/')) {
+    const address = decodeURIComponent(path.slice('/trongrid/v1/accounts/'.length));
+    if (state.failingWallets.has(address)) {
+      return [500, { error: 'internal error' }];
+    }
     const body = structuredClone(fixture('trongrid/account.json')) as {
-      data: { balance: number }[];
+      data: { balance: number; frozenV2: unknown[]; trc20: unknown[] }[];
     };
     const account = body.data[0];
+    if (account && address === TRON_WALLET_2) {
+      account.balance = TRON_WALLET_2_SUN;
+      account.frozenV2 = [];
+      account.trc20 = [];
+    }
     if (account) {
       account.balance += state.extraSun;
     }

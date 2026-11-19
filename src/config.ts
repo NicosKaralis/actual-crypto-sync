@@ -457,7 +457,10 @@ class Loader {
     return accounts;
   }
 
-  /** One address, or a list of them (block or inline), the same forms as explorers take. */
+  /**
+   * One address, or a list of them (block or inline), the same forms as explorers take.
+   * The account's balance is the sum of its wallets, so a wallet may appear once.
+   */
   wallets(value: unknown, path: string, chain: Chain): Wallet[] {
     if (typeof value === 'string') {
       return [this.wallet(value, path, chain)];
@@ -468,13 +471,17 @@ class Loader {
     if (value.length === 0) {
       throw new ConfigError(path, 'list one wallet');
     }
-    if (value.length > 1) {
-      throw new ConfigError(
-        path,
-        "several wallets per account isn't supported yet (see ROADMAP.md)",
-      );
-    }
-    return value.map((entry: unknown, index) => this.wallet(entry, `${path}[${index}]`, chain));
+    const wallets = value.map((entry: unknown, index) =>
+      this.wallet(entry, `${path}[${index}]`, chain),
+    );
+    wallets.forEach((wallet, index) => {
+      const first = wallets.findIndex((other) => other.address === wallet.address);
+      if (first < index) {
+        // Paths only: the address may be someone's wallet.
+        throw new ConfigError(`${path}[${index}]`, `the same wallet as ${path}[${first}]`);
+      }
+    });
+    return wallets;
   }
 
   wallet(value: unknown, path: string, chain: Chain): Wallet {
@@ -483,7 +490,7 @@ class Loader {
       // The address isn't shown: it may be someone's wallet.
       throw new ConfigError(path, `not a valid ${chain.id} address`);
     }
-    return { address };
+    return { address: chain.normalizeAddress(address) };
   }
 
   str(value: unknown, path: string): string {

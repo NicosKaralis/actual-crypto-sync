@@ -239,12 +239,14 @@ async function syncAccounts(
     const synced = await tracer.startActiveSpan(`account ${name}`, async (span) => {
       try {
         const amount = toUnits(balance.raw, token.decimals);
-        gauges.balance.record(amount, {
-          chain,
-          symbol: token.symbol,
-          account: name,
-          explorer: balance.explorer,
-        });
+        const labels = { chain, symbol: token.symbol, account: name };
+        // One point per explorer, so the explorer label always holds one name;
+        // the total has its own metric, which a sum over explorers can't double count.
+        for (const [explorer, raw] of balance.byExplorer) {
+          gauges.balance.record(toUnits(raw, token.decimals), { ...labels, explorer });
+        }
+        gauges.accountBalance.record(amount, labels);
+        const explorers = [...balance.byExplorer.keys()].sort().join(',');
 
         const { id } = await actual.findAccount(name);
         const txs = await actual.transactionsForPlan(id, today);
@@ -270,7 +272,7 @@ async function syncAccounts(
           amount_cents: plan.amountCents,
           value_cents: plan.valueCents,
           note: plan.note,
-          explorer: balance.explorer,
+          explorer: explorers,
           source: quote.source,
         };
 

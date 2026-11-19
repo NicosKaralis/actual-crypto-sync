@@ -39,6 +39,7 @@ export const fakeChains: Record<string, Chain> = {
     nativeSymbol: 'TRX',
     supportsTokens: true,
     isValidAddress: (address) => new RegExp(`^T${BASE58}{33}$`).test(address),
+    normalizeAddress: (address) => address,
     explorers: {
       trongrid: explorer('trongrid', true),
       'tron-native-only': explorer('tron-native-only', false),
@@ -50,7 +51,9 @@ export const fakeChains: Record<string, Chain> = {
     nativeSymbol: 'BTC',
     supportsTokens: false,
     isValidAddress: (address) =>
-      new RegExp(`^[13]${BASE58}{25,34}$`).test(address) || /^bc1[a-z0-9]{11,71}$/.test(address),
+      new RegExp(`^[13]${BASE58}{25,34}$`).test(address) ||
+      /^(bc1[a-z0-9]{11,71}|BC1[A-Z0-9]{11,71})$/.test(address),
+    normalizeAddress: (address) => (/^bc1/i.test(address) ? address.toLowerCase() : address),
     explorers: { 'mempool-space': explorer('mempool-space', false) },
     defaultExplorers: ['mempool-space'],
   },
