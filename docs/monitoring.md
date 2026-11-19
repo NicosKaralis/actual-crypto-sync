@@ -64,8 +64,11 @@ The tool sets each metric one time per run. All metrics are gauges.
 | `actual_crypto_sync_transactions`                   | `action`                                 | Transactions `created`, `updated`, `cleared` and `deleted`; accounts `skipped`.          |
 | `actual_crypto_sync_errors`                         | `stage`                                  | Errors at each stage: `config`, `wallet`, `quotes`, `actual`, `account`.                 |
 | `actual_crypto_sync_provider_errors`                | `kind`, `id`                             | Failed requests to each explorer (`kind="explorer"`) or price provider (`kind="price"`). |
+| `actual_crypto_sync_build_info`                     | `version`                                | Always 1. The version of the tool that sent the metrics.                                 |
 
 `skipped` counts the accounts that the run did not update, because today's sync transaction is reconciled in Actual and the value of the wallet changed. These accounts show the reconciled value until the next day. See [What the tool writes](configuration.md#what-the-tool-writes).
+
+To show the running version on a dashboard, use the `version` label of `actual_crypto_sync_build_info`. Every metric and span also has the version in its scope. See [Resource and scope](opentelemetry.md#resource-the-service-name-and-labels).
 
 An alert on `actual_crypto_sync_last_success_timestamp_seconds` tells you when the sync stops working. For example, alert when it is more than one day old.
 
