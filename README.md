@@ -145,7 +145,7 @@ All participants must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 ### Key files
 
 - [`config.example.yml`](config.example.yml): an example config, with an explanation of each setting.
-- [`src/tokens.yml`](src/tokens.yml): the built-in tokens. To add a token, add it here.
+- [`tokens.yml`](tokens.yml) and [`tokens/`](tokens): the built-in tokens, with one file for each chain that has tokens. To add a token, add it to the file of its chain.
 - [`src/chains/`](src/chains): one folder per chain, with its block explorers.
 - [`src/prices/`](src/prices): one file per price provider.
 - [`src/actual.ts`](src/actual.ts): reads and writes the budget through `@actual-app/api`.
