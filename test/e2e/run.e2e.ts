@@ -26,7 +26,7 @@ import { createLog } from '../../src/log.ts';
 import { run } from '../../src/main.ts';
 import { VERSION } from '../../src/otel-env.ts';
 import { startTelemetry } from '../../src/telemetry.ts';
-import { COINPAPRIKA_PRICES, type Mock, startMock } from './mock.ts';
+import { COINPAPRIKA_PRICES, type Mock, startMock, TRON_WALLET_2_SUN } from './mock.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CONFIG = join(ROOT, 'test/e2e/config.yml');
@@ -221,6 +221,10 @@ describe('e2e', () => {
       accounts.get('TRON: USDT')?.[0]?.notes,
       '0.828961 USDT (Δ +0.828961 @ 0.9041 EUR/USDT, 0.75 EUR)',
     );
+    // The account with two wallets shows their total.
+    const one = parseNote(accounts.get('TRON: TRX')?.[0]?.notes ?? null)?.balance ?? 0;
+    const two = parseNote(accounts.get('TRON: TRX, two wallets')?.[0]?.notes ?? null)?.balance;
+    assert.equal(two, Math.round((one + TRON_WALLET_2_SUN / 1e6) * 1e6) / 1e6);
   });
 
   test('a second run on the same day updates them', async () => {
@@ -309,6 +313,29 @@ describe('e2e', () => {
     assert.equal(code, 0);
     assert.equal(messages(entries, 'dry run: would create a transaction').length, ACCOUNTS.length);
     assert.deepEqual(await budget(), before);
+  });
+
+  test('a failing wallet skips its account, never writing a partial total', async () => {
+    const before = await budget();
+    mock.state.failingWallets.add('TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2');
+    try {
+      const { code, entries } = await sync({ now: DAY3 });
+      assert.equal(code, 1);
+      assert.ok(
+        entries.some(
+          (e) => e.level === 'error' && String(e.msg).startsWith('TF4E...JKv2: every explorer'),
+        ),
+      );
+      const written = messages(entries, 'created a transaction').map((e) => e.account);
+      assert.deepEqual(
+        written.sort(),
+        ACCOUNTS.filter((name) => name !== 'TRON: TRX, two wallets').sort(),
+      );
+      const after = await budget();
+      assert.deepEqual(after.get('TRON: TRX, two wallets'), before.get('TRON: TRX, two wallets'));
+    } finally {
+      mock.state.failingWallets.clear();
+    }
   });
 
   test('a password login syncs too', async () => {

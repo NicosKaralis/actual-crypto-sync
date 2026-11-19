@@ -71,7 +71,7 @@ accounts:                                      # the off-budget Actual accounts 
   - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
     chain: tron                                # tron or bitcoin
     token: TRX                                 # a built-in token or one from tokens:
-    wallets:                                   # one wallet per account for now: a list,
+    wallets:                                   # a list (the account shows their total),
       - ${TRON_WALLET_ADDRESS}                 # an inline list or a single address (below)
 
   - name: "WTRX Account"                       # any name you like, as long as it matches the account in Actual

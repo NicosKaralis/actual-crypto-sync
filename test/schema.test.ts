@@ -179,6 +179,10 @@ describe('the schema and the loader agree on the shape', () => {
   }
 
   const accepted: [string, (raw: Raw) => void][] = [
+    [
+      'accounts: two wallets',
+      (raw) => Object.assign(account(raw), { wallets: [TRON_WALLET, TRON_WALLET_2] }),
+    ],
     ['the base config', () => {}],
     ['one provider by name', (raw) => Object.assign(prices(raw), { providers: 'coingecko' })],
     [
@@ -316,8 +320,8 @@ describe('the schema and the loader agree on the shape', () => {
     ['accounts: a lower-case token', (raw) => Object.assign(account(raw), { token: 'trx' })],
     ['accounts: an empty wallet list', (raw) => Object.assign(account(raw), { wallets: [] })],
     [
-      'accounts: two wallets',
-      (raw) => Object.assign(account(raw), { wallets: [TRON_WALLET, TRON_WALLET_2] }),
+      'accounts: the same wallet twice',
+      (raw) => Object.assign(account(raw), { wallets: [TRON_WALLET, TRON_WALLET] }),
     ],
   ];
 

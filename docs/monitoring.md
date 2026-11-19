@@ -58,13 +58,16 @@ The tool sets each metric one time per run. All metrics are gauges.
 | `actual_crypto_sync_last_run_timestamp_seconds`     |                                          | When the last run started.                                                               |
 | `actual_crypto_sync_last_success_timestamp_seconds` |                                          | When the last run without errors started.                                                |
 | `actual_crypto_sync_run_duration_seconds`           |                                          | How long the last run took.                                                              |
-| `actual_crypto_sync_balance`                        | `chain`, `symbol`, `account`, `explorer` | The balance of the wallet, in tokens.                                                    |
+| `actual_crypto_sync_balance`                        | `chain`, `symbol`, `account`, `explorer` | The part of the account's balance that each explorer read, in tokens.                    |
+| `actual_crypto_sync_account_balance`                | `chain`, `symbol`, `account`             | The balance of the account, in tokens: the total of all its wallets.                     |
 | `actual_crypto_sync_price`                          | `symbol`, `currency`, `source`           | The price of one token.                                                                  |
-| `actual_crypto_sync_value`                          | `chain`, `symbol`, `account`, `currency` | The value of the wallet in the currency.                                                 |
+| `actual_crypto_sync_value`                          | `chain`, `symbol`, `account`, `currency` | The value of the account in the currency.                                                |
 | `actual_crypto_sync_transactions`                   | `action`                                 | Transactions `created`, `updated`, `cleared` and `deleted`; accounts `skipped`.          |
 | `actual_crypto_sync_errors`                         | `stage`                                  | Errors at each stage: `config`, `wallet`, `quotes`, `actual`, `account`.                 |
 | `actual_crypto_sync_provider_errors`                | `kind`, `id`                             | Failed requests to each explorer (`kind="explorer"`) or price provider (`kind="price"`). |
 | `actual_crypto_sync_build_info`                     | `version`                                | Always 1. The version of the tool that sent the metrics.                                 |
+
+An account with several wallets can have more than one `actual_crypto_sync_balance` series, one for each explorer that read its wallets. Usually one explorer reads all of them, so there is one series. For the total of the account, use `actual_crypto_sync_account_balance` in tokens, or `actual_crypto_sync_value` in the currency. Do not add up `actual_crypto_sync_balance` over the explorers with a query over a time window: when the explorer of a wallet changes between two runs, the window can hold both series, and the wallet counts two times.
 
 `skipped` counts the accounts that the run did not update, because today's sync transaction is reconciled in Actual and the value of the wallet changed. These accounts show the reconciled value until the next day. See [What the tool writes](configuration.md#what-the-tool-writes).
 

@@ -355,16 +355,36 @@ describe('loadConfig: chains and wallets', () => {
     assert.deepEqual(load().accounts[0]?.wallets, [{ address: TRON_WALLET }]);
   });
 
-  test('two wallets in one account are not supported yet', () => {
+  test('an account can list several wallets', () => {
+    const config = load((raw) =>
+      Object.assign(firstAccount(raw), { wallets: ['${TRON_WALLET}', '${TRON_WALLET_2}'] }),
+    );
+    assert.deepEqual(config.accounts[0]?.wallets, [
+      { address: TRON_WALLET },
+      { address: TRON_WALLET_2 },
+    ]);
+  });
+
+  test('the same wallet twice in one account is an error', () => {
     assertConfigError(
       () =>
         load((raw) =>
-          accounts(raw).push(btcAccount, {
-            ...usdtAccount,
-            wallets: ['${TRON_WALLET}', '${TRON_WALLET_2}'],
+          Object.assign(firstAccount(raw), {
+            wallets: ['${TRON_WALLET_2}', '${TRON_WALLET}', '${TRON_WALLET}'],
           }),
         ),
-      "accounts[2].wallets: several wallets per account isn't supported yet (see ROADMAP.md)",
+      'accounts[0].wallets[2]: the same wallet as accounts[0].wallets[1]',
+    );
+  });
+
+  test('wallets are kept in their normal form, so case is no way around the check', () => {
+    // A bech32 address may be written in upper case; it is the same wallet.
+    const upper = BTC_WALLET.toUpperCase();
+    const one = load((raw) => accounts(raw).push({ ...btcAccount, wallets: [upper] }));
+    assert.deepEqual(one.accounts[1]?.wallets, [{ address: BTC_WALLET }]);
+    assertConfigError(
+      () => load((raw) => accounts(raw).push({ ...btcAccount, wallets: ['${BTC_WALLET}', upper] })),
+      'accounts[1].wallets[1]: the same wallet as accounts[1].wallets[0]',
     );
   });
 

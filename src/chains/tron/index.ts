@@ -17,6 +17,8 @@ export const tron: Chain = {
     const payload = decodeBase58Check(address);
     return payload?.length === 21 && payload[0] === VERSION;
   },
+  // base58 is case-sensitive: the address is already its one spelling.
+  normalizeAddress: (address) => address,
   explorers: { trongrid },
   defaultExplorers: ['trongrid'],
 };

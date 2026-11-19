@@ -318,7 +318,7 @@
             "description": "The chain's coin, a built-in token, or a token from tokens. The tool checks that the chain has it."
           },
           "wallets": {
-            "description": "The wallet address: one address, or a list with one address.",
+            "description": "The wallet address: one address, or a list of addresses. The account shows the total of all its wallets.",
             "oneOf": [
               {
                 "$ref": "#/definitions/text"
@@ -326,7 +326,7 @@
               {
                 "type": "array",
                 "minItems": 1,
-                "maxItems": 1,
+                "uniqueItems": true,
                 "items": {
                   "$ref": "#/definitions/text"
                 }
