@@ -8,6 +8,7 @@ import { type Actual, type ActualApi, type OpenBudgetOptions, openBudget } from 
 import { type ActualAuth, type Config, ConfigError } from '../src/config.ts';
 import { createLog, LOG_FORMATS } from '../src/log.ts';
 import { main, run } from '../src/main.ts';
+import { VERSION } from '../src/otel-env.ts';
 import type { PlanTransaction } from '../src/plan.ts';
 import { type GaugeName, startTelemetry, type Telemetry } from '../src/telemetry.ts';
 import type { Chain, Explorer, PriceProvider, Quote, Token } from '../src/types.ts';
@@ -292,6 +293,7 @@ describe('run', () => {
     assert.equal(calls.at(-1), 'sync');
 
     assert.deepEqual(values('lastRun'), [{ value: NOW.getTime() / 1000 }]);
+    assert.deepEqual(values('buildInfo'), [{ value: 1, version: VERSION }]);
     assert.deepEqual(values('lastSuccess'), [{ value: NOW.getTime() / 1000 }]);
     assert.equal(values('runDuration').length, 1);
     assert.deepEqual(values('transactions'), [
@@ -464,6 +466,8 @@ describe('run', () => {
     );
     assert.deepEqual(values('lastSuccess'), []);
     assert.deepEqual(values('lastRun'), [{ value: NOW.getTime() / 1000 }]);
+    // A failed run still says which version ran.
+    assert.deepEqual(values('buildInfo'), [{ value: 1, version: VERSION }]);
   });
 
   test('a token with no quote fails only its accounts', async () => {
@@ -599,6 +603,7 @@ describe('run', () => {
       { value: 1, stage: 'config' },
     );
     assert.equal(values('lastRun').length, 1);
+    assert.deepEqual(values('buildInfo'), [{ value: 1, version: VERSION }]);
   });
 
   test('a rejected login exits 1 before any explorer or provider is called', async () => {

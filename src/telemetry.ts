@@ -80,6 +80,7 @@ const GAUGES = {
   transactions: 'actual_crypto_sync_transactions', // {action}
   errors: 'actual_crypto_sync_errors', // {stage}
   providerErrors: 'actual_crypto_sync_provider_errors', // {kind, id}
+  buildInfo: 'actual_crypto_sync_build_info', // {version}, always 1
 } as const;
 
 export type GaugeName = keyof typeof GAUGES;

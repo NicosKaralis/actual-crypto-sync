@@ -95,6 +95,7 @@ describe('startTelemetry', () => {
     gauges.transactions.record(1, { action: 'created' });
     gauges.errors.record(0, { stage: 'wallet' });
     gauges.providerErrors.record(1, { kind: 'explorer', id: 'trongrid' });
+    gauges.buildInfo.record(1, { version: '1.2.0' });
     await telemetry.shutdown();
 
     const exported = new Map(
@@ -105,6 +106,7 @@ describe('startTelemetry', () => {
     );
     assert.deepEqual([...exported.keys()].sort(), [
       'actual_crypto_sync_balance',
+      'actual_crypto_sync_build_info',
       'actual_crypto_sync_errors',
       'actual_crypto_sync_last_run_timestamp_seconds',
       'actual_crypto_sync_last_success_timestamp_seconds',
