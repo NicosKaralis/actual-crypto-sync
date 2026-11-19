@@ -1,0 +1,4 @@
+{
+  // tokens.yml joins the chain files in tokens/ with !import (docs/development.md).
+  "yaml.customTags": ["!import scalar"]
+}
