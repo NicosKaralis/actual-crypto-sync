@@ -21,10 +21,9 @@ When a version is released, its milestone closes automatically, and its closed i
 
 ## Later
 
-- **Several wallets in one account.** The account shows the total of all its wallets.
 - **One token across chains in one account.** For example, USDT on TRON and on Ethereum in one account. This needs several wallets in one account, and a second chain with USDT.
 - **Bitcoin xpub and zpub.** The tool finds all the addresses of an HD wallet and adds their balances.
-- **EVM chains.** Ethereum first, then Base, Arbitrum and Polygon. ETH and ERC20 tokens.
+- **More EVM chains.** Base, Arbitrum and Polygon. Their native coin and ERC20 tokens.
 - **Solana.** SOL and SPL tokens.
 - **More explorers.** For example blockchain.com for Bitcoin and Tronscan for TRON.
 - **More price providers.** For example Kraken, Binance and CryptoCompare.
