@@ -48,7 +48,7 @@ const NO_IMPORT_TAG: ScalarTag = {
 };
 // Relative, segments that start with a letter or digit (no `.`, `..`, empty or
 // hidden ones), and a .yml or .yaml file.
-const IMPORT_PATH = /^[A-Za-z0-9][\w.-]*(?:\/[A-Za-z0-9][\w.-]*)*\.ya?ml$/;
+export const IMPORT_PATH = /^[A-Za-z0-9][\w.-]*(?:\/[A-Za-z0-9][\w.-]*)*\.ya?ml$/;
 
 /**
  * One token entry, from `tokens.yml` or the config's `tokens:`. An entry with

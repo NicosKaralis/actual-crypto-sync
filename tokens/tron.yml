@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../tokens.schema.json
 # The built-in tokens on TRON, imported by tokens.yml. The fields are explained there.
 
 - symbol: TRX

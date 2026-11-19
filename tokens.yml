@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=tokens.schema.json
 # The built-in tokens, which a config picks by symbol. Read when the program starts.
 #
 # A chain with contract tokens has its own file, tokens/<chain>.yml, which holds
