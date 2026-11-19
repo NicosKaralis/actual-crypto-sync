@@ -156,6 +156,8 @@ When `OTEL_SERVICE_NAME` is set, it wins over a `service.name` in `OTEL_RESOURCE
 
 Use these variables to tell two installations apart, for example two budgets. Many backends turn the resource attributes into labels.
 
+Each metric and each span also carries the instrumentation scope: the name `actual-crypto-sync` and the version of the tool, for example `1.2.0`. Backends that keep the scope as labels, such as VictoriaMetrics, show it as `scope.name` and `scope.version`. When you update the tool, each series gets a new `scope.version`, so the series change one time for each release. To use the version in a query, `actual_crypto_sync_build_info` has it as a label. See [Metrics](monitoring.md#metrics).
+
 > [!WARNING]
 > If you change the service name or the attributes, the labels of every metric change. Update your dashboards and your alerts at the same time, or they stop matching the new series.
 
@@ -323,7 +325,7 @@ environment:
   OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: grpc
 ```
 
-VictoriaMetrics keeps the resource attributes as labels, so the metrics have the label `service.name="actual-crypto-sync"`.
+VictoriaMetrics keeps the resource attributes and the scope as labels, so the metrics have the labels `service.name="actual-crypto-sync"`, `scope.name="actual-crypto-sync"` and `scope.version`, for example `"1.2.0"`.
 
 ### A hosted backend with an API key
 

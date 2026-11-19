@@ -16,7 +16,13 @@ import { type Config, ConfigError, loadConfig } from './config.ts';
 import { redactUrl, toUnits } from './format.ts';
 import type { Sleep } from './http.ts';
 import { createLog, errorMessage, type Log, type LogFormat, parseLogFormat } from './log.ts';
-import { OtelEnvError, parseTelemetryEnv, TELEMETRY_OFF, type TelemetryEnv } from './otel-env.ts';
+import {
+  OtelEnvError,
+  parseTelemetryEnv,
+  TELEMETRY_OFF,
+  type TelemetryEnv,
+  VERSION,
+} from './otel-env.ts';
 import { planAccount } from './plan.ts';
 import { collectQuotes } from './quotes.ts';
 import { startTelemetry, type Telemetry } from './telemetry.ts';
@@ -97,6 +103,7 @@ export async function run(options: RunOptions): Promise<number> {
   const { gauges } = telemetry;
   const startedSeconds = started.getTime() / 1000;
   gauges.lastRun.record(startedSeconds);
+  gauges.buildInfo.record(1, { version: VERSION });
   if (succeeded) {
     gauges.lastSuccess.record(startedSeconds);
   }
