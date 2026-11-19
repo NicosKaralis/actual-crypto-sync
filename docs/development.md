@@ -105,11 +105,11 @@ The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not ru
 
 `npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes about half a minute and needs no keys.
 
-- **Tokens:** the decimals of each contract on chain are the decimals in `src/tokens.yml`. The CoinGecko id of each token belongs to the same contract on CoinGecko.
+- **Tokens:** the decimals of each contract on chain are the decimals in the token files (`tokens.yml` and `tokens/`). The CoinGecko id of each token belongs to the same contract on CoinGecko.
 - **Explorers:** each explorer reads the public exchange wallets of its chain. The read must give a balance for each token. A balance of 0 is correct, because any wallet can be emptied.
 - **Price providers:** each provider gives a price for each token that has an id for it. A normal run stops at the first provider that gives a price. The live checks ask every provider.
 
-The checks take the chains, explorers, providers and tokens from the registries and `src/tokens.yml`, so a new one is checked without a change to the test. The test reads only the wallets in `test/live/registries.live.ts`, and test names show them as short addresses.
+The checks take the chains, explorers, providers and tokens from the registries and the token files, so a new one is checked without a change to the test. The test reads only the wallets in `test/live/registries.live.ts`, and test names show them as short addresses.
 
 The `Live checks` workflow runs them every Monday, on demand, and on pull requests that change the tokens, a chain, a price provider or the checks. It is not a required check: a service that is down for a short time must not block other work. A failed weekly run tells you that a contract, an API or a price id changed.
 
@@ -144,7 +144,7 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 2. Add at least one explorer. See [Add an explorer](#add-an-explorer).
 3. Register the chain in `src/chains/index.ts`.
    Add it to `config.schema.json`: under `chains`, to the chains of `accounts`, and to the chains of `tokens` if it has tokens. The schema tests fail until you do.
-4. Add the native token, and popular tokens, to `src/tokens.yml`.
+4. Add the native token, and popular tokens. See [The token files](#the-token-files). A chain with tokens gets its own file, `tokens/<chain>.yml`, and the line `<chain>: !import tokens/<chain>.yml` in `tokens.yml`. A chain with only its native token is listed in `tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
 7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a reader of contract decimals to `CONTRACT_DECIMALS`, and the CoinGecko platform id to `COINGECKO_PLATFORMS`. The [live checks](#live-checks) fail until you do.
@@ -176,7 +176,7 @@ Open an issue with the [new price provider form](https://github.com/NicosKaralis
    - `settingKeys`, `serialIntervalMs` and `rateLimitAdvice`, as for an explorer.
 2. Register the provider in `src/prices/index.ts`.
    Add it, with its settings, to `providers` and `price_ids` in `config.schema.json`. The schema tests fail until you do.
-3. Add the id of each built-in token at the provider to `price_ids` in `src/tokens.yml`.
+3. Add the id of each built-in token at the provider to `price_ids` in the token files.
 4. Record fixtures, and test the currency mapping, the parse of the response and each error.
 5. Add the provider to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
 
@@ -187,11 +187,36 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 1. Check the contract on a block explorer of the chain, for example Tronscan for TRON. Many fake tokens copy the name of a real token.
 2. Copy the decimals from the contract.
 3. Find the id at each price provider. On CoinGecko, check that the contract on the token page is the same contract.
-4. Add the token to `src/tokens.yml`. Put the links that you checked in the pull request.
+4. Add the token to the file of its chain, `tokens/<chain>.yml`. Put the links that you checked in the pull request.
 5. Add the token to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 tokens.
 6. Run `npm run test:live`. It checks the decimals on chain and the CoinGecko id of the new token. The pull request runs it too.
 
-The unit tests of `src/tokens.yml` check its rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) check its contents against the real services, so a new token needs no new test.
+The unit tests of the token files check their rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) check its contents against the real services, so a new token needs no new test.
+
+## The token files
+
+The built-in tokens are in `tokens.yml`, at the root of the project. It is a map of chain id to the list of tokens of that chain.
+
+- A chain with contract tokens has its own file, `tokens/<chain>.yml`. That file holds only the list of tokens. `tokens.yml` imports it with the `!import` tag:
+
+  ```yaml
+  tron: !import tokens/tron.yml
+  ```
+
+- A chain with only its native token, such as Bitcoin, is listed in `tokens.yml`.
+
+The rules for `!import`:
+
+- The path is relative to `tokens.yml`. It has no `.` or `..` segment, and it is not absolute.
+- The file ends in `.yml` or `.yaml`. The project uses `.yml`.
+- Only `tokens.yml` imports files. An imported file cannot use `!import`.
+- `!import` works only in the token files, not in the config.
+
+The unit tests fail if a file in `tokens/` is not imported, or if a list in `tokens.yml` has more than the native token.
+
+The token files name `tokens.schema.json` on their first line, as the config names `config.schema.json`. An editor with YAML support then checks the files and completes the keys. The schema checks the shape. The loader also checks that each chain has one native token, that symbols and contracts are unique, and that each contract is a valid address.
+
+The YAML language server (for example the YAML extension for VS Code) does not know the `!import` tag. The repository has a `.vscode/settings.json` with `"yaml.customTags": ["!import scalar"]`, so VS Code knows it. For another editor, add the same setting to its YAML language server.
 
 ## How a release happens
 

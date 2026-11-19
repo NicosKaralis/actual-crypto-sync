@@ -115,6 +115,18 @@ describe('loadConfig: the whole file', () => {
     );
   });
 
+  test('an unknown tag is an error, !import included', () => {
+    // yaml only warns, and would read the value as a plain string.
+    assertConfigError(
+      () => loadText('tokens: !import tokens.yml\n'),
+      'config: Unresolved tag: !import at line 1, column 9',
+    );
+    assertConfigError(
+      () => loadText('prices:\n  currency: !secret eur\n'),
+      'config: Unresolved tag: !secret at line 2, column 13',
+    );
+  });
+
   test('the top level must be a map', () => {
     assertConfigError(() => loadText('- just\n- a list\n'), 'config: expected a map');
   });

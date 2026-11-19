@@ -1,4 +1,4 @@
-# The test token database. Tests load this instead of src/tokens.yml, so the
+# The test token database. Tests load this instead of tokens.yml, so the
 # built-in list can change without changing them.
 
 tron:

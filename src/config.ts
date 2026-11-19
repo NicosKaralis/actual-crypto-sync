@@ -77,10 +77,11 @@ export function loadConfig(
   },
 ): Config {
   const doc = parseDocument(text, { uniqueKeys: true });
-  const [syntaxError] = doc.errors;
-  if (syntaxError) {
+  // A warning too: an unknown tag (`!import`) would otherwise load as a plain string.
+  const [problem] = [...doc.errors, ...doc.warnings];
+  if (problem) {
     // Only the first line: the rest quotes the file, which may hold a secret.
-    throw new ConfigError('config', syntaxError.message.split('\n')[0]?.replace(/:$/, '') ?? '');
+    throw new ConfigError('config', problem.message.split('\n')[0]?.replace(/:$/, '') ?? '');
   }
   const raw: unknown = doc.toJS();
   if (raw === null || raw === undefined) {

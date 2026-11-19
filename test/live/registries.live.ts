@@ -4,7 +4,7 @@
 // them, so a changed contract, API or price id shows up before a user's sync
 // fails.
 //
-// Everything comes from the registries and src/tokens.yml, so a new chain,
+// Everything comes from the registries and tokens.yml, so a new chain,
 // explorer, provider or token is checked without a change here. Only the public
 // exchange wallets of the unit tests are read, and test names show them as
 // short addresses. A balance of 0 passes: any wallet can be emptied.
