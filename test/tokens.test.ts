@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
+
+import { parseDocument } from 'yaml';
 
 import { getChain } from '../src/chains/index.ts';
 import { PRICE_PROVIDERS } from '../src/prices/index.ts';
@@ -9,6 +12,7 @@ import {
   findBuiltinToken,
   parseTokens,
   resolveToken,
+  TOKENS_FILE,
 } from '../src/tokens.ts';
 import type { Token } from '../src/types.ts';
 import { fakeTokens, TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
@@ -25,15 +29,65 @@ const CUSTOM: Token = {
 
 const parse = (text: string) => parseTokens(text, 'test.yml');
 
+/** Parses `text` with `files` as the files that `!import` can read. */
+function parseWith(text: string, files: Record<string, string>): ReturnType<typeof parseTokens> {
+  return parseTokens(text, 'test.yml', (path) => {
+    const file = files[path];
+    if (file === undefined) {
+      throw new Error(`ENOENT: ${path}`);
+    }
+    return file;
+  });
+}
+
+const TRX = '{ symbol: TRX, decimals: 6, price_ids: { coingecko: tron } }';
+const TRON_LIST = `- ${TRX}\n- { symbol: USDT, contract: TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t, decimals: 6, price_ids: { coingecko: tether } }\n`;
+
+/** Each chain of tokens.yml, with the file it imports, or undefined for an inline list. */
+function builtinIndex(): Map<string, string | undefined> {
+  const doc = parseDocument(readFileSync(TOKENS_FILE, 'utf8'), {
+    customTags: [{ tag: '!import', resolve: (path: string) => ({ import: path }) }],
+  });
+  const raw = doc.toJS() as Record<string, unknown>;
+  return new Map(
+    Object.entries(raw).map(([chain, value]) => [
+      chain,
+      Array.isArray(value) ? undefined : (value as { import: string }).import,
+    ]),
+  );
+}
+
 /** A one-chain database whose second token is `fields`, after a native TRX. */
 function withToken(fields: string): string {
   return `tron:\n  - { symbol: TRX, decimals: 6, price_ids: { coingecko: tron } }\n  - ${fields}\n`;
 }
 
-describe('the built-in database, src/tokens.yml', () => {
-  // Rules only: adding a token to src/tokens.yml shouldn't need a test change.
+describe('the built-in database, tokens.yml', () => {
+  // Rules only: adding a token to tokens.yml or tokens/ shouldn't need a test change.
   test('loads', () => {
     assert.ok(BUILTIN_TOKENS.length > 0);
+  });
+
+  test('every file in tokens/ is imported by tokens.yml', () => {
+    const imported = [...builtinIndex().values()].filter((path) => path !== undefined).sort();
+    const files = readdirSync(new URL('tokens/', TOKENS_FILE))
+      .map((name) => `tokens/${name}`)
+      .sort();
+    assert.deepEqual(imported, files);
+  });
+
+  test('an inline list in tokens.yml holds only the native token', () => {
+    // A chain with contract tokens gets its own file in tokens/.
+    for (const [chain, path] of builtinIndex()) {
+      if (path === undefined) {
+        const tokens = BUILTIN_TOKENS.filter((t) => t.chain === chain);
+        assert.deepEqual(
+          tokens.map((t) => t.kind),
+          ['native'],
+          chain,
+        );
+      }
+    }
   });
 
   test('every chain has exactly one native token', () => {
@@ -192,10 +246,104 @@ describe('parseTokens', () => {
     }
   });
 
+  test('an unknown tag is an error, not a string', () => {
+    assert.throws(() => parse('tron: !improt tokens/tron.yml\n'), {
+      message: 'test.yml: file: Unresolved tag: !improt at line 1, column 7',
+    });
+  });
+
   test('a contract used twice on a chain is an error', () => {
     const text = `${withToken(`{ symbol: AAA, contract: ${TRON_WALLET}, decimals: 6, price_ids: { coingecko: a } }`)}  - { symbol: BBB, contract: ${TRON_WALLET}, decimals: 6, price_ids: { coingecko: b } }\n`;
     assert.throws(() => parse(text), {
       message: 'test.yml: tron[2].contract: already used by AAA',
+    });
+  });
+});
+
+describe('parseTokens with !import', () => {
+  test("gives the same tokens as the chain's list inline", () => {
+    const inline = parse(`tron:\n${TRON_LIST.replace(/^/gm, '  ')}`);
+    assert.deepEqual(
+      parseWith('tron: !import tokens/tron.yml\n', { 'tokens/tron.yml': TRON_LIST }),
+      inline,
+    );
+  });
+
+  test('accepts .yml and .yaml, and mixes with inline lists', () => {
+    const tokens = parseWith(
+      `tron: !import tron.yaml\nbitcoin:\n  - { symbol: BTC, decimals: 8, price_ids: { coingecko: bitcoin } }\n`,
+      { 'tron.yaml': TRON_LIST },
+    );
+    assert.deepEqual(
+      tokens.map((t) => `${t.chain}:${t.symbol}`),
+      ['tron:TRX', 'tron:USDT', 'bitcoin:BTC'],
+    );
+  });
+
+  test('errors name the file that has the problem', () => {
+    const files = {
+      'tokens/missing-decimals.yml': `- ${TRX}\n- { symbol: XYZ, contract: ${TRON_WALLET}, price_ids: { coingecko: x } }\n`,
+      'tokens/map.yml': 'symbol: TRX\n',
+      'tokens/nested.yml': `- !import other.yml\n`,
+      'tokens/syntax.yml': '- { symbol: TRX\n',
+    };
+    const cases: [string, string][] = [
+      ['tron: !import tokens/tron.yml\n', "test.yml: tron: can't read tokens/tron.yml"],
+      [
+        'tron: !import tokens/missing-decimals.yml\n',
+        'tokens/missing-decimals.yml: tron[1].decimals: required',
+      ],
+      ['tron: !import tokens/map.yml\n', 'tokens/map.yml: tron: expected a list of tokens'],
+      [
+        'tron: !import tokens/nested.yml\n',
+        'tokens/nested.yml: file: !import is only allowed in tokens.yml at line 1, column 3',
+      ],
+      [
+        'tron: !import tokens/syntax.yml\n',
+        'tokens/syntax.yml: file: Flow map in block collection must be sufficiently indented and end with a } at line 2, column 1',
+      ],
+      [
+        'tron: [ !import tokens/map.yml ]\n',
+        "test.yml: tron[0]: !import must be a chain's whole list",
+      ],
+      ['!import tokens/map.yml\n', "test.yml: file: !import must be a chain's whole list"],
+    ];
+    for (const [text, message] of cases) {
+      assert.throws(() => parseWith(text, files), { message }, text);
+    }
+  });
+
+  test('a path must be relative, to a .yml or .yaml file, with no . or .. segment', () => {
+    const message =
+      'test.yml: tron: !import needs a relative path to a .yml or .yaml file, such as tokens/tron.yml';
+    const paths = [
+      '',
+      './tokens/tron.yml',
+      'tokens/./tron.yml',
+      'tokens/../tron.yml',
+      '../tron.yml',
+      '/tokens/tron.yml',
+      'C:/tokens/tron.yml',
+      'tokens\\\\tron.yml',
+      'tokens//tron.yml',
+      'tokens/.tron.yml',
+      'tokens/tron.json',
+      'tokens/tron',
+      'https://example.com/tron.yml',
+    ];
+    for (const path of paths) {
+      assert.throws(
+        () => parseWith(`tron: !import "${path}"\n`, { [path]: TRON_LIST }),
+        { message },
+        path,
+      );
+    }
+  });
+
+  test("isn't allowed without a file to import from", () => {
+    // The fixture database, and the config's tokens:, have no reader.
+    assert.throws(() => parse('tron: !import tokens/tron.yml\n'), {
+      message: "test.yml: tron: !import isn't allowed in this file",
     });
   });
 });

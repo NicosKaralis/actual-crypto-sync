@@ -28,6 +28,8 @@ COPY --from=test /tmp/tests-passed /tmp/tests-passed
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
+COPY tokens.yml ./
+COPY tokens ./tokens
 RUN mkdir -p /cache /config && chown node:node /cache
 USER node
 ENTRYPOINT ["node", "/app/src/main.ts"]
