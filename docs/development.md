@@ -57,7 +57,7 @@ The dev stack is a local Actual server in Docker, at `http://localhost:5006`. It
 
 1. **Start the server:** `npm run dev:up`. The command waits until the server answers.
 2. **Make your env file:** copy `dev/.env.example` to `dev/.env`. Git ignores `dev/.env`.
-3. **Seed the budget:** `npm run dev:seed`. On a new server, it sets the server password from `dev/.env`. Then it creates a budget with the name `Dev` and the off-budget accounts of `dev/config.yml`. It prints the sync ID and a session token. Put them in `dev/.env`.
+3. **Seed the budget:** `npm run dev:seed`. On a new server, it sets the server password from `dev/.env`. Then it creates a budget with the name `Dev` and the off-budget accounts of `dev/config.yml`. If the `Dev` budget is already there, it adds only the accounts that the budget does not have, so you can run it again after an account is added. It prints the sync ID and a session token. Put them in `dev/.env`.
 4. **Run the tool:** `npm run dev:run`. Add `-- --dry-run` to write nothing, or `-- --debug` to see each request.
 5. **Log in with the password instead:** `npm run dev:run -- --config dev/config.password.yml`.
 

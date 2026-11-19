@@ -266,7 +266,7 @@ accounts:
 | `name`    | Yes      | The Actual account, by its name or its id. Each account can be in the list one time only. |
 | `chain`   | Yes      | `tron` or `bitcoin`.                                                                      |
 | `token`   | Yes      | The chain's coin (TRX or BTC), a built-in token, or a token from `tokens`.                |
-| `wallets` | Yes      | The wallet address. In v1.0, one wallet per account.                                      |
+| `wallets` | Yes      | The wallet addresses. The account shows the total of all its wallets.                     |
 
 The account in Actual must be open and off budget. Each account holds one token on one chain. For TRX and USDT on the same wallet, make two accounts.
 
@@ -282,6 +282,24 @@ wallets: ["${BTC_ADDRESS}"]
 In an inline list, put quotes around `${...}`. If you do not, YAML reads it as a map.
 
 You can use the same wallet in more than one account. The tool reads it one time.
+
+### Several wallets in one account
+
+An account can have more than one wallet, all on its chain. The account shows the total of its wallets, and the note shows the total only.
+
+```yaml
+accounts:
+  - name: "TRON: TRX, all wallets"
+    chain: tron
+    token: TRX
+    wallets:
+      - ${TRON_WALLET_ADDRESS}
+      - ${TRON_SAVINGS_ADDRESS}
+```
+
+- If the tool cannot read one of the wallets, it does not write to the account in that run. It never writes a total that leaves out a wallet. The run continues for the other accounts and then ends with an error.
+- Each wallet can be in the list one time only. Bitcoin bech32 addresses (`bc1...`) can have upper-case or lower-case letters. The tool compares them in lower case, so `bc1q...` and `BC1Q...` are the same wallet.
+- Each wallet can be read by a different explorer, for example when the first explorer fails for one wallet. The metrics then show each explorer's part. See [Metrics](monitoring.md#metrics).
 
 ## What the tool writes
 
@@ -333,25 +351,25 @@ The tool checks all of the config before it connects to Actual. If the config ha
 
 These are the errors that you can see most often:
 
-| Error                                                                                   | What to do                                                                                      |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `config: can't read /config/config.yml (ENOENT)`                                        | Mount the file at that path, or set `--config` or `CONFIG_FILE`.                                |
-| `<path>: unknown key; expected ...`                                                     | Correct the spelling of the key. The error lists the correct keys.                              |
-| `<path>: unknown setting; expected ...`                                                 | Correct the spelling of the setting. The error lists the settings of that explorer or provider. |
-| `<path>: required`                                                                      | Add the key.                                                                                    |
-| `<path>: environment variable NAME is not set`                                          | Set the variable for the tool, for example in your Secret or env file.                          |
-| `actual.auth: set one of session, password, api_key`                                    | Add one login method. See [docs/authentication.md](authentication.md).                          |
-| `actual.auth: set only one of session, password, api_key; found ...`                    | Remove all methods but one.                                                                     |
-| `actual.auth.<method>: use ${VAR}, never the secret itself`                             | Put the secret in an environment variable, and write `${NAME}` in the file.                     |
-| `prices.currency: "..." isn't an ISO 4217 currency code`                                | Use a 3-letter code, for example `eur`.                                                         |
-| `prices.currency: "..." isn't supported by ...`                                         | Use another currency, or add a provider that supports it.                                       |
-| `<path>: unknown explorer "..." for tron; supported: ...`                               | Use one of the listed explorers.                                                                |
-| `<path>: unknown price provider "..."; supported: ...`                                  | Use one of the listed providers.                                                                |
-| `accounts[N].token: "..." isn't built in on tron; define it in tokens:`                 | Add the token to `tokens`, or correct the symbol.                                               |
-| `accounts[N].token: none of the listed price providers (...) has a price id for ...`    | Add a `price_ids` entry for one of your providers.                                              |
-| `accounts[N].wallets[0]: not a valid tron address`                                      | Correct the address. The error does not show it.                                                |
-| `accounts[N].wallets: several wallets per account isn't supported yet (see ROADMAP.md)` | Use one wallet per account. See the [roadmap](../ROADMAP.md).                                   |
-| `accounts[N].name: "..." is already used by accounts[M]`                                | Each account can be in the list one time only.                                                  |
+| Error                                                                                | What to do                                                                                      |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `config: can't read /config/config.yml (ENOENT)`                                     | Mount the file at that path, or set `--config` or `CONFIG_FILE`.                                |
+| `<path>: unknown key; expected ...`                                                  | Correct the spelling of the key. The error lists the correct keys.                              |
+| `<path>: unknown setting; expected ...`                                              | Correct the spelling of the setting. The error lists the settings of that explorer or provider. |
+| `<path>: required`                                                                   | Add the key.                                                                                    |
+| `<path>: environment variable NAME is not set`                                       | Set the variable for the tool, for example in your Secret or env file.                          |
+| `actual.auth: set one of session, password, api_key`                                 | Add one login method. See [docs/authentication.md](authentication.md).                          |
+| `actual.auth: set only one of session, password, api_key; found ...`                 | Remove all methods but one.                                                                     |
+| `actual.auth.<method>: use ${VAR}, never the secret itself`                          | Put the secret in an environment variable, and write `${NAME}` in the file.                     |
+| `prices.currency: "..." isn't an ISO 4217 currency code`                             | Use a 3-letter code, for example `eur`.                                                         |
+| `prices.currency: "..." isn't supported by ...`                                      | Use another currency, or add a provider that supports it.                                       |
+| `<path>: unknown explorer "..." for tron; supported: ...`                            | Use one of the listed explorers.                                                                |
+| `<path>: unknown price provider "..."; supported: ...`                               | Use one of the listed providers.                                                                |
+| `accounts[N].token: "..." isn't built in on tron; define it in tokens:`              | Add the token to `tokens`, or correct the symbol.                                               |
+| `accounts[N].token: none of the listed price providers (...) has a price id for ...` | Add a `price_ids` entry for one of your providers.                                              |
+| `accounts[N].wallets[0]: not a valid tron address`                                   | Correct the address. The error does not show it.                                                |
+| `accounts[N].wallets[I]: the same wallet as accounts[N].wallets[J]`                  | Remove one of the two. The error does not show the address.                                     |
+| `accounts[N].name: "..." is already used by accounts[M]`                             | Each account can be in the list one time only.                                                  |
 
 Errors from the login and the budget download are in [docs/authentication.md](authentication.md#troubleshooting).
 
