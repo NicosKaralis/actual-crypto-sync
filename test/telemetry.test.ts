@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createServer, type IncomingHttpHeaders, type IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { describe, test } from 'node:test';
@@ -11,6 +12,13 @@ import type { Log } from '../src/log.ts';
 import { parseTelemetryEnv } from '../src/otel-env.ts';
 import { exportError, startTelemetry } from '../src/telemetry.ts';
 import { TRON_WALLET } from './fakes.ts';
+
+/** The version in package.json, read here so the test doesn't trust the code under test. */
+const PACKAGE_VERSION = (
+  JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+    version: string;
+  }
+).version;
 
 function exporters() {
   return {
@@ -36,6 +44,33 @@ describe('startTelemetry', () => {
     assert.deepEqual(span?.resource.attributes, { 'service.name': 'actual-crypto-sync' });
     const [metrics] = metricExporter.getMetrics();
     assert.deepEqual(metrics?.resource.attributes, { 'service.name': 'actual-crypto-sync' });
+  });
+
+  test("metrics and spans carry the tool's version in their scope", async () => {
+    const { spanExporter, metricExporter } = exporters();
+    const telemetry = startTelemetry({
+      spanExporter,
+      metricExporter,
+      instrumentFetch: false,
+    });
+    telemetry.tracer.startSpan('actual-crypto-sync.run').end();
+    telemetry.gauges.lastRun.record(1);
+    const [span] = spanExporter.getFinishedSpans();
+    await telemetry.shutdown();
+
+    const scope = { name: 'actual-crypto-sync', version: PACKAGE_VERSION };
+    assert.ok(PACKAGE_VERSION, 'package.json has no version');
+    assert.deepEqual(
+      { name: span?.instrumentationScope.name, version: span?.instrumentationScope.version },
+      scope,
+    );
+    const scopes = metricExporter
+      .getMetrics()
+      .flatMap((resource) => resource.scopeMetrics.map((metrics) => metrics.scope));
+    assert.deepEqual(
+      scopes.map(({ name, version }) => ({ name, version })),
+      [scope],
+    );
   });
 
   test('gauges export under their metric names, with their labels', async () => {

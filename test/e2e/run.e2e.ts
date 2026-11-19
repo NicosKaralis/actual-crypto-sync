@@ -24,6 +24,7 @@ import { loadConfig } from '../../src/config.ts';
 import { parseNote } from '../../src/format.ts';
 import { createLog } from '../../src/log.ts';
 import { run } from '../../src/main.ts';
+import { VERSION } from '../../src/otel-env.ts';
 import { startTelemetry } from '../../src/telemetry.ts';
 import { COINPAPRIKA_PRICES, type Mock, startMock } from './mock.ts';
 
@@ -445,10 +446,10 @@ describe('e2e', () => {
       });
       assert.ok(!stdout.includes(' WARN '), stdout);
       const labels = await eventually(lastRunLabels);
-      assert.ok(
-        labels?.some((series) => series['service.name'] === 'e2e-protobuf'),
-        `no metrics in VictoriaMetrics: ${JSON.stringify(labels)}`,
-      );
+      const series = labels?.find((series) => series['service.name'] === 'e2e-protobuf');
+      assert.ok(series, `no metrics in VictoriaMetrics: ${JSON.stringify(labels)}`);
+      // VictoriaMetrics keeps the scope as labels.
+      assert.equal(series['scope.version'], VERSION, JSON.stringify(series));
     });
 
     test('JSON metrics refused by the backend log a warning; the run still exits 0', async () => {

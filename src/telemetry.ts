@@ -64,6 +64,7 @@ import {
   SERVICE_NAME,
   type Signal,
   TELEMETRY_OFF,
+  VERSION,
 } from './otel-env.ts';
 
 export { SERVICE_NAME };
@@ -198,7 +199,9 @@ export function startTelemetry({
         ]
       : [],
   });
-  const meter = meterProvider.getMeter(SERVICE_NAME);
+  // The version goes in the scope, not the resource: series change once per
+  // release, never per run.
+  const meter = meterProvider.getMeter(SERVICE_NAME, VERSION);
   const gauges = Object.fromEntries(
     Object.entries(GAUGES).map(([key, name]) => [key, meter.createGauge(name)]),
   ) as Record<GaugeName, Gauge>;
@@ -227,7 +230,7 @@ export function startTelemetry({
   }
 
   return {
-    tracer: tracerProvider.getTracer(SERVICE_NAME),
+    tracer: tracerProvider.getTracer(SERVICE_NAME, VERSION),
     gauges,
     propagateTo: (url) => {
       actualOrigin = originOf(url);
