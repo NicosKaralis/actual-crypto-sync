@@ -189,7 +189,7 @@ Each explorer and provider also has its own settings:
 | `coingecko`     | Price provider    | `demo_api_key` |                                       | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                     |
 | `coingecko`     | Price provider    | `pro_api_key`  |                                       | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`.                                                                              |
 | `coinpaprika`   | Price provider    | `api_url`      | `https://api.coinpaprika.com/v1`      | The CoinPaprika API.                                                                                                                                                                       |
-| `coinpaprika`   | Price provider    | `api_key`      |                                       | A CoinPaprika API key, for the paid plans. The default `api_url` is then `https://api-pro.coinpaprika.com/v1`. Use `${VAR}`.                                                               |
+| `coinpaprika`   | Price provider    | `api_key`      |                                       | A CoinPaprika API key of a paid plan (pro, business or enterprise). A free plan's key does not work. The default `api_url` is then `https://api-pro.coinpaprika.com/v1`. Use `${VAR}`.     |
 
 Any other setting is an error, so a misspelled setting cannot be ignored without a message.
 
