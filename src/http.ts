@@ -69,15 +69,39 @@ function oneAtATime(
 }
 
 /** GETs `url` and returns its parsed JSON body, as `unknown` for the caller to check. */
-export async function getJson(
+export function getJson(
   service: string,
   url: string,
   fetch: typeof globalThis.fetch,
   headers: Record<string, string> = {},
 ): Promise<unknown> {
+  return requestJson(service, url, fetch, { headers: { accept: 'application/json', ...headers } });
+}
+
+/** POSTs `body` as JSON to `url` and returns the parsed JSON answer, as `unknown`. */
+export function postJson(
+  service: string,
+  url: string,
+  fetch: typeof globalThis.fetch,
+  body: unknown,
+  headers: Record<string, string> = {},
+): Promise<unknown> {
+  return requestJson(service, url, fetch, {
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  });
+}
+
+async function requestJson(
+  service: string,
+  url: string,
+  fetch: typeof globalThis.fetch,
+  init: RequestInit,
+): Promise<unknown> {
   let response: Response;
   try {
-    response = await fetch(url, { headers: { accept: 'application/json', ...headers } });
+    response = await fetch(url, init);
   } catch (error) {
     if (error instanceof Error && error.name === 'TimeoutError') {
       throw new Error(`${service}: request timed out`);
