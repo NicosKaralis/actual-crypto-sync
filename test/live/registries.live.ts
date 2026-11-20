@@ -359,8 +359,10 @@ describe('price providers', () => {
   });
 
   // One request per chain: CoinPaprika's list of every contract on that
-  // platform. Its free API allows only 60 requests an hour, so the key is
-  // used when it's set.
+  // platform. With COINPAPRIKA_API_KEY it asks the paid API, which takes only
+  // a paid plan's key; without, the free API, which allows 60 requests an
+  // hour. (The paid API's Cloudflare cache can answer a list that someone
+  // else fetched, so a wrong key can still pass for one chain.)
   for (const chain of [...new Set(contractTokens.map((token) => token.chain))]) {
     test(`every CoinPaprika id on ${chain} is the token's contract on CoinPaprika`, async () => {
       const coinpaprika = PRICE_PROVIDERS.coinpaprika;
@@ -373,11 +375,12 @@ describe('price providers', () => {
         key ? { authorization: key } : {},
       );
       assert.ok(Array.isArray(list), 'coinpaprika: expected a list of contracts');
-      const normalize = CHAINS[chain]?.normalizeAddress ?? ((address: string) => address);
+      // The list has every address in lower case, even TRON's case-sensitive
+      // base58, so both sides are compared in lower case.
       const ids = new Map<string, unknown>();
       for (const entry of list) {
         if (isRecord(entry) && typeof entry.address === 'string') {
-          ids.set(normalize(entry.address), entry.id);
+          ids.set(entry.address.toLowerCase(), entry.id);
         }
       }
 
@@ -387,7 +390,7 @@ describe('price providers', () => {
         if (id === undefined) {
           continue;
         }
-        const listed = ids.get(normalize(token.contract ?? ''));
+        const listed = ids.get((token.contract ?? '').toLowerCase());
         if (COINPAPRIKA_WITHOUT_CONTRACT.has(tokenKey(token))) {
           if (listed !== undefined) {
             wrong.push(
