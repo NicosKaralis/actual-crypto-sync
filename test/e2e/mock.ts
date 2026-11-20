@@ -1,4 +1,4 @@
-// A stand-in for TronGrid, mempool.space, an Ethereum JSON-RPC node, CoinGecko and CoinPaprika, run inside the e2e
+// A stand-in for TronGrid, mempool.space, Ethereum and BNB Smart Chain JSON-RPC nodes, CoinGecko and CoinPaprika, run inside the e2e
 // test process. It answers from the recorded responses in test/fixtures/, and
 // the tests change its state between runs. The e2e config points each
 // explorer and provider at it through api_url: <url>/trongrid, and so on.
@@ -33,6 +33,7 @@ export const COINPAPRIKA_PRICES: Record<string, number> = {
   'btc-bitcoin': 62519,
   'eth-ethereum': 2290.17,
   'usdc-usd-coin': 0.9043,
+  'bnb-binance-coin': 517.88,
 };
 
 export interface Mock {
@@ -60,7 +61,8 @@ export async function startMock(): Promise<Mock> {
     for await (const chunk of request) {
       text += chunk;
     }
-    const [status, body] = path === '/json-rpc' ? jsonRpc(text) : answer(path, state);
+    const node = JSON_RPC_NODES[path];
+    const [status, body] = node ? jsonRpc(text, node) : answer(path, state);
     response.writeHead(status, { 'content-type': 'application/json' });
     response.end(JSON.stringify(body));
   });
@@ -76,18 +78,36 @@ export async function startMock(): Promise<Mock> {
 }
 
 /**
- * A JSON-RPC batch, answered from test/fixtures/json-rpc/balances.json:
- * ETH_WALLET's ETH for eth_getBalance, and its USDT, USDC or DAI for an
- * eth_call to that contract, whatever the address asked for.
+ * The JSON-RPC nodes, by path: each answers from its recorded batch, with the
+ * coin's balance first and then these contracts' balances, in this order.
  */
-function jsonRpc(text: string): [number, unknown] {
-  const recorded = fixture('json-rpc/balances.json') as { result: string }[];
-  // The recorded batch's order: ETH, then these contracts.
-  const contracts = [
-    '0xdac17f958d2ee523a2206206994597c13d831ec7',
-    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-    '0x6b175474e89094c44da98b954eedeac495271d0f',
-  ];
+const JSON_RPC_NODES: Record<string, { fixture: string; contracts: string[] }> = {
+  // ETH_WALLET's ETH, USDT, USDC and DAI.
+  '/ethereum/json-rpc': {
+    fixture: 'json-rpc/balances.json',
+    contracts: [
+      '0xdac17f958d2ee523a2206206994597c13d831ec7',
+      '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      '0x6b175474e89094c44da98b954eedeac495271d0f',
+    ],
+  },
+  // ETH_WALLET's BNB and USDT on BNB Smart Chain.
+  '/bsc/json-rpc': {
+    fixture: 'json-rpc/bsc-balances.json',
+    contracts: ['0x55d398326f99059ff775485246999027b3197955'],
+  },
+};
+
+/**
+ * A JSON-RPC batch, answered from the node's recorded batch: the coin for
+ * eth_getBalance, and a contract's balance for an eth_call to that contract,
+ * whatever the address asked for.
+ */
+function jsonRpc(
+  text: string,
+  { fixture: path, contracts }: { fixture: string; contracts: string[] },
+): [number, unknown] {
+  const recorded = fixture(path) as { result: string }[];
   const calls = JSON.parse(text) as {
     id: number;
     method: string;

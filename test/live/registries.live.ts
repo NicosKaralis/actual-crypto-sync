@@ -42,6 +42,8 @@ const WALLETS: Record<ChainId, string[]> = {
   tron: [TRON_WALLET, TRON_WALLET_2],
   bitcoin: [BTC_WALLET, BTC_P2PKH_WALLET, BTC_P2SH_WALLET],
   ethereum: [ETH_WALLET, ETH_WALLET_2, ETH_WALLET_3],
+  // Binance 8 and Bitfinex 2 hold BNB and tokens on BNB Smart Chain too.
+  bsc: [ETH_WALLET, ETH_WALLET_2],
 };
 
 /**
@@ -55,23 +57,32 @@ const KEYS: Record<string, { env: string; setting: string }> = {
   'ethereum/json-rpc': { env: 'ETHEREUM_RPC_URL', setting: 'api_url' },
   'ethereum/blockscout': { env: 'BLOCKSCOUT_API_KEY', setting: 'api_key' },
   'ethereum/etherscan': { env: 'ETHERSCAN_API_KEY', setting: 'api_key' },
+  'bsc/json-rpc': { env: 'BSC_RPC_URL', setting: 'api_url' },
+  // Etherscan's free tier doesn't cover BNB Smart Chain: a paid key, kept apart.
+  'bsc/etherscan': { env: 'ETHERSCAN_BSC_API_KEY', setting: 'api_key' },
   coingecko: { env: 'COINGECKO_API_KEY', setting: 'demo_api_key' },
   coinpaprika: { env: 'COINPAPRIKA_API_KEY', setting: 'api_key' },
 };
 
-// The defaults of the trongrid and Ethereum json-rpc explorers and the coingecko
+// The defaults of the trongrid and the EVM json-rpc explorers and the coingecko
 // and coinpaprika providers.
 const TRONGRID_URL = 'https://api.trongrid.io';
 const ETHEREUM_RPC_URL = 'https://ethereum-rpc.publicnode.com';
+const BSC_RPC_URL = 'https://bsc-rpc.publicnode.com';
 const COINGECKO_URL = 'https://api.coingecko.com/api/v3';
 const COINPAPRIKA_URL = 'https://api.coinpaprika.com/v1';
 const COINPAPRIKA_PRO_URL = 'https://api-pro.coinpaprika.com/v1';
 
 /** CoinGecko's and CoinPaprika's platform id of each chain with tokens. */
-const COINGECKO_PLATFORMS: Record<ChainId, string> = { tron: 'tron', ethereum: 'ethereum' };
+const COINGECKO_PLATFORMS: Record<ChainId, string> = {
+  tron: 'tron',
+  ethereum: 'ethereum',
+  bsc: 'binance-smart-chain',
+};
 const COINPAPRIKA_PLATFORMS: Record<ChainId, string> = {
   tron: 'trx-tron',
   ethereum: 'eth-ethereum',
+  bsc: 'bnb-binance-coin',
 };
 
 /**
@@ -79,7 +90,7 @@ const COINPAPRIKA_PLATFORMS: Record<ChainId, string> = {
  * CoinPaprika has no entry for this contract (the token files say so too).
  * The check expects them missing, so it fails once CoinPaprika adds them.
  */
-const COINPAPRIKA_WITHOUT_CONTRACT = new Set(['tron:WETH', 'ethereum:USDD']);
+const COINPAPRIKA_WITHOUT_CONTRACT = new Set(['tron:WETH', 'ethereum:USDD', 'bsc:TRX', 'bsc:WBTC']);
 
 /** Contracts whose symbol() isn't the built-in symbol: TRON's wrapped coins. */
 const ONCHAIN_SYMBOLS: Record<string, string> = { 'tron:WBTC': 'BTC', 'tron:WETH': 'ETH' };
@@ -182,10 +193,19 @@ const CONTRACT_CALLS: Record<
     );
     return hex;
   },
-  async ethereum(contract, fn) {
-    const rpc = CHAINS.ethereum?.explorers['json-rpc'];
-    const fetch = serviceFetch('ethereum/json-rpc', rpc?.serialIntervalMs ?? 1000);
-    const body = await postJson('json-rpc', ETHEREUM_RPC_URL, fetch, {
+  ethereum: evmContractCall('ethereum', ETHEREUM_RPC_URL),
+  bsc: evmContractCall('bsc', BSC_RPC_URL),
+};
+
+/** An EVM chain's contract call: eth_call on its public json-rpc node. */
+function evmContractCall(
+  chain: ChainId,
+  url: string,
+): (contract: string, fn: 'decimals' | 'symbol') => Promise<string> {
+  return async (contract, fn) => {
+    const rpc = CHAINS[chain]?.explorers['json-rpc'];
+    const fetch = serviceFetch(`${chain}/json-rpc`, rpc?.serialIntervalMs ?? 1000);
+    const body = await postJson('json-rpc', url, fetch, {
       jsonrpc: '2.0',
       id: 1,
       method: 'eth_call',
@@ -198,8 +218,8 @@ const CONTRACT_CALLS: Record<
       `json-rpc: ${fn}() gave no result`,
     );
     return hex;
-  },
-};
+  };
+}
 
 const contractTokens = BUILTIN_TOKENS.filter((token) => token.kind === 'contract');
 
@@ -224,7 +244,8 @@ describe('built-in tokens', () => {
         Number(BigInt(`0x${(await call(contract, 'decimals')).replace(/^0x/, '')}`)),
         token.decimals,
       );
-      // Case aside: Lido's stETH is STETH here, as symbols are upper case.
+      // Case aside: Lido's stETH is STETH here, and PancakeSwap's Cake is CAKE,
+      // as symbols are upper case.
       assert.equal(abiString(await call(contract, 'symbol')).toUpperCase(), symbol);
     });
   }

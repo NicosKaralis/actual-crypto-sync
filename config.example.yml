@@ -40,6 +40,11 @@ prices:
     #     label: coingecko-main                # the name in logs, spans and metric labels (default: the id)
     #     serial: true                         # one request at a time, 6 s apart, if it rate-limits you
     - coinpaprika                              # asked for the prices that CoinGecko didn't give
+    # - coinpaprika:
+    #     api_key: ${COINPAPRIKA_API_KEY}      # a paid plan's key (pro, business or enterprise); a free key doesn't work
+    #     api_url: https://api-pro.coinpaprika.com/v1  # the default with api_key (without: https://api.coinpaprika.com/v1)
+    #     label: coinpaprika-pro               # the name in logs, spans and metric labels (default: the id)
+    #     serial: true                         # one request at a time, 0.1 s apart, if it rate-limits you
 
 chains:                                        # optional, settings per chain
   tron:
@@ -65,6 +70,14 @@ chains:                                        # optional, settings per chain
       - blockscout                             # https://eth.blockscout.com/api
       # - etherscan:
       #     api_key: ${ETHERSCAN_API_KEY}      # required: a free key from etherscan.io
+  bsc:                                         # BNB Smart Chain
+    explorers:                                 # the default: json-rpc, which needs no key
+      - json-rpc                               # a public node (https://bsc-rpc.publicnode.com)
+      # - json-rpc:                            # a backup if the default fails: BNB Chain's own public node
+      #     api_url: https://bsc-dataseed.bnbchain.org
+      #     label: bnb-dataseed                # tells the two json-rpc entries apart in logs and metrics
+      # - etherscan:
+      #     api_key: ${ETHERSCAN_API_KEY}      # required: a key on a paid plan (the free one doesn't cover BNB Smart Chain)
 
 tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
@@ -77,7 +90,7 @@ tokens:                                        # optional, tokens that aren't bu
 
 accounts:                                      # the off-budget Actual accounts to keep in line
   - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
-    chain: tron                                # tron, bitcoin or ethereum
+    chain: tron                                # tron, bitcoin, ethereum or bsc
     token: TRX                                 # a built-in token or one from tokens:
     wallets:                                   # a list (the account shows their total),
       - ${TRON_WALLET_ADDRESS}                 # an inline list or a single address (below)
@@ -97,3 +110,8 @@ accounts:                                      # the off-budget Actual accounts 
     chain: ethereum
     token: USDC
     wallets: ${ETH_ADDRESS}                    # 0x and 40 hex digits; quote it if you write it here
+
+  - name: "BNB Smart Chain: USDT"
+    chain: bsc
+    token: USDT                                # each chain has its own built-in tokens
+    wallets: ${ETH_ADDRESS}                    # an EVM address works on Ethereum and BNB Smart Chain alike

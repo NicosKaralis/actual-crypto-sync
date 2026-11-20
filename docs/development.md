@@ -110,14 +110,16 @@ The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not ru
 - **Price providers:** each provider gives a price for each token that has an id for it. A normal run stops at the first provider that gives a price. The live checks ask every provider.
 - **Keys:** each explorer and provider is checked without a key if it allows that, and with its key if it has one. Without a key, an entry that also has a key reads only one wallet and two tokens, because public endpoints allow few requests. With a key, it reads everything. The keys come from these environment variables. A check with a key is skipped if its variable is not set.
 
-  | Variable              | Entry                                                 |
-  | --------------------- | ----------------------------------------------------- |
-  | `TRONGRID_API_KEY`    | `trongrid`                                            |
-  | `ETHEREUM_RPC_URL`    | `json-rpc` on Ethereum: a node URL with its key in it |
-  | `BLOCKSCOUT_API_KEY`  | `blockscout`                                          |
-  | `ETHERSCAN_API_KEY`   | `etherscan`, which needs a key                        |
-  | `COINGECKO_API_KEY`   | `coingecko`, as a Demo key                            |
-  | `COINPAPRIKA_API_KEY` | `coinpaprika`, for the paid API                       |
+  | Variable                | Entry                                                 |
+  | ----------------------- | ----------------------------------------------------- |
+  | `TRONGRID_API_KEY`      | `trongrid`                                            |
+  | `ETHEREUM_RPC_URL`      | `json-rpc` on Ethereum: a node URL with its key in it |
+  | `BSC_RPC_URL`           | `json-rpc` on BNB Smart Chain: the same, for BSC      |
+  | `BLOCKSCOUT_API_KEY`    | `blockscout`                                          |
+  | `ETHERSCAN_API_KEY`     | `etherscan` on Ethereum, which needs a key            |
+  | `ETHERSCAN_BSC_API_KEY` | `etherscan` on BNB Smart Chain: a paid plan's key     |
+  | `COINGECKO_API_KEY`     | `coingecko`, as a Demo key                            |
+  | `COINPAPRIKA_API_KEY`   | `coinpaprika`, for the paid API                       |
 
   To set them locally, copy `.env.live.example` to `.env.live` and fill in your keys. Git ignores `.env.live`, and `npm run test:live` reads it. A variable already set in the environment wins over the file. The workflow gets the keys from repository secrets with the same names. A new explorer or provider with a key setting goes in `KEYS` in `test/live/registries.live.ts`; a check fails until it does.
 
@@ -133,6 +135,7 @@ The file ends in `.live.ts`, so `npm test` and the image build do not run it.
    - TRON: `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`, `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`
    - Bitcoin: `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`, `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`, `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v`
    - Ethereum: `0xF977814e90dA44bFA03b6295A0616a897441aceC`, `0x742d35Cc6634C0532925a3b844Bc454e4438f44e`, `0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43`
+   - BNB Smart Chain: `0xF977814e90dA44bFA03b6295A0616a897441aceC`, `0x742d35Cc6634C0532925a3b844Bc454e4438f44e`
 2. Do not send an API key, or remove it from all that you save.
 3. Save the response as JSON in `test/fixtures/<explorer or provider>/`. Format it, so that a review can read it.
 4. Read it in a test with `fixture('<explorer or provider>/<file>.json')` from `test/fakes.ts`.
@@ -171,9 +174,9 @@ An EVM chain needs only a chain file. The address check and the explorers are sh
 - `isValidEvmAddress` and `normalizeEvmAddress` (`address.ts`): `0x` and 40 hex digits, with the EIP-55 checksum when the case is mixed.
 - `jsonRpcExplorer({ defaultUrl })` (`jsonrpc.ts`): any JSON-RPC endpoint. Give it a public endpoint with no key.
 - `blockscoutExplorer({ defaultUrl })` (`blockscout.ts`): the chain's public Blockscout instance, up to and including `/api`.
-- `etherscanExplorer({ chainId })` (`etherscan.ts`): Etherscan API V2, with the chain's id. Check that the free tier of Etherscan covers the chain.
+- `etherscanExplorer({ chainId })` (`etherscan.ts`): Etherscan API V2, with the chain's id. Check that the free tier of Etherscan covers the chain. If it does not, give its key its own variable in the live checks' `KEYS`, as BNB Smart Chain does.
 
-See `src/chains/ethereum/index.ts`. The other steps above stay the same. For `CONTRACT_CALLS` in the live checks, use `eth_call` on a public endpoint, as Ethereum does.
+See `src/chains/ethereum/index.ts`, and `src/chains/bsc/index.ts` for a chain with no public Blockscout. The other steps above stay the same. For `CONTRACT_CALLS` in the live checks, add `evmContractCall(<chain>, <public endpoint>)`.
 
 ## Add an explorer
 

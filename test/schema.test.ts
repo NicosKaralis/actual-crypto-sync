@@ -246,6 +246,25 @@ describe('the schema and the loader agree on the shape', () => {
         }),
     ],
     [
+      'a BNB Smart Chain account, with its two explorers',
+      (raw) =>
+        Object.assign(raw, {
+          chains: {
+            bsc: {
+              explorers: [
+                { 'json-rpc': { api_url: 'https://rpc.example' } },
+                { etherscan: { api_key: '${KEY}' } },
+              ],
+            },
+          },
+          accounts: [{ name: 'BNB', chain: 'bsc', token: 'USDT', wallets: ETH_WALLET }],
+        }),
+    ],
+    [
+      'a custom BEP20 token',
+      token({ chain: 'bsc', contract: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE' }),
+    ],
+    [
       'a custom ERC20 token',
       token({ chain: 'ethereum', contract: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE' }),
     ],
@@ -328,6 +347,10 @@ describe('the schema and the loader agree on the shape', () => {
     [
       'chains: etherscan without its key',
       (raw) => Object.assign(raw, { chains: { ethereum: { explorers: ['etherscan'] } } }),
+    ],
+    [
+      'chains: blockscout on BNB Smart Chain',
+      (raw) => Object.assign(raw, { chains: { bsc: { explorers: ['blockscout'] } } }),
     ],
     [
       'chains: etherscan with settings but no key',

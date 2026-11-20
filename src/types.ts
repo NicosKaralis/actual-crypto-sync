@@ -1,7 +1,7 @@
 // What chains, explorers and price providers implement. Not a public API: these
 // can change in any version.
 
-export type ChainId = string; // 'tron', 'bitcoin'
+export type ChainId = string; // 'tron', 'bitcoin', 'ethereum', 'bsc'
 
 /** Lowercase ISO 4217 code, normalized by the config loader: 'eur', 'usd'. */
 export type Currency = string;

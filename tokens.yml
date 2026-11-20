@@ -18,6 +18,8 @@ tron: !import tokens/tron.yml
 
 ethereum: !import tokens/ethereum.yml
 
+bsc: !import tokens/bsc.yml
+
 bitcoin:
   - symbol: BTC
     decimals: 8
