@@ -28,13 +28,13 @@ The schema checks the shape of the file. The tool checks more when it starts: th
 
 ## Secrets and `${VAR}`
 
-Do not write secrets in the config file. Write `${NAME}`, and the tool reads the value from the environment variable `NAME` when it starts.
+Do not write secrets in the config file. Write `${NAME}` in their place. When the tool starts, it reads the value from the environment variable `NAME`.
 
 - `${NAME}` works in all string values, also inside a longer string, for example `http://${HOST}:5006`.
 - If the variable is not set, the tool stops with an error that names the variable. The error never shows a value.
 - The `actual.auth` values must be a `${VAR}` reference. The tool refuses a secret that is written in the file.
 
-Wallet addresses are not secret, but they tell everybody what you own. Thus, the examples put them in environment variables too.
+Wallet addresses are not secret, but they tell everybody what you own. That is why the examples put them in environment variables too.
 
 ## Top level
 
@@ -46,7 +46,7 @@ Wallet addresses are not secret, but they tell everybody what you own. Thus, the
 | `tokens`   | No       | Tokens that are not built in.                             |
 | `accounts` | Yes      | The Actual accounts to keep in line with your wallets.    |
 
-An unknown key is an error. This applies at all levels, so a spelling mistake does not go unseen.
+An unknown key is an error. This applies at all levels, so the tool finds each spelling mistake in a key.
 
 ## `actual`
 
@@ -78,7 +78,7 @@ actual:
 
 ### `encryption_password`
 
-`encryption_password` is not a login. It decrypts a budget that has end-to-end encryption. Set it only for such a budget. It can be a `${VAR}` reference or a value in the file, but a `${VAR}` reference is better.
+`encryption_password` is not a login. It decrypts a budget that has end-to-end encryption. Set it only for such a budget. It can be a `${VAR}` reference or a value in the file. A `${VAR}` reference is better.
 
 ## `prices`
 
@@ -131,7 +131,7 @@ chains:
 
 The tool reads each wallet one time, with all the tokens of the accounts on that wallet. It asks the first explorer of the chain. If that explorer fails, it asks the next explorer for the full wallet. One run never mixes two explorers for one wallet.
 
-An explorer that cannot read contract tokens is skipped for a wallet with a contract token.
+For a wallet with a contract token, the tool skips the explorers that cannot read contract tokens.
 
 If all the explorers fail for a wallet, the tool does not write to the accounts of that wallet. The run continues for the other accounts and then ends with an error.
 
@@ -151,7 +151,7 @@ A list of names:
 providers: [coingecko]
 ```
 
-A list of entries. Each entry is a name, or a map with one key, the name, and its settings as the value:
+A list of entries. Each entry is a name, or a map with one key. That key is the name, and its value holds the settings:
 
 ```yaml
 providers:
@@ -199,11 +199,11 @@ Each explorer and provider also has its own settings:
 | `coinmarketcap` | Price provider    | `api_url`      | `https://pro-api.coinmarketcap.com/public-api/v2` | The CoinMarketCap API without a key.                                                                                                                                                       |
 | `coinmarketcap` | Price provider    | `api_key`      |                                                   | A CoinMarketCap API key. The free Basic plan works. The default `api_url` is then `https://pro-api.coinmarketcap.com/v2`. Use `${VAR}`.                                                    |
 
-Any other setting is an error, so a misspelled setting cannot be ignored without a message.
+Any other setting is an error. So the tool never ignores a misspelled setting without a message.
 
-CoinMarketCap works without a key. All users on the same IP address then share one rate limit, so the tool tries a request again after 1, 2 and 4 seconds when the limit is reached. With `api_key`, the tool sends the key in a header to the keyed API, and does not try again.
+CoinMarketCap works without a key. Then all users on the same IP address share one rate limit. When a request reaches the limit, the tool tries it again after 1, 2 and 4 seconds. With `api_key`, the tool sends the key in a header to the keyed API. It does not try again.
 
-CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind with its own header, and a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
+CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind in its own header. It sends a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
 
 In serial mode, the wait after each request is:
 
@@ -226,7 +226,7 @@ When an API limits your requests, the tool logs a warning one time for each entr
 - mempool.space: set `serial: true`, or set `api_url` to your own mempool instance.
 - JSON-RPC: set `serial: true` and a `batch_size`, or set `api_url` to your own node or a provider with an API key.
 - Blockscout: add a free `api_key`, or set `serial: true`.
-- Etherscan: set `serial: true`. In serial mode: run less often, or use a paid Etherscan plan.
+- Etherscan: set `serial: true`. If serial mode is already on, run less often, or use a paid Etherscan plan.
 - CoinGecko: add a free Demo key with `demo_api_key`, run less often, or add another provider after it.
 - CoinPaprika: run less often, add an `api_key`, or add another provider after it.
 - CoinMarketCap: add an `api_key`, run less often, or add another provider after it.
@@ -255,7 +255,7 @@ chains:
       - blockscout
 ```
 
-Some providers count each call in a batch against a limit per second. Infura's free plan allows 500 credits a second, and each balance costs 80 credits, so at most 6 calls a second. One wallet's batch is the coin and every token: 13 calls on Ethereum and 16 on BNB Smart Chain. Infura refuses part of it, and the tool logs a rate limit. To stay under the limit, set `batch_size` to send fewer calls in each request, and `serial: true` to send one request a second:
+Some providers count each call in a batch against a limit per second. Infura's free plan allows 500 credits a second. Each balance costs 80 credits, so the plan allows at most 6 calls a second. One wallet's batch is the coin and every token: 13 calls on Ethereum and 16 on BNB Smart Chain. Infura refuses part of the batch, and the tool logs a rate limit. To stay under the limit, use two settings. `batch_size` sends fewer calls in each request, and `serial: true` sends one request a second:
 
 ```yaml
 - json-rpc:
@@ -277,13 +277,13 @@ chains:
           api_key: ${ETHERSCAN_API_KEY}
 ```
 
-`json-rpc` reads at the latest block. The other explorers can be a few seconds behind it, so two explorers can give slightly different balances for a wallet that just received a transaction.
+`json-rpc` reads at the latest block. The other explorers can be a few seconds behind it. So two explorers can give slightly different balances for a wallet that just received a transaction.
 
 ### BNB Smart Chain explorers
 
 With no `explorers` for `bsc`, the tool asks `json-rpc` (a public PublicNode endpoint). It needs no key. There is no public Blockscout instance for BNB Smart Chain. To use your own node or a provider, set `api_url` on `json-rpc`, as on Ethereum.
 
-The default is the only explorer, so a run fails for your BNB Smart Chain accounts when PublicNode is down. To have a backup, add a second `json-rpc` entry with another public node, for example BNB Chain's own `https://bsc-dataseed.bnbchain.org`. It needs no key either. The tool asks it only when PublicNode fails. Give it a `label`, so that logs and metrics tell the two entries apart:
+The default is the only explorer. When PublicNode is down, a run fails for your BNB Smart Chain accounts. To have a backup, add a second `json-rpc` entry with another public node, for example BNB Chain's own `https://bsc-dataseed.bnbchain.org`. It needs no key either. The tool asks it only when PublicNode fails. Give it a `label`, so that logs and metrics tell the two entries apart:
 
 ```yaml
 chains:
@@ -341,7 +341,7 @@ Many fake tokens copy the name and symbol of a real token. Before you add a toke
 2. Copy the decimals from the contract page.
 3. Find the token on CoinGecko. Make sure that the contract on the CoinGecko page is the same contract. The id is in the URL of the page, for example `wrapped-tron` in `coingecko.com/en/coins/wrapped-tron`.
 
-If you think that other users want the token, ask for it to be built in with the [new token form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-token.yml).
+If you think that other users want the token, ask to add it to the built-in tokens with the [new token form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-token.yml).
 
 ## `accounts`
 
@@ -374,7 +374,7 @@ wallets: ["${BTC_ADDRESS}"]
 
 In an inline list, put quotes around `${...}`. If you do not, YAML reads it as a map.
 
-An Ethereum or BNB Smart Chain address is `0x` and 40 hex digits. The same address works on both chains. The tool reads it as text with or without quotes, but put quotes around it if you write it in the file: your editor reads `0x...` without quotes as a number. If the address has upper and lower case letters, the case is its checksum (EIP-55), and the tool checks it. An address all in lower case or all in upper case has no checksum.
+An Ethereum or BNB Smart Chain address is `0x` and 40 hex digits. The same address works on both chains. The tool reads the address as text, with or without quotes. But if you write it in the file, put quotes around it: your editor reads `0x...` without quotes as a number. If the address has upper-case and lower-case letters, the case is its checksum (EIP-55), and the tool checks it. An address all in lower case or all in upper case has no checksum.
 
 You can use the same wallet in more than one account. The tool reads it one time.
 
@@ -394,13 +394,13 @@ accounts:
 
 - If the tool cannot read one of the wallets, it does not write to the account in that run. It never writes a total that leaves out a wallet. The run continues for the other accounts and then ends with an error.
 - Each wallet can be in the list one time only. Bitcoin bech32 addresses (`bc1...`) can have upper-case or lower-case letters. The tool compares them in lower case, so `bc1q...` and `BC1Q...` are the same wallet.
-- Each wallet can be read by a different explorer, for example when the first explorer fails for one wallet. The metrics then show each explorer's part. See [Metrics](monitoring.md#metrics).
+- A different explorer can read each wallet, for example when the first explorer fails for one wallet. The metrics then show each explorer's part. See [Metrics](monitoring.md#metrics).
 
 ## What the tool writes
 
 For each account, the tool writes one transaction per day:
 
-- **The amount** is the difference between the value of the wallet and the balance of the account. Thus, the account balance becomes the value of the wallet.
+- **The amount** is the difference between the value of the wallet and the balance of the account. So the account balance becomes the value of the wallet.
 - **The payee** is `AutoImporter`.
 - **The note** shows the balance, the change since the last sync, the price and the value, for example `156.9193 TRX (Δ +2.009071 @ 0.297 EUR/TRX, 46.6 EUR)`.
 - **The transaction is not cleared.** If the tool runs again on the same day, it updates that transaction. The first run of the next day clears it.
@@ -409,7 +409,7 @@ The tool never changes or deletes a transaction that you added. If two runs writ
 
 The tool also never changes or deletes a reconciled transaction. If you reconcile the account in Actual, today's sync transaction can be part of the reconciliation. A later run on the same day then keeps it as it is:
 
-- If the value of the wallet did not change, the reconciled transaction already has the right amount, and the run does not change it.
+- If the value of the wallet did not change, the reconciled transaction already has the right amount. The run does not change it.
 - If the value changed, the run skips the account and logs the warning `today's sync transaction is reconciled; skipped until tomorrow`. The run still exits with 0.
 
 The first run of the next day writes a new transaction, so the account shows the value of the wallet again.
@@ -430,7 +430,7 @@ To find the change since the last sync, the tool reads the note of the last sync
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf`      | `http/protobuf`, `http/json` or `grpc`. It must match what your collector takes.                        |
 | `OTEL_EXPORTER_OTLP_HEADERS`  |                      | Headers for the collector, such as an API key, as `key=value,key=value`.                                |
 
-The variables that your config uses with `${VAR}` are also necessary.
+Also set each variable that your config uses with `${VAR}`.
 
 The tool reads all the standard `OTEL_*` variables: separate endpoints and protocols for traces and metrics, TLS, timeouts, sampling, and more. See [Sending metrics and traces](opentelemetry.md) for all of them, with examples. For the logs, and the metrics and traces that the tool sends, see [docs/monitoring.md](monitoring.md).
 
@@ -470,11 +470,11 @@ Errors from the login and the budget download are in [docs/authentication.md](au
 
 Errors during the run do not stop the other accounts:
 
-| Error                                                                                     | What it means                                                                                                     |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `<account>: account "..." not found`                                                      | No open account in the budget has that name or id. Names must be the same, also the letter case.                  |
-| `<account>: account "..." is on budget; only off-budget accounts are synced`              | Make the account off budget in Actual, or use another account.                                                    |
-| `<account>: account "..." is closed`                                                      | Reopen the account, or remove it from the config.                                                                 |
-| `tron:USDT: no price from any provider; its accounts are skipped`                         | All providers failed for that token. The warnings before it tell you why.                                         |
-| `TC9F...R2MJ: every explorer failed (trongrid: ...)`                                      | No explorer could read the wallet. The reason of each explorer is in the parentheses, and the warnings before it. |
-| `TC9F...R2MJ: every explorer failed (trongrid: trongrid: account not found: TC9F...R2MJ)` | The address never received a transaction, so TRON does not know it yet.                                           |
+| Error                                                                                     | What it means                                                                                                            |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `<account>: account "..." not found`                                                      | No open account in the budget has that name or id. The name must be exactly the same, also in letter case.               |
+| `<account>: account "..." is on budget; only off-budget accounts are synced`              | Make the account off budget in Actual, or use another account.                                                           |
+| `<account>: account "..." is closed`                                                      | Reopen the account, or remove it from the config.                                                                        |
+| `tron:USDT: no price from any provider; its accounts are skipped`                         | All providers failed for that token. The warnings before it tell you why.                                                |
+| `TC9F...R2MJ: every explorer failed (trongrid: ...)`                                      | No explorer could read the wallet. The parentheses and the warnings before the error show the reason from each explorer. |
+| `TC9F...R2MJ: every explorer failed (trongrid: trongrid: account not found: TC9F...R2MJ)` | The address never received a transaction, so TRON does not know it yet.                                                  |

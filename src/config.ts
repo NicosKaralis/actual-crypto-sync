@@ -253,7 +253,7 @@ class Loader {
   /**
    * A providers or explorers list: a name, a list of names, or a list of names
    * and one-key maps of name to settings. Repeats are labelled `id#2`, `id#3`
-   * unless they set `label`. `serial` puts the entry in serial mode (C27).
+   * unless they set `label`. `serial` puts the entry in serial mode.
    */
   entries<T extends Pick<PriceProvider, 'settingKeys' | 'checkSettings'>>(
     value: unknown,
@@ -466,7 +466,7 @@ class Loader {
 
   /**
    * One address, or a list of them (block or inline), the same forms as explorers take.
-   * The account's balance is the sum of its wallets, so a wallet may appear once.
+   * The account's balance is the sum of its wallets, so each wallet can appear only once.
    */
   wallets(value: unknown, path: string, chain: Chain): Wallet[] {
     if (typeof value === 'string') {

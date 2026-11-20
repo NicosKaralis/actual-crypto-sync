@@ -11,8 +11,7 @@ const PRO_API_URL = 'https://pro-api.coingecko.com/api/v3';
 /**
  * The fiat currencies among CoinGecko's `vs_currencies`
  * (`GET /simple/supported_vs_currencies`, 2026-11-12). The crypto ones (btc,
- * sats, ...) and the metals and SDR (xag, xau, xdr) are left out. Updated
- * together with the token table.
+ * sats, ...) and the metals and SDR (xag, xau, xdr) are left out.
  */
 const CURRENCIES = new Set(
   [

@@ -1,6 +1,6 @@
 # Roadmap
 
-This page tells you the ideas for the future of the tool. Nothing on it has a version or a date. The order can change.
+This page lists the ideas for the future of the tool. Nothing on it has a version or a date. The order can change.
 
 The work that is planned for a version is not on this page. It is on the [milestone](https://github.com/NicosKaralis/actual-crypto-sync/milestones) of that version, for example `v1.1.0`. A milestone lists its issues, and shows which are done.
 
@@ -14,10 +14,10 @@ To propose an idea, open an issue with the [feature request form](https://github
    - **For the next versions:** gives the issue the `planned` label and adds it to the milestone of a version. Bug fixes and small features go this way.
    - **For later:** adds it to this page, with a link to the issue. Large features with no version yet go this way.
    - **Not planned:** closes the issue, with the reason.
-4. When an item on this page gets a version, the maintainer adds its issue to the milestone and removes it from this page. When the maintainer decides not to do an item, it moves to [Dropped](#dropped), with a page that tells why.
-5. When a pull request merges into `develop`, a workflow replaces `planned` with `awaiting release` on each issue that the pull request closes. It finds them in the description and in the commit messages, as `Closes #12`, `Fixes #12` or `Resolves #12`. The issue stays open until the next release brings the work to `main`, which closes it.
+4. When an item on this page gets a version, the maintainer adds its issue to the milestone and removes it from this page. When the maintainer decides not to do an item, the maintainer moves it to [Dropped](#dropped), with a page that tells why.
+5. When a pull request merges into `develop`, a workflow replaces `planned` with `awaiting release` on each issue that the pull request closes. It finds them in the description and in the commit messages, as `Closes #12`, `Fixes #12` or `Resolves #12`. The issue stays open until the next release brings the work to `main`. That release closes it.
 
-When a version is released, its milestone closes automatically, and its closed issues lose the `awaiting release` label.
+When a version is released, its milestone closes automatically. Its closed issues lose the `awaiting release` label.
 
 ## Later
 
@@ -33,6 +33,6 @@ When a version is released, its milestone closes automatically, and its closed i
 
 ## Dropped
 
-These ideas will not be done. Each one links to a page that tells why.
+These ideas are not planned. Each one links to a page that tells why.
 
 - [One token across chains in one account](docs/dropped/one-token-across-chains.md)

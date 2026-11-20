@@ -1,5 +1,5 @@
 name: New built-in token
-description: Ask for a token to be built in, so a config can use it by its symbol.
+description: Ask for a new built-in token, so that a config can use it by its symbol.
 labels: [new token, needs triage]
 body:
   - type: markdown

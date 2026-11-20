@@ -10,7 +10,7 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64:
 ghcr.io/nicoskaralis/actual-crypto-sync:1
 ```
 
-The same image is also on Docker Hub as `docker.io/nicoskaralis/actual-crypto-sync`, with the same tags and the same digest. Use it if you can't pull from GHCR.
+The same image is also on Docker Hub as `docker.io/nicoskaralis/actual-crypto-sync`. It has the same tags and the same digest. Use it if you cannot pull from GHCR.
 
 Each release has these tags:
 
@@ -28,18 +28,18 @@ To run it from source with Node.js, see [docs/development.md](development.md).
 
 ## Ways to run it
 
-The tool syncs your accounts one time and exits, so a scheduler runs it, for example one time each day.
+The tool syncs your accounts one time and exits. Use a scheduler to run it, for example one time each day.
 
 - [Command line](#command-line)
 - [Cron](#cron)
 - [Docker Compose](#docker-compose)
 - [Kubernetes](#kubernetes)
 
-Set `TZ` to your time zone in each of them. The date of the transaction is "today" in that time zone, and the image uses UTC if you do not set it.
+Set `TZ` to your time zone in each of them. The date of each transaction is "today" in that time zone. If you do not set `TZ`, the image uses UTC.
 
 ### Command line
 
-Run the image with `docker run`, as in the [quick start](../README.md#quick-start), and add the options after the image name:
+Run the image with `docker run`, as in the [quick start](../README.md#quick-start). Put the options after the image name:
 
 ```sh
 docker run --rm --env-file .env -e TZ=Europe/Lisbon \
@@ -57,7 +57,7 @@ Options:
   -h, --help       Show this help
 ```
 
-The exit code is 0 when all accounts are in line, and 1 when one or more failed. The other accounts are still synced.
+The exit code is 0 when all accounts are in line. It is 1 when one or more accounts failed. A failed account does not stop the others: the tool still syncs them.
 
 ### Cron
 
@@ -69,7 +69,7 @@ Any scheduler that can run a command works. For example, a crontab line:
 
 ### Docker Compose
 
-With [Ofelia](https://github.com/mcuadros/ofelia) as the scheduler. Ofelia starts the `actual-crypto-sync` container at each scheduled time:
+This example uses [Ofelia](https://github.com/mcuadros/ofelia) as the scheduler. Ofelia starts the `actual-crypto-sync` container at each scheduled time:
 
 ```yaml
 services:
@@ -187,7 +187,7 @@ spec:
               emptyDir: {}
 ```
 
-The tool downloads the budget again on each run, so `/cache` can be an `emptyDir`.
+The tool downloads the budget again on each run. That is why `/cache` can be an `emptyDir`.
 
 ## Environment variables
 
@@ -203,4 +203,4 @@ The tool downloads the budget again on each run, so `/cache` can be an `emptyDir
 
 Your config can read other variables with `${NAME}`, for example the secrets and the wallets.
 
-For all the `OTEL_*` variables (separate endpoints and protocols for traces and metrics, TLS, timeouts, sampling, and more), see [Sending metrics and traces](opentelemetry.md). For what the tool sends to the collector, see [docs/monitoring.md](monitoring.md).
+[Sending metrics and traces](opentelemetry.md) has all the `OTEL_*` variables: separate endpoints and protocols for traces and metrics, TLS, timeouts, sampling and more. [docs/monitoring.md](monitoring.md) tells you what the tool sends to the collector.

@@ -11,9 +11,9 @@ The tool writes its logs on standard output, one line per entry. The `LOG_FORMAT
 | `text` (the default) | For people: in a terminal, a cron mail or `docker logs`.          |
 | `json`               | For log systems, for example VictoriaLogs, Loki or Elasticsearch. |
 
-Any other value is an error: the tool writes one error line in text, and stops with exit code 1.
+Any other value is an error. The tool writes one error line in the text format and stops with exit code 1.
 
-In both formats, wallet addresses show only in a short form, for example `TC9F...R2MJ`, and secrets never show. With `--debug`, the tool also logs each request: the method, the URL without its query string, the status and the time.
+In both formats, wallet addresses show only in a short form, for example `TC9F...R2MJ`. Secrets never show. With `--debug`, the tool also logs each request: the method, the URL without its query string, the status and the time.
 
 ### Text
 
@@ -25,7 +25,7 @@ Each line has the time in UTC, the level, the message, then the fields as `key=v
 
 ### JSON
 
-With `LOG_FORMAT=json`, each line is one JSON object. It has the same fields as the text line, and also the `trace_id` and `span_id` of the active span, so you can find the trace of a log line:
+With `LOG_FORMAT=json`, each line is one JSON object. It has the same fields as the text line. It also has the `trace_id` and `span_id` of the active span, so you can find the trace of a log line:
 
 ```json
 {
@@ -47,7 +47,7 @@ With `LOG_FORMAT=json`, each line is one JSON object. It has the same fields as 
 
 Metrics and traces go to an OpenTelemetry collector or backend over OTLP: `http/protobuf` by default, or `http/json` or `grpc`. Set `OTEL_EXPORTER_OTLP_ENDPOINT`, for example `http://otel-collector:4318`. Without an endpoint, the tool sends nothing. If an export fails, the tool logs a warning, and the run still succeeds.
 
-To connect the tool to your backend (protocols, authentication, TLS, sampling and the other settings), see [Sending metrics and traces](opentelemetry.md).
+[Sending metrics and traces](opentelemetry.md) tells you how to connect the tool to your backend: the protocols, authentication, TLS, sampling and the other settings.
 
 ### Metrics
 
@@ -67,9 +67,9 @@ The tool sets each metric one time per run. All metrics are gauges.
 | `actual_crypto_sync_provider_errors`                | `kind`, `id`                             | Failed requests to each explorer (`kind="explorer"`) or price provider (`kind="price"`). |
 | `actual_crypto_sync_build_info`                     | `version`                                | Always 1. The version of the tool that sent the metrics.                                 |
 
-An account with several wallets can have more than one `actual_crypto_sync_balance` series, one for each explorer that read its wallets. Usually one explorer reads all of them, so there is one series. For the total of the account, use `actual_crypto_sync_account_balance` in tokens, or `actual_crypto_sync_value` in the currency. Do not add up `actual_crypto_sync_balance` over the explorers with a query over a time window: when the explorer of a wallet changes between two runs, the window can hold both series, and the wallet counts two times.
+An account with several wallets can have more than one `actual_crypto_sync_balance` series, one for each explorer that read its wallets. Usually one explorer reads all of them, so there is one series. For the total of the account, use `actual_crypto_sync_account_balance` in tokens, or `actual_crypto_sync_value` in the currency. Do not add up `actual_crypto_sync_balance` over the explorers with a query over a time window. When the explorer of a wallet changes between two runs, the window can hold both series. Then the wallet counts two times.
 
-`skipped` counts the accounts that the run did not update, because today's sync transaction is reconciled in Actual and the value of the wallet changed. These accounts show the reconciled value until the next day. See [What the tool writes](configuration.md#what-the-tool-writes).
+`skipped` counts the accounts that the run did not update. The run skips an account when today's sync transaction is reconciled in Actual and the value of the wallet changed. These accounts show the reconciled value until the next day. See [What the tool writes](configuration.md#what-the-tool-writes).
 
 To show the running version on a dashboard, use the `version` label of `actual_crypto_sync_build_info`. Every metric and span also has the version in its scope. See [Resource and scope](opentelemetry.md#resource-the-service-name-and-labels).
 
@@ -79,4 +79,4 @@ An alert on `actual_crypto_sync_last_success_timestamp_seconds` tells you when t
 
 Each run is one trace, with the root span `actual-crypto-sync.run`. Its child spans are `actual.download`, `wallet <chain> <short address>`, `quotes`, `price <provider>` and `account <name>`, and one span for each HTTP request.
 
-The requests to your Actual server carry the trace ID in a `traceparent` header, so a future Actual version that sends traces can join the trace. The requests to block explorers and price providers never carry it. See [Propagation](opentelemetry.md#propagation).
+The requests to your Actual server carry the trace ID in a `traceparent` header. Then a future Actual version that sends traces can join the trace. The requests to block explorers and price providers never carry it. See [Propagation](opentelemetry.md#propagation).

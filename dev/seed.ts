@@ -4,7 +4,7 @@
 // to put in dev/.env.
 //
 // `--cutoff-check` instead checks, against the real server, what src/actual.ts
-// assumes about Actual (C18): which transactions balanceThrough counts, and
+// assumes about Actual: which transactions balanceThrough counts, and
 // which transactionsForPlan returns, in what order.
 //
 // The e2e tests (test/e2e/) seed their own server with seedBudget.
