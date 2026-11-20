@@ -7,19 +7,23 @@ const BALANCE_OF = '0x70a08231';
 // EIP-1474's "limit exceeded"; providers also answer -32029, -32090 or a message.
 const RATE_LIMIT_CODES = new Set([-32005, -32029, -32090]);
 const QUANTITY = /^0x[0-9a-fA-F]{1,64}$/;
+const BATCH_SIZE = /^[1-9]\d*$/;
 
 /**
  * An EVM chain's standard JSON-RPC API, which every node and node provider
  * serves: `eth_getBalance` for the native token and `eth_call` of the ERC20
  * `balanceOf` for each contract, all in one batch request per wallet.
  * `defaultUrl` is a keyless public endpoint; api_url points at your own node,
- * or at a provider such as Infura or Alchemy, key included.
+ * or at a provider such as Infura or Alchemy, key included. With batch_size,
+ * the calls go in batches of at most that size, one after the other: a
+ * provider can charge each call in a batch against a per-second limit (Infura's
+ * free plan allows 6 calls a second).
  */
 export function jsonRpcExplorer({ defaultUrl }: { defaultUrl: string }): Explorer {
   return {
     id: ID,
     supportsContracts: true,
-    settingKeys: ['api_url'],
+    settingKeys: ['api_url', 'batch_size'],
     // Public endpoints don't publish their limits; one request a second is a cautious pace.
     serialIntervalMs: 1000,
     rateLimitAdvice(error, { serial }) {
@@ -27,7 +31,14 @@ export function jsonRpcExplorer({ defaultUrl }: { defaultUrl: string }): Explore
         return null;
       }
       const ownNode = 'point api_url at your own node or a provider with an API key';
-      return serial ? ownNode : `set serial: true to send one request at a time, or ${ownNode}`;
+      return serial
+        ? `set a lower batch_size to send fewer calls in each request, or ${ownNode}`
+        : `set serial: true to send one request at a time and batch_size to send fewer calls in each, or ${ownNode}`;
+    },
+    checkSettings(settings) {
+      return settings.batch_size === undefined || BATCH_SIZE.test(settings.batch_size)
+        ? null
+        : 'batch_size must be a whole number of 1 or more';
     },
     async getBalances({ wallet, tokens, settings, fetch }) {
       const calls = tokens.map((token, index) => ({
@@ -43,26 +54,19 @@ export function jsonRpcExplorer({ defaultUrl }: { defaultUrl: string }): Explore
       if (calls.length === 0) {
         return new Map();
       }
-      const body = await postJson(ID, apiUrl(settings, defaultUrl), fetch, calls);
-      // A whole batch can be refused with one error object.
-      if (isRecord(body) && body.error !== undefined) {
-        throw rpcError(body.error);
+      const size = settings.batch_size ? Number(settings.batch_size) : calls.length;
+      const byId = new Map<unknown, unknown>();
+      for (let start = 0; start < calls.length; start += size) {
+        const body = await postJson(
+          ID,
+          apiUrl(settings, defaultUrl),
+          fetch,
+          calls.slice(start, start + size),
+        );
+        for (const entry of batchEntries(body)) {
+          byId.set(isRecord(entry) ? entry.id : undefined, entry);
+        }
       }
-      if (!Array.isArray(body)) {
-        throw new Error(`${ID}: expected a list of results`);
-      }
-      // A call refused with a bare error and no id, as Infura answers a rate
-      // limit ({ code: -32005, message }), can't be matched to its token: it is
-      // the batch's error, not a missing result.
-      const refused = body.find(
-        (entry: unknown) => isRecord(entry) && entry.id === undefined && entry.code !== undefined,
-      );
-      if (refused !== undefined) {
-        throw rpcError(refused);
-      }
-      const byId = new Map<unknown, unknown>(
-        body.map((entry: unknown) => [isRecord(entry) ? entry.id : undefined, entry]),
-      );
       return new Map(
         tokens.map((token, index): [string, bigint] => [
           token.symbol,
@@ -71,6 +75,27 @@ export function jsonRpcExplorer({ defaultUrl }: { defaultUrl: string }): Explore
       );
     },
   };
+}
+
+/** The entries of one batch's answer, or its error. */
+function batchEntries(body: unknown): unknown[] {
+  // A whole batch can be refused with one error object.
+  if (isRecord(body) && body.error !== undefined) {
+    throw rpcError(body.error);
+  }
+  if (!Array.isArray(body)) {
+    throw new Error(`${ID}: expected a list of results`);
+  }
+  // A call refused with a bare error and no id, as Infura answers a rate
+  // limit ({ code: -32005, message }), can't be matched to its token: it is
+  // the batch's error, not a missing result.
+  const refused = body.find(
+    (entry: unknown) => isRecord(entry) && entry.id === undefined && entry.code !== undefined,
+  );
+  if (refused !== undefined) {
+    throw rpcError(refused);
+  }
+  return body;
 }
 
 function balanceOfData(address: string): string {

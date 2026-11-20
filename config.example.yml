@@ -72,6 +72,8 @@ chains:                                        # optional, settings per chain
       - json-rpc                               # a public node (https://ethereum-rpc.publicnode.com)
       # - json-rpc:
       #     api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}  # your own node, Infura or Alchemy
+      #     batch_size: 6                      # at most 6 calls per request: Infura's free plan allows 6 a second
+      #     serial: true                       # one request a second
       - blockscout                             # https://eth.blockscout.com/api
       # - etherscan:
       #     api_key: ${ETHERSCAN_API_KEY}      # required: a free key from etherscan.io

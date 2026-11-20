@@ -261,6 +261,16 @@ describe('the schema and the loader agree on the shape', () => {
         }),
     ],
     [
+      'json-rpc with a batch_size, as a number or a string',
+      (raw) =>
+        Object.assign(raw, {
+          chains: {
+            ethereum: { explorers: [{ 'json-rpc': { batch_size: 6, serial: true } }] },
+            bsc: { explorers: [{ 'json-rpc': { batch_size: '6' } }] },
+          },
+        }),
+    ],
+    [
       'a custom BEP20 token',
       token({ chain: 'bsc', contract: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE' }),
     ],
@@ -343,6 +353,20 @@ describe('the schema and the loader agree on the shape', () => {
     [
       "chains: another chain's explorer",
       (raw) => Object.assign(raw, { chains: { tron: { explorers: ['mempool-space'] } } }),
+    ],
+    [
+      'chains: a batch_size of 0',
+      (raw) =>
+        Object.assign(raw, {
+          chains: { ethereum: { explorers: [{ 'json-rpc': { batch_size: 0 } }] } },
+        }),
+    ],
+    [
+      'chains: a batch_size that is not a whole number',
+      (raw) =>
+        Object.assign(raw, {
+          chains: { bsc: { explorers: [{ 'json-rpc': { batch_size: 1.5 } }] } },
+        }),
     ],
     [
       'chains: etherscan without its key',

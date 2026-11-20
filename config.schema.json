@@ -249,6 +249,12 @@
                                 "$ref": "#/definitions/setting",
                                 "description": "The JSON-RPC endpoint: your own node, or a provider's URL with its key, such as Infura or Alchemy."
                               },
+                              "batch_size": {
+                                "type": ["integer", "string"],
+                                "minimum": 1,
+                                "pattern": "^([1-9][0-9]*|\\$\\{[A-Za-z_][A-Za-z0-9_]*\\})$",
+                                "description": "The most calls in one request. Default: all the calls for a wallet in one request. Infura's free plan allows 6 calls a second: set 6, with serial: true."
+                              },
                               "label": {
                                 "$ref": "#/definitions/label"
                               },
@@ -320,6 +326,12 @@
                               "api_url": {
                                 "$ref": "#/definitions/setting",
                                 "description": "The JSON-RPC endpoint: your own node, or a provider's URL with its key, such as Infura or Alchemy."
+                              },
+                              "batch_size": {
+                                "type": ["integer", "string"],
+                                "minimum": 1,
+                                "pattern": "^([1-9][0-9]*|\\$\\{[A-Za-z_][A-Za-z0-9_]*\\})$",
+                                "description": "The most calls in one request. Default: all the calls for a wallet in one request. Infura's free plan allows 6 calls a second: set 6, with serial: true."
                               },
                               "label": {
                                 "$ref": "#/definitions/label"
