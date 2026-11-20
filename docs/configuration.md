@@ -258,10 +258,10 @@ chains:
 Some providers count each call in a batch against a limit per second. Infura's free plan allows 500 credits a second, and each balance costs 80 credits, so at most 6 calls a second. One wallet's batch is the coin and every token: 13 calls on Ethereum and 16 on BNB Smart Chain. Infura refuses part of it, and the tool logs a rate limit. To stay under the limit, set `batch_size` to send fewer calls in each request, and `serial: true` to send one request a second:
 
 ```yaml
-      - json-rpc:
-          api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}
-          batch_size: 6
-          serial: true
+- json-rpc:
+    api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}
+    batch_size: 6
+    serial: true
 ```
 
 The tool never shows a key in logs, traces or errors. In a URL path, it shows `***` in place of a long run of letters and digits.
