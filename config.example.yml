@@ -40,6 +40,11 @@ prices:
     #     label: coingecko-main                # the name in logs, spans and metric labels (default: the id)
     #     serial: true                         # one request at a time, 6 s apart, if it rate-limits you
     - coinpaprika                              # asked for the prices that CoinGecko didn't give
+    # - coinpaprika:
+    #     api_key: ${COINPAPRIKA_API_KEY}      # a paid plan's key (pro, business or enterprise); a free key doesn't work
+    #     api_url: https://api-pro.coinpaprika.com/v1  # the default with api_key (without: https://api.coinpaprika.com/v1)
+    #     label: coinpaprika-pro               # the name in logs, spans and metric labels (default: the id)
+    #     serial: true                         # one request at a time, 0.1 s apart, if it rate-limits you
 
 chains:                                        # optional, settings per chain
   tron:
