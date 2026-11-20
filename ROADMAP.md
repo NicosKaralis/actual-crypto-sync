@@ -29,6 +29,7 @@ When a version is released, its milestone closes automatically, and its closed i
 - **Import each transfer.** Import each on-chain transfer as a transaction, not one value adjustment per day.
 - **Actual API keys.** Use the first Actual release with API keys, and recommend API keys for login.
 - **A configurable request interval.** In serial mode, set the time between two requests.
+- **One price id per token.** Review the tokens whose price id differs by chain. For example, CoinGecko prices USDT as `tether` on TRON and Ethereum, but as `binance-bridged-usdt-bnb-smart-chain` on BNB Smart Chain. CoinPaprika prices ETH as `eth-ethereum` on Ethereum, but as `eth-ethereum-token` on BNB Smart Chain.
 
 ## Dropped
 
