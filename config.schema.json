@@ -118,6 +118,10 @@
                             "$ref": "#/definitions/setting",
                             "description": "The API base URL."
                           },
+                          "api_key": {
+                            "$ref": "#/definitions/setting",
+                            "description": "A CoinPaprika API key, for the paid API (https://api-pro.coinpaprika.com/v1). Use ${VAR}."
+                          },
                           "label": {
                             "$ref": "#/definitions/label"
                           },

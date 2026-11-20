@@ -97,6 +97,22 @@ describe('coinpaprika', () => {
     }
   });
 
+  test('with api_key, it asks the paid API, with the key as the whole Authorization header', async () => {
+    const { result, calls } = quotes(() => ticker('EUR', 0.3), [TRX], {
+      settings: { api_key: 'test-key' },
+    });
+    await result;
+    assert.equal(calls[0]?.url, 'https://api-pro.coinpaprika.com/v1/tickers/trx-id?quotes=EUR');
+    assert.equal(calls[0]?.headers.authorization, 'test-key');
+  });
+
+  test('without a key, no Authorization header', async () => {
+    const { result, calls } = quotes(() => ticker('EUR', 0.3), [TRX]);
+    await result;
+    assert.equal(calls[0]?.url, 'https://api.coinpaprika.com/v1/tickers/trx-id?quotes=EUR');
+    assert.equal('authorization' in (calls[0]?.headers ?? {}), false);
+  });
+
   test('an id it does not know (404) is left out, and the others are priced', async () => {
     const { result } = quotes(
       (url) =>
@@ -147,7 +163,7 @@ describe('coinpaprika', () => {
       assert.equal(coinpaprika.serialIntervalMs, 100);
     });
 
-    test('a 429 or a 402 is a rate limit: run less often', async () => {
+    test('a 429 or a 402 is a rate limit: run less often, or add a key', async () => {
       for (const status of [429, 402]) {
         const error = await failure(
           jsonResponse({ error: 'you have reached maximum request limit' }, status),
@@ -155,7 +171,12 @@ describe('coinpaprika', () => {
         assert.ok(error instanceof ApiError);
         assert.equal(
           coinpaprika.rateLimitAdvice(error, { settings: {}, serial: false }),
-          "run less often, or list another price provider after it: CoinPaprika's free API allows 20,000 requests a month",
+          "run less often, add an API key (api_key: ${COINPAPRIKA_API_KEY}), or list another price provider after it: CoinPaprika's free API allows 20,000 requests a month",
+          String(status),
+        );
+        assert.equal(
+          coinpaprika.rateLimitAdvice(error, { settings: { api_key: 'k' }, serial: false }),
+          'run less often, or list another price provider after it',
           String(status),
         );
       }
