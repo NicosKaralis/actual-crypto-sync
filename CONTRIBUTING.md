@@ -12,7 +12,7 @@ Each run does these steps:
 2. It reads the current price of each token.
 3. It writes one adjustment transaction per account per day.
 
-v1.0 supports TRON and Bitcoin. The code lets contributors add more chains, block explorers and price providers.
+It supports TRON, Bitcoin, Ethereum and BNB Smart Chain. Contributors can add more chains, block explorers and price providers.
 
 The project uses TypeScript and runs on Node.js. The project is not affiliated with Actual Budget.
 
@@ -35,7 +35,7 @@ To report a bug, open an issue with the bug report form. The form asks for this 
 
 **Do not put API keys, passwords, session tokens or full wallet addresses in an issue.** The repository is public. All text in an issue stays in its history.
 
-A short address is sufficient, for example `TC9F...R2MJ`. The logs show addresses in the same short form.
+A short address is enough, for example `TC9F...R2MJ`. The logs show addresses in the same short form.
 
 To request a new feature, use the feature request form. To request a new chain, block explorer, price provider or token, use the related issue form. Do not use the bug report form for these requests.
 
@@ -59,7 +59,7 @@ Open an issue first for these changes:
 - A new dependency.
 - A large change to how the tool works.
 
-In the issue, we agree on the approach before you write the code. Thus, you do not do work that we cannot merge.
+In the issue, we agree on the approach before you write the code. So you do not do work that we cannot merge.
 
 ## Development
 
@@ -74,7 +74,7 @@ In the issue, we agree on the approach before you write the code. Thus, you do n
 
 ## Commit messages
 
-All commits use [Conventional Commits](https://www.conventionalcommits.org). [Release Please](https://github.com/googleapis/release-please) reads the commit messages. It writes the changelog from them. It also sets the next version from them. Thus, the commit type is important.
+All commits use [Conventional Commits](https://www.conventionalcommits.org). [Release Please](https://github.com/googleapis/release-please) reads the commit messages. It writes the changelog from them. It also sets the next version from them. So the commit type is important.
 
 | Type        | Use                                                           | Changelog section  | Release |
 | ----------- | ------------------------------------------------------------- | ------------------ | ------- |
@@ -94,11 +94,11 @@ This is an example of a commit message with a body:
 ```
 feat: read token balances from Tronscan
 
-Tronscan returns all TRC20 balances in one request. Thus, a wallet with
+Tronscan returns all TRC20 balances in one request. So a wallet with
 many tokens needs fewer requests than with TronGrid.
 ```
 
-A breaking change has a mark. The mark is `!` after the type, or a `BREAKING CHANGE:` footer. One mark is sufficient for a major version. This project uses the two marks together.
+A breaking change has a mark. The mark is `!` after the type, or a `BREAKING CHANGE:` footer. One mark is enough for a major version. This project uses the two marks together.
 
 For a breaking change, do these steps:
 
@@ -138,7 +138,7 @@ These changes need a minor version:
 - A new optional config key.
 - A change to the default explorers of a chain. The changelog tells users.
 
-The TypeScript interfaces in `src/types.ts` are not public. The project is not a library, so they can change in all versions.
+The TypeScript interfaces in `src/types.ts` are not public. The project is not a library, so they can change in any version.
 
 ## Branches
 
@@ -152,7 +152,7 @@ The project uses git flow. `develop` has the work for the next version, and `mai
 
 **Open your pull request into `develop`.** GitHub selects `main` by default, so change the base branch. A check fails pull requests into `main` from other branches.
 
-After each release, a workflow merges `main` back into `develop`. Thus, `develop` also gets the release commit and each hotfix.
+After each release, a workflow merges `main` back into `develop`. So `develop` also gets the release commit and each hotfix.
 
 ## Pull requests
 
@@ -165,7 +165,7 @@ Before you open a pull request, do these checks:
 5. `npm run lint`, `npm run typecheck` and `npm test` pass.
 6. There are no API keys, passwords, session tokens or real wallet addresses in the code, the tests, the fixtures or the description.
 
-The pull request template has the same checklist. For a breaking change, tell users in the description what they must do. A workflow adds the `breaking change` label from the commit marks. GitHub doesn't let it label a pull request from a fork, so the maintainer adds the label there.
+The pull request template has the same checklist. For a breaking change, tell users in the description what they must do. A workflow adds the `breaking change` label from the commit marks. GitHub does not let the workflow label a pull request from a fork. For those, the maintainer adds the label by hand.
 
 ## AI, Claude Code and other agents
 

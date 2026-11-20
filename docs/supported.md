@@ -26,7 +26,7 @@ An account uses a chain's coin by its symbol, for example `token: TRX`.
 
 To use your own mempool or Esplora instance, set `api_url` on the `mempool-space` explorer. See [Settings of each entry](configuration.md#settings-of-each-entry).
 
-On Ethereum, the tool uses `json-rpc` and then `blockscout` when the config lists no explorers. Neither needs a key. To use your own node, or a provider such as Infura or Alchemy, set `api_url` on `json-rpc` to its URL, with the key in it. The tool never shows that URL's path in logs or spans. `blockscout` takes an optional free API key for higher limits. `etherscan` needs a free API key, so it is used only when you list it. See [Ethereum explorers](configuration.md#ethereum-explorers).
+On Ethereum, the tool uses `json-rpc` and then `blockscout` when the config lists no explorers. Neither needs a key. To use your own node, or a provider such as Infura or Alchemy, set `api_url` on `json-rpc` to its URL, with the key in it. The tool never shows that URL's path in logs or spans. `blockscout` takes an optional free API key for higher limits. `etherscan` needs a free API key, so the tool uses it only when you list it. See [Ethereum explorers](configuration.md#ethereum-explorers).
 
 On BNB Smart Chain, the tool uses `json-rpc` when the config lists no explorers. It needs no key. For a backup, add a second `json-rpc` entry with BNB Chain's public node, `https://bsc-dataseed.bnbchain.org`. There is no public Blockscout for this chain. `etherscan` works here only with a key of a paid Etherscan plan. See [BNB Smart Chain explorers](configuration.md#bnb-smart-chain-explorers).
 
@@ -38,9 +38,9 @@ On BNB Smart Chain, the tool uses `json-rpc` when the config lists no explorers.
 | [CoinMarketCap](https://coinmarketcap.com) | `coinmarketcap` | 93 fiat currencies, for example EUR, USD, GBP and JPY   |
 | [CoinPaprika](https://coinpaprika.com)     | `coinpaprika`   | 40 fiat currencies, for example EUR, USD, GBP and JPY   |
 
-CoinMarketCap needs no key. Without a key, all users on the same IP address share one rate limit, so the tool tries again after 1, 2 and 4 seconds when the limit is reached. A free key of the Basic plan gives you a limit of your own. A run sends one request for all tokens. CoinMarketCap knows a token by its slug, for example `tether`, never by its symbol: one symbol can belong to several coins.
+CoinMarketCap needs no key. Without a key, all users on the same IP address share one rate limit. When a request reaches the limit, the tool tries it again after 1, 2 and 4 seconds. A free key of the Basic plan gives you a limit of your own. A run sends one request for all tokens. CoinMarketCap knows a token by its slug, for example `tether`, never by its symbol: one symbol can belong to several coins.
 
-CoinPaprika's free API needs no key. It allows 20,000 requests a month and is for personal use only. A run sends one request for each token that your accounts use.
+CoinPaprika's free API needs no key. It allows 20,000 requests a month. It is for personal use only. A run sends one request for each token that your accounts use.
 
 ## Built-in tokens
 
@@ -99,7 +99,7 @@ An account uses a built-in token by its symbol only. To use another token, [add 
 
 On BNB Smart Chain, `USDT` and `USDC` have 18 decimals, not 6 as on Ethereum and TRON. `ETH` is Binance-Peg Ether, a BEP20 token, not ETH on Ethereum. `TRX`, `WIN` and `BTT` are bridged copies of the TRON tokens. CoinPaprika does not list `TRX` and `WBTC` on BNB Smart Chain, so it uses its price of TRX on TRON and of WBTC on Ethereum. CoinMarketCap does not list `WBTC` on BNB Smart Chain, so it uses its price of WBTC on Ethereum. CoinGecko has its own ids for the bridged USDT, USDC, DAI, ETH, TRX and WIN on this chain.
 
-The price providers know each coin and token by an id of their own. The same token on several chains has the same id, because it has the same price, unless the provider lists that chain's copy as a coin of its own.
+The price providers know each coin and token by an id of their own. The same token on several chains has the same id, because it has the same price. The exception is a provider that lists a chain's copy as a coin of its own.
 
 <details>
 <summary>Price providers' mapping</summary>

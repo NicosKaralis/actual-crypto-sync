@@ -24,7 +24,7 @@
 
 ## Getting Started
 
-actual-crypto-sync is a command-line tool. It is free and open source, and it is written in TypeScript for Node.js. Each run does these steps:
+actual-crypto-sync is a command-line tool. It is free and open source. It is written in TypeScript and runs on Node.js. Each run does these steps:
 
 1. It reads the balance of each wallet from a block explorer.
 2. It reads the current price of each token from a price provider.
@@ -40,7 +40,7 @@ The tool runs once and exits. Run it on a schedule, for example with cron or a K
 
 ### Supported
 
-Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
+Popular tokens are built in. For a built-in token, the config needs only its symbol. Other tokens work too: you [define them in the config](docs/configuration.md#tokens).
 
 - **Chains:** TRON (TRX), Bitcoin (BTC), Ethereum (ETH), BNB Smart Chain (BNB)
 - **Built-in tokens:** USDT, USDC, WBTC, WETH, DAI [and more](docs/supported.md#built-in-tokens)
@@ -55,7 +55,7 @@ To ask for a new [chain](https://github.com/NicosKaralis/actual-crypto-sync/issu
 
 - This project is not affiliated with Actual Budget.
 - It is not financial advice.
-- It writes to your budget. Back up your budget first, and start with `--dry-run`. With `--dry-run`, the tool shows what it will do and writes nothing.
+- It writes to your budget. Back up your budget first. Then start with `--dry-run`: the tool shows what it will do and writes nothing.
 - It is tested with Actual server **26.11.0**. Other versions can work, but they are not tested.
 
 ### Privacy and data
@@ -63,19 +63,19 @@ To ask for a new [chain](https://github.com/NicosKaralis/actual-crypto-sync/issu
 The tool collects nothing, and it has no telemetry of its own. It contacts only these services:
 
 - **Your Actual server.** The tool reads and writes your budget.
-- **The block explorers in your config.** They get your wallet addresses and your API key, if you set one, to read the balances.
+- **The block explorers in your config.** To read the balances, they get your wallet addresses. They also get your API key, if you set one.
 - **The price providers in your config.** They get the token ids and the currency only. They get no addresses and no amounts.
 - **Your OpenTelemetry collector**, only if you set an OTLP endpoint, such as `OTEL_EXPORTER_OTLP_ENDPOINT`. See [Monitoring](docs/monitoring.md).
 
-The tool needs only public addresses. It never asks for private keys or seed phrases, and it cannot move funds.
+The tool needs only public addresses. It never asks for private keys or seed phrases. It cannot move funds.
 
-A block explorer sees your full address and your IP address, and it can log them. To keep your addresses private, use your own instance with `api_url`: a mempool or Esplora instance for Bitcoin, or your own node for Ethereum and BNB Smart Chain. See [Supported](docs/supported.md).
+A block explorer sees your full address and your IP address. It can log them. To keep your addresses private, use your own instance with `api_url`: a mempool or Esplora instance for Bitcoin, or your own node for Ethereum and BNB Smart Chain. See [Supported](docs/supported.md).
 
-Logs, traces and errors show only short addresses, and they never show secrets. See [SECURITY.md](SECURITY.md).
+Logs, traces and errors show only short addresses. They never show secrets. See [SECURITY.md](SECURITY.md).
 
 ## Installation
 
-The tool is a Docker image on GitHub Container Registry, for amd64 and arm64. [docs/installation.md](docs/installation.md) has the image tags, all the ways to run the tool, and the environment variables.
+The tool is a Docker image for amd64 and arm64. It is on GitHub Container Registry and on Docker Hub. [docs/installation.md](docs/installation.md) has the image tags, all the ways to run the tool, and the environment variables.
 
 ### Quick start
 
@@ -89,7 +89,7 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64. [d
    | OpenID, or more than one user          | `session`               |
    | A server with API keys (after 26.11.0) | `api_key`               |
 
-4. **Write the config.** Copy [`config.example.yml`](config.example.yml) to `config.yml`, and change it for your server, accounts and wallets. [docs/configuration.md](docs/configuration.md) tells you about each setting.
+4. **Write the config.** Copy [`config.example.yml`](config.example.yml) to `config.yml`. Change it for your server, accounts and wallets. [docs/configuration.md](docs/configuration.md) tells you about each setting.
 5. **Write the secrets in an env file**, for example `.env`:
 
    ```sh
@@ -113,7 +113,7 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64. [d
 7. **Run it without `--dry-run`**, and check the transactions in Actual.
 8. **Run it on a schedule**, for example one time each day, with [cron](docs/installation.md#cron), [Docker Compose](docs/installation.md#docker-compose) or [Kubernetes](docs/installation.md#kubernetes).
 
-Set `TZ` to your time zone. The date of the transaction is "today" in that time zone, and the image uses UTC if you do not set it.
+Set `TZ` to your time zone. The date of each transaction is "today" in that time zone. If you do not set `TZ`, the image uses UTC.
 
 ## Key Links
 
@@ -135,7 +135,7 @@ Set `TZ` to your time zone. The date of the transaction is "today" in that time 
 - **A bug, or a request for a new chain, explorer, price provider or token:** open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form.
 - **A security issue:** do not open a public issue. Read [SECURITY.md](SECURITY.md).
 
-**Do not put API keys, passwords, session tokens or full wallet addresses in an issue or a discussion.** A short address, for example `TC9F...R2MJ`, is sufficient.
+**Do not put API keys, passwords, session tokens or full wallet addresses in an issue or a discussion.** A short address, for example `TC9F...R2MJ`, is enough.
 
 ## Contributing
 
@@ -153,11 +153,11 @@ All participants must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Feature Requests
 
-To ask for a new feature, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). To ask for a new chain, block explorer, price provider or token, open an [issue](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose) with the related form. The [milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) show the work planned for each version, and the [roadmap](ROADMAP.md) shows the ideas for later. To show that you want an existing request, add a 👍 reaction to its first comment.
+To ask for a new feature, open an issue with the [feature request form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=feature-request.yml). For a new chain, block explorer, price provider or token, use its own [issue form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new/choose). The [milestones](https://github.com/NicosKaralis/actual-crypto-sync/milestones) show the work planned for each version, and the [roadmap](ROADMAP.md) shows the ideas for later. To show that you want an existing request, add a 👍 reaction to its first comment.
 
 ### AI Use
 
-This project is built with a lot of help from AI, mostly Claude Code, and AI-assisted contributions are welcome. See [AI, Claude Code and other agents](CONTRIBUTING.md#ai-claude-code-and-other-agents) for what that means.
+AI, mostly Claude Code, helps a lot to build this project. AI-assisted contributions are welcome. See [AI, Claude Code and other agents](CONTRIBUTING.md#ai-claude-code-and-other-agents) for what that means.
 
 ## License
 
