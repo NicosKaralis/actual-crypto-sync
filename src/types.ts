@@ -1,6 +1,8 @@
 // What chains, explorers and price providers implement. Not a public API: these
 // can change in any version.
 
+import type { Sleep } from './http.ts';
+
 export type ChainId = string; // 'tron', 'bitcoin', 'ethereum', 'bsc'
 
 /** Lowercase ISO 4217 code, normalized by the config loader: 'eur', 'usd'. */
@@ -75,5 +77,6 @@ export interface PriceProvider {
     currency: Currency;
     settings: Record<string, string>;
     fetch: typeof fetch;
+    sleep?: Sleep; // for a provider that waits between tries
   }): Promise<Map<string, Quote>>; // keyed by `${chain}:${symbol}`
 }

@@ -46,6 +46,8 @@ describe('the registries', () => {
 
   test('hold the price providers', () => {
     assert.equal(getPriceProvider('coingecko').id, 'coingecko');
+    assert.equal(getPriceProvider('coinmarketcap').id, 'coinmarketcap');
+    assert.equal(getPriceProvider('coinpaprika').id, 'coinpaprika');
     for (const [id, provider] of Object.entries(PRICE_PROVIDERS)) {
       assert.equal(provider.id, id);
     }

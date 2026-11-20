@@ -65,7 +65,7 @@
           "oneOf": [
             {
               "type": "string",
-              "enum": ["coingecko", "coinpaprika"]
+              "enum": ["coingecko", "coinmarketcap", "coinpaprika"]
             },
             {
               "type": "array",
@@ -74,7 +74,7 @@
                 "oneOf": [
                   {
                     "type": "string",
-                    "enum": ["coingecko", "coinpaprika"]
+                    "enum": ["coingecko", "coinmarketcap", "coinpaprika"]
                   },
                   {
                     "type": "object",
@@ -108,6 +108,26 @@
                         "not": {
                           "type": "object",
                           "required": ["demo_api_key", "pro_api_key"]
+                        }
+                      },
+                      "coinmarketcap": {
+                        "type": ["object", "null"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "api_url": {
+                            "$ref": "#/definitions/setting",
+                            "description": "The API base URL."
+                          },
+                          "api_key": {
+                            "$ref": "#/definitions/setting",
+                            "description": "A CoinMarketCap API key; the free Basic plan works. The default api_url is then the keyed API (https://pro-api.coinmarketcap.com/v2). Use ${VAR}."
+                          },
+                          "label": {
+                            "$ref": "#/definitions/label"
+                          },
+                          "serial": {
+                            "$ref": "#/definitions/serial"
+                          }
                         }
                       },
                       "coinpaprika": {
@@ -454,6 +474,9 @@
             "additionalProperties": false,
             "properties": {
               "coingecko": {
+                "$ref": "#/definitions/text"
+              },
+              "coinmarketcap": {
                 "$ref": "#/definitions/text"
               },
               "coinpaprika": {

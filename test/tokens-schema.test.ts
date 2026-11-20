@@ -117,6 +117,10 @@ describe('tokens.schema.json and the loader agree on the shape', () => {
       'an unknown price provider',
       `tron:\n  - { symbol: TRX, decimals: 6, price_ids: { kraken: trx } }\n`,
     ],
+    [
+      'a CoinMarketCap symbol in place of a slug',
+      `tron:\n  - { symbol: TRX, decimals: 6, price_ids: { coinmarketcap: TRX } }\n`,
+    ],
   ];
 
   for (const [name, text] of accepted) {
