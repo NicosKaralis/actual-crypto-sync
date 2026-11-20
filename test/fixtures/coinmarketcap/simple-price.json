@@ -1,0 +1,47 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "slug": "bitcoin",
+      "quotes": [
+        {
+          "symbol": "EUR",
+          "price": 56360.095287722825665827
+        }
+      ]
+    },
+    {
+      "id": 825,
+      "name": "Tether USDt",
+      "symbol": "USDT",
+      "slug": "tether",
+      "quotes": [
+        {
+          "symbol": "EUR",
+          "price": 0.91170594955737068
+        }
+      ]
+    },
+    {
+      "id": 1958,
+      "name": "TRON",
+      "symbol": "TRX",
+      "slug": "tron",
+      "quotes": [
+        {
+          "symbol": "EUR",
+          "price": 0.280443563372315222
+        }
+      ]
+    }
+  ],
+  "status": {
+    "timestamp": "2026-11-20T11:14:09.511Z",
+    "error_code": "0",
+    "error_message": "",
+    "elapsed": 3,
+    "credit_count": 1
+  }
+}

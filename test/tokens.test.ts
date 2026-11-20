@@ -13,6 +13,7 @@ import {
   parseTokens,
   resolveToken,
   TOKENS_FILE,
+  tokenKey,
 } from '../src/tokens.ts';
 import type { Token } from '../src/types.ts';
 import { fakeTokens, TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
@@ -109,6 +110,12 @@ describe('the built-in database, tokens.yml', () => {
   test('every token has a CoinGecko id', () => {
     for (const token of BUILTIN_TOKENS) {
       assert.ok(token.priceIds.coingecko, `${token.chain}:${token.symbol}`);
+    }
+  });
+
+  test('every token has a CoinMarketCap slug', () => {
+    for (const token of BUILTIN_TOKENS) {
+      assert.match(token.priceIds.coinmarketcap ?? '', /^[a-z0-9]+(-[a-z0-9]+)*$/, tokenKey(token));
     }
   });
 

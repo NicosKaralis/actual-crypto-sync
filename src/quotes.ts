@@ -82,6 +82,7 @@ async function quote({
             currency,
             settings,
             fetch: entryFetch(fetch, { serial, intervalMs: provider.serialIntervalMs, sleep }),
+            sleep,
           });
         } catch (error) {
           span.setStatus({

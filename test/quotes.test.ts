@@ -327,5 +327,23 @@ describe('collectQuotes', () => {
       assert.equal(tracking.state.maxActive, 1);
       assert.deepEqual(sleeps, [6000]);
     });
+
+    test('the sleep is passed to the provider, for its own waits between tries', async () => {
+      const sleep = async () => {};
+      let given: unknown;
+      const waiting: PriceProvider = {
+        ...provider('coingecko', [], {}),
+        getQuotes: async (req) => {
+          given = req.sleep;
+          return new Map();
+        },
+      };
+      await collectQuotes({
+        config: config([{ label: 'coingecko', provider: waiting }], [BTC]),
+        fetch,
+        sleep,
+      });
+      assert.equal(given, sleep);
+    });
   });
 });

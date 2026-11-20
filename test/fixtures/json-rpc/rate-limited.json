@@ -1,0 +1,28 @@
+[
+  {
+    "code": -32005,
+    "message": "Too Many Requests",
+    "data": {
+      "see": "https://infura.io/dashboard"
+    }
+  },
+  {
+    "code": -32005,
+    "message": "Too Many Requests",
+    "data": {
+      "see": "https://infura.io/dashboard"
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "result": "0x00000000000000000000000000000000000000000000000000000000087b49a4"
+  },
+  {
+    "code": -32005,
+    "message": "Too Many Requests",
+    "data": {
+      "see": "https://infura.io/dashboard"
+    }
+  }
+]

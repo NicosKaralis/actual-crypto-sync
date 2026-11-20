@@ -45,6 +45,11 @@ prices:
     #     api_url: https://api-pro.coinpaprika.com/v1  # the default with api_key (without: https://api.coinpaprika.com/v1)
     #     label: coinpaprika-pro               # the name in logs, spans and metric labels (default: the id)
     #     serial: true                         # one request at a time, 0.1 s apart, if it rate-limits you
+    # - coinmarketcap:                         # works without a key too
+    #     api_key: ${COINMARKETCAP_API_KEY}    # the free Basic plan works; without one, the keyless API's limit is shared per IP
+    #     api_url: https://pro-api.coinmarketcap.com/v2  # the default with api_key (without: https://pro-api.coinmarketcap.com/public-api/v2)
+    #     label: coinmarketcap                 # the name in logs, spans and metric labels (default: the id)
+    #     serial: true                         # one request at a time, 2 s apart, if it rate-limits you
 
 chains:                                        # optional, settings per chain
   tron:
@@ -67,6 +72,8 @@ chains:                                        # optional, settings per chain
       - json-rpc                               # a public node (https://ethereum-rpc.publicnode.com)
       # - json-rpc:
       #     api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}  # your own node, Infura or Alchemy
+      #     batch_size: 6                      # at most 6 calls per request: Infura's free plan allows 6 a second
+      #     serial: true                       # one request a second
       - blockscout                             # https://eth.blockscout.com/api
       # - etherscan:
       #     api_key: ${ETHERSCAN_API_KEY}      # required: a free key from etherscan.io

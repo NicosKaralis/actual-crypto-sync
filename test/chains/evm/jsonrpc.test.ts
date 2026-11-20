@@ -50,10 +50,24 @@ async function failure(response: Response): Promise<unknown> {
 }
 
 describe('jsonRpcExplorer', () => {
-  test('reads contract tokens, with api_url as its one setting', () => {
+  test('reads contract tokens, with api_url and batch_size as its settings', () => {
     assert.equal(explorer.id, 'json-rpc');
     assert.equal(explorer.supportsContracts, true);
-    assert.deepEqual(explorer.settingKeys, ['api_url']);
+    assert.deepEqual(explorer.settingKeys, ['api_url', 'batch_size']);
+  });
+
+  test('batch_size is a whole number of 1 or more', () => {
+    assert.equal(explorer.checkSettings?.({}), null);
+    for (const size of ['1', '6', '100']) {
+      assert.equal(explorer.checkSettings?.({ batch_size: size }), null, size);
+    }
+    for (const size of ['0', '-1', '1.5', '06', 'six', '']) {
+      assert.equal(
+        explorer.checkSettings?.({ batch_size: size }),
+        'batch_size must be a whole number of 1 or more',
+        size,
+      );
+    }
   });
 
   test('ETH and each token in one batch, keyed by symbol', async () => {
@@ -100,6 +114,50 @@ describe('jsonRpcExplorer', () => {
     });
     await result;
     assert.equal(calls[0]?.url, url);
+  });
+
+  test('with batch_size, the calls go in batches of that size, one after the other', async () => {
+    let open = 0;
+    let maxOpen = 0;
+    const { fetch, calls } = fakeFetch((_, body) => {
+      const batch = JSON.parse(body ?? '[]') as { id: number }[];
+      return jsonResponse(batch.map(({ id }) => ({ jsonrpc: '2.0', id, result: `0x${id}` })));
+    });
+    const tracked = (async (input: string | URL | Request, init?: RequestInit) => {
+      maxOpen = Math.max(maxOpen, ++open);
+      await new Promise((resolve) => setImmediate(resolve));
+      open--;
+      return fetch(input, init);
+    }) as typeof globalThis.fetch;
+    const result = await explorer.getBalances({
+      wallet: { address: ETH_WALLET },
+      tokens: [ETH, USDT, USDC, DAI, token('LINK', '0x514910771AF9Ca656af840dff83E8264EcF986CA')],
+      settings: { batch_size: '2' },
+      fetch: tracked,
+    });
+    assert.deepEqual(
+      calls.map((call) => (JSON.parse(call.body ?? '[]') as { id: number }[]).map((c) => c.id)),
+      [[1, 2], [3, 4], [5]],
+    );
+    assert.equal(maxOpen, 1);
+    assert.deepEqual(
+      result,
+      new Map([
+        ['ETH', 1n],
+        ['USDT', 2n],
+        ['USDC', 3n],
+        ['DAI', 4n],
+        ['LINK', 5n],
+      ]),
+    );
+  });
+
+  test('a batch_size at least the number of tokens is one batch', async () => {
+    const { result, calls } = balances(fixture('json-rpc/balances.json'), [ETH, USDT, USDC, DAI], {
+      batch_size: '4',
+    });
+    await result;
+    assert.equal(calls.length, 1);
   });
 
   test('no tokens, no request', async () => {
@@ -161,11 +219,11 @@ describe('jsonRpcExplorer', () => {
       const error = await failure(jsonResponse(LIMITED, 429));
       assert.equal(
         explorer.rateLimitAdvice(error, { settings: {}, serial: false }),
-        'set serial: true to send one request at a time, or point api_url at your own node or a provider with an API key',
+        'set serial: true to send one request at a time and batch_size to send fewer calls in each, or point api_url at your own node or a provider with an API key',
       );
       assert.equal(
         explorer.rateLimitAdvice(error, { settings: {}, serial: true }),
-        'point api_url at your own node or a provider with an API key',
+        'set a lower batch_size to send fewer calls in each request, or point api_url at your own node or a provider with an API key',
       );
     });
 
@@ -181,6 +239,36 @@ describe('jsonRpcExplorer', () => {
           JSON.stringify(error),
         );
       }
+    });
+
+    // test/fixtures/json-rpc/rate-limited.json: Infura's answer to ETH, USDT, USDC
+    // and DAI over its limit, HTTP 200. Only USDC (id 3) was answered; the other
+    // calls are bare errors with no id.
+    test('a batch with calls refused for a rate limit, without their ids, is a rate limit', async () => {
+      const { result } = balances(fixture('json-rpc/rate-limited.json'), [ETH, USDT, USDC, DAI]);
+      const error = await result.then(
+        () => assert.fail('expected getBalances to throw'),
+        (error: unknown) => error,
+      );
+      assert.ok(error instanceof ApiError);
+      assert.equal(error.message, 'json-rpc: JSON-RPC error -32005');
+      assert.ok(explorer.rateLimitAdvice(error, { settings: {}, serial: false }));
+    });
+
+    test('an error without an id is the error of the batch, even when it is not a rate limit', async () => {
+      const { result } = balances(
+        [
+          { code: -32603, message: 'internal error' },
+          { jsonrpc: '2.0', id: 2, result: '0x1' },
+        ],
+        [ETH, USDT],
+      );
+      await assert.rejects(result, (error: unknown) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.message, 'json-rpc: JSON-RPC error -32603');
+        assert.equal(explorer.rateLimitAdvice(error, { settings: {}, serial: false }), null);
+        return true;
+      });
     });
 
     test('other errors get no advice', async () => {

@@ -25,4 +25,5 @@ bitcoin:
     decimals: 8
     price_ids:
       coingecko: bitcoin
+      coinmarketcap: bitcoin
       coinpaprika: btc-bitcoin

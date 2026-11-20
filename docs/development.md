@@ -105,7 +105,7 @@ The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not ru
 
 `npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes a few minutes, and needs no keys.
 
-- **Tokens:** the decimals and the symbol of each contract on chain are the ones in the token files (`tokens.yml` and `tokens/`). The CoinGecko id and the CoinPaprika id of each token belong to the same contract at that provider.
+- **Tokens:** the decimals and the symbol of each contract on chain are the ones in the token files (`tokens.yml` and `tokens/`). The CoinGecko id, the CoinPaprika id and the CoinMarketCap slug of each token belong to the same contract at that provider. The CoinMarketCap check needs `COINMARKETCAP_API_KEY`, because the keyless API has no endpoint for contracts.
 - **Explorers:** each explorer reads the public exchange wallets of its chain. The read must give a balance for each token. A balance of 0 is correct, because any wallet can be emptied.
 - **Price providers:** each provider gives a price for each token that has an id for it. A normal run stops at the first provider that gives a price. The live checks ask every provider.
 - **Keys:** each explorer and provider is checked without a key if it allows that, and with its key if it has one. Without a key, an entry that also has a key reads only one wallet and two tokens, because public endpoints allow few requests. With a key, it reads everything. The keys come from these environment variables. A check with a key is skipped if its variable is not set.
@@ -120,6 +120,7 @@ The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not ru
   | `ETHERSCAN_BSC_API_KEY` | `etherscan` on BNB Smart Chain: a paid plan's key     |
   | `COINGECKO_API_KEY`     | `coingecko`, as a Demo key                            |
   | `COINPAPRIKA_API_KEY`   | `coinpaprika`, for the paid API                       |
+  | `COINMARKETCAP_API_KEY` | `coinmarketcap`; the free Basic plan works            |
 
   To set them locally, copy `.env.live.example` to `.env.live` and fill in your keys. Git ignores `.env.live`, and `npm run test:live` reads it. A variable already set in the environment wins over the file. The workflow gets the keys from repository secrets with the same names. A new explorer or provider with a key setting goes in `KEYS` in `test/live/registries.live.ts`; a check fails until it does.
 
@@ -164,8 +165,8 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 4. Add the native token, and popular tokens. See [The token files](#the-token-files). A chain with tokens gets its own file, `tokens/<chain>.yml`, and the line `<chain>: !import tokens/<chain>.yml` in `tokens.yml`. A chain with only its native token is listed in `tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
-7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a way to call a contract to `CONTRACT_CALLS`, and the platform ids to `COINGECKO_PLATFORMS` and `COINPAPRIKA_PLATFORMS`. The [live checks](#live-checks) fail until you do.
-8. Add the chain to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 chains.
+7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a way to call a contract to `CONTRACT_CALLS`, and the platform ids to `COINGECKO_PLATFORMS`, `COINPAPRIKA_PLATFORMS` and `COINMARKETCAP_PLATFORMS`. The [live checks](#live-checks) fail until you do.
+8. Add the chain to [docs/supported.md](supported.md), and its coin's ids to the price providers' mapping there. Add it to the short list in the README only if the list has fewer than 5 chains.
 
 ### An EVM chain
 
@@ -207,7 +208,7 @@ Open an issue with the [new price provider form](https://github.com/NicosKaralis
    Add it, with its settings, to `providers` and `price_ids` in `config.schema.json`. The schema tests fail until you do.
 3. Add the id of each built-in token at the provider to `price_ids` in the token files.
 4. Record fixtures, and test the currency mapping, the parse of the response and each error.
-5. Add the provider to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
+5. Add the provider to [docs/supported.md](supported.md), and its id of each token to the price providers' mapping there. Add its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
 
 ## Add a built-in token
 
@@ -217,7 +218,7 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 2. Copy the decimals from the contract.
 3. Find the id at each price provider. On CoinGecko, check that the contract on the token page is the same contract.
 4. Add the token to the file of its chain, `tokens/<chain>.yml`. Put the links that you checked in the pull request.
-5. Add the token to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 tokens.
+5. Add the token to [docs/supported.md](supported.md): to the table of its chain, and its ids to the price providers' mapping. Add it to the short list in the README only if the list has fewer than 5 tokens.
 6. Run `npm run test:live`. It checks the decimals on chain and the CoinGecko id of the new token. The pull request runs it too.
 
 The unit tests of the token files check their rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) check its contents against the real services, so a new token needs no new test.

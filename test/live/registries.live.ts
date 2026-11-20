@@ -22,7 +22,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import { CHAINS } from '../../src/chains/index.ts';
 import { walletPrefix } from '../../src/format.ts';
-import { entryFetch, getJson, isRecord, postJson } from '../../src/http.ts';
+import { ApiError, entryFetch, getJson, isRecord, postJson } from '../../src/http.ts';
 import { PRICE_PROVIDERS } from '../../src/prices/index.ts';
 import { BUILTIN_TOKENS, tokenKey } from '../../src/tokens.ts';
 import type { ChainId, Token } from '../../src/types.ts';
@@ -51,29 +51,37 @@ const WALLETS: Record<ChainId, string[]> = {
  * one: the environment variable that holds it, and the setting it goes in.
  * The workflow sets them from repository secrets of the same names. A node
  * provider's key is part of its URL, so json-rpc gets a whole api_url.
+ * `settings` are added to the keyed check's settings.
  */
-const KEYS: Record<string, { env: string; setting: string }> = {
+const KEYS: Record<string, { env: string; setting: string; settings?: Record<string, string> }> = {
   'tron/trongrid': { env: 'TRONGRID_API_KEY', setting: 'api_key' },
-  'ethereum/json-rpc': { env: 'ETHEREUM_RPC_URL', setting: 'api_url' },
+  // Infura's free plan allows 6 calls a second, and a batch counts each call.
+  'ethereum/json-rpc': {
+    env: 'ETHEREUM_RPC_URL',
+    setting: 'api_url',
+    settings: { batch_size: '6' },
+  },
   'ethereum/blockscout': { env: 'BLOCKSCOUT_API_KEY', setting: 'api_key' },
   'ethereum/etherscan': { env: 'ETHERSCAN_API_KEY', setting: 'api_key' },
-  'bsc/json-rpc': { env: 'BSC_RPC_URL', setting: 'api_url' },
+  'bsc/json-rpc': { env: 'BSC_RPC_URL', setting: 'api_url', settings: { batch_size: '6' } },
   // Etherscan's free tier doesn't cover BNB Smart Chain: a paid key, kept apart.
   'bsc/etherscan': { env: 'ETHERSCAN_BSC_API_KEY', setting: 'api_key' },
   coingecko: { env: 'COINGECKO_API_KEY', setting: 'demo_api_key' },
+  coinmarketcap: { env: 'COINMARKETCAP_API_KEY', setting: 'api_key' },
   coinpaprika: { env: 'COINPAPRIKA_API_KEY', setting: 'api_key' },
 };
 
 // The defaults of the trongrid and the EVM json-rpc explorers and the coingecko
-// and coinpaprika providers.
+// and coinpaprika providers, and coinmarketcap's keyed API.
 const TRONGRID_URL = 'https://api.trongrid.io';
 const ETHEREUM_RPC_URL = 'https://ethereum-rpc.publicnode.com';
 const BSC_RPC_URL = 'https://bsc-rpc.publicnode.com';
 const COINGECKO_URL = 'https://api.coingecko.com/api/v3';
 const COINPAPRIKA_URL = 'https://api.coinpaprika.com/v1';
 const COINPAPRIKA_PRO_URL = 'https://api-pro.coinpaprika.com/v1';
+const COINMARKETCAP_KEYED_URL = 'https://pro-api.coinmarketcap.com/v2';
 
-/** CoinGecko's and CoinPaprika's platform id of each chain with tokens. */
+/** CoinGecko's and CoinPaprika's platform id, and CoinMarketCap's platform name, of each chain with tokens. */
 const COINGECKO_PLATFORMS: Record<ChainId, string> = {
   tron: 'tron',
   ethereum: 'ethereum',
@@ -84,6 +92,11 @@ const COINPAPRIKA_PLATFORMS: Record<ChainId, string> = {
   ethereum: 'eth-ethereum',
   bsc: 'bnb-binance-coin',
 };
+const COINMARKETCAP_PLATFORMS: Record<ChainId, string> = {
+  tron: 'Tron20',
+  ethereum: 'Ethereum',
+  bsc: 'BNB Smart Chain (BEP20)',
+};
 
 /**
  * Tokens whose CoinPaprika id is that coin on another chain, because
@@ -91,11 +104,15 @@ const COINPAPRIKA_PLATFORMS: Record<ChainId, string> = {
  * The check expects them missing, so it fails once CoinPaprika adds them.
  */
 const COINPAPRIKA_WITHOUT_CONTRACT = new Set(['tron:WETH', 'ethereum:USDD', 'bsc:TRX', 'bsc:WBTC']);
+/** The same for CoinMarketCap: its slug of that coin lists no contract on this chain. */
+const COINMARKETCAP_WITHOUT_CONTRACT = new Set(['tron:WETH', 'bsc:WBTC']);
 
 /** Contracts whose symbol() isn't the built-in symbol: TRON's wrapped coins. */
 const ONCHAIN_SYMBOLS: Record<string, string> = { 'tron:WBTC': 'BTC', 'tron:WETH': 'ETH' };
 
 const RATE_LIMIT_RETRY_MS = 60_000;
+/** JSON-RPC nodes: the wait before the one retry of a rate-limited answer. */
+const JSON_RPC_RETRY_MS = 1000;
 
 // One fetch per service, shared by every test, so the service's pacing holds
 // across tests: one request at a time, its serial interval apart.
@@ -104,7 +121,8 @@ const fetches = new Map<string, typeof fetch>();
 function serviceFetch(service: string, intervalMs: number): typeof fetch {
   let serviceFetch = fetches.get(service);
   if (!serviceFetch) {
-    serviceFetch = retryOnRateLimit(entryFetch(globalThis.fetch, { serial: true, intervalMs }));
+    const paced = entryFetch(globalThis.fetch, { serial: true, intervalMs });
+    serviceFetch = retryOnRateLimit(service.includes('/json-rpc') ? jsonRpcRetry(paced) : paced);
     fetches.set(service, serviceFetch);
   }
   return serviceFetch;
@@ -120,6 +138,38 @@ function retryOnRateLimit(fetch: typeof globalThis.fetch): typeof globalThis.fet
     await delay(RATE_LIMIT_RETRY_MS);
     return fetch(input, init);
   }) as typeof globalThis.fetch;
+}
+
+/**
+ * A JSON-RPC node's rate-limited answer is tried once more, 1 s later. Some
+ * nodes (Infura) answer a rate limit with HTTP 200 and the refused calls as
+ * errors in the batch, so the body is checked with the json-rpc explorer's
+ * own rule.
+ */
+function jsonRpcRetry(fetch: typeof globalThis.fetch): typeof globalThis.fetch {
+  return (async (input, init) => {
+    const response = await fetch(input, init);
+    if (!(await jsonRpcRateLimited(response.clone()))) {
+      return response;
+    }
+    await delay(JSON_RPC_RETRY_MS);
+    return fetch(input, init);
+  }) as typeof globalThis.fetch;
+}
+
+async function jsonRpcRateLimited(response: Response): Promise<boolean> {
+  const explorer = CHAINS.ethereum?.explorers['json-rpc'];
+  assert.ok(explorer);
+  const limited = (body: unknown) =>
+    explorer.rateLimitAdvice(new ApiError('json-rpc', 'live check', response.status, body), {
+      settings: {},
+      serial: true,
+    }) !== null;
+  if (limited(undefined)) {
+    return true; // HTTP 429
+  }
+  const body: unknown = await response.json().catch(() => undefined);
+  return (Array.isArray(body) ? body : [body]).some(limited);
 }
 
 /**
@@ -146,7 +196,7 @@ function modes(
     const value = process.env[key.env];
     result.push({
       name: 'with a key',
-      settings: value ? { [key.setting]: value } : {},
+      settings: value ? { ...key.settings, [key.setting]: value } : {},
       sample: false,
       skip: value ? false : `set ${key.env} to check it`,
     });
@@ -226,7 +276,12 @@ const contractTokens = BUILTIN_TOKENS.filter((token) => token.kind === 'contract
 describe('built-in tokens', () => {
   test('every chain with contract tokens can call contracts and has its platform ids', () => {
     const chains = [...new Set(contractTokens.map((token) => token.chain))];
-    for (const table of [CONTRACT_CALLS, COINGECKO_PLATFORMS, COINPAPRIKA_PLATFORMS]) {
+    for (const table of [
+      CONTRACT_CALLS,
+      COINGECKO_PLATFORMS,
+      COINPAPRIKA_PLATFORMS,
+      COINMARKETCAP_PLATFORMS,
+    ]) {
       assert.deepEqual(
         chains.filter((chain) => !Object.hasOwn(table, chain)),
         [],
@@ -427,4 +482,56 @@ describe('price providers', () => {
       assert.deepEqual(wrong, []);
     });
   }
+
+  // One request for every slug's contracts, on every chain. Only with
+  // COINMARKETCAP_API_KEY: the keyless API has no info endpoint.
+  test("every CoinMarketCap slug is the token's contract on CoinMarketCap", {
+    skip: process.env.COINMARKETCAP_API_KEY ? false : 'set COINMARKETCAP_API_KEY to check it',
+  }, async () => {
+    const coinmarketcap = PRICE_PROVIDERS.coinmarketcap;
+    assert.ok(coinmarketcap);
+    const slugs = [...new Set(contractTokens.map((token) => token.priceIds.coinmarketcap))];
+    const body = await getJson(
+      'coinmarketcap',
+      `${COINMARKETCAP_KEYED_URL}/cryptocurrency/info?slug=${slugs.join(',')}`,
+      serviceFetch('coinmarketcap with a key', coinmarketcap.serialIntervalMs),
+      { 'x-cmc_pro_api_key': process.env.COINMARKETCAP_API_KEY ?? '' },
+    );
+    assert.ok(isRecord(body) && isRecord(body.data), 'coinmarketcap: expected a map of coins');
+    // Keyed by id; each value is the coin, or a list of coins in older answers.
+    const contracts = new Map<string, unknown[]>();
+    for (const coin of Object.values(body.data).flat()) {
+      if (isRecord(coin) && typeof coin.slug === 'string' && Array.isArray(coin.contract_address)) {
+        contracts.set(coin.slug, coin.contract_address);
+      }
+    }
+
+    const wrong: string[] = [];
+    for (const token of contractTokens) {
+      const slug = token.priceIds.coinmarketcap;
+      if (slug === undefined) {
+        continue;
+      }
+      const platform = COINMARKETCAP_PLATFORMS[token.chain];
+      const normalize = CHAINS[token.chain]?.normalizeAddress ?? ((address: string) => address);
+      const listed = (contracts.get(slug) ?? []).some(
+        (entry) =>
+          isRecord(entry) &&
+          isRecord(entry.platform) &&
+          entry.platform.name === platform &&
+          typeof entry.contract_address === 'string' &&
+          normalize(entry.contract_address) === normalize(token.contract ?? ''),
+      );
+      if (COINMARKETCAP_WITHOUT_CONTRACT.has(tokenKey(token))) {
+        if (listed) {
+          wrong.push(`${tokenKey(token)}: CoinMarketCap's ${slug} now lists its contract`);
+        }
+      } else if (!listed) {
+        wrong.push(
+          `${tokenKey(token)}: CoinMarketCap's ${slug} has no ${token.contract} on ${platform}`,
+        );
+      }
+    }
+    assert.deepEqual(wrong, []);
+  });
 });

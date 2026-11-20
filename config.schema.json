@@ -65,7 +65,7 @@
           "oneOf": [
             {
               "type": "string",
-              "enum": ["coingecko", "coinpaprika"]
+              "enum": ["coingecko", "coinmarketcap", "coinpaprika"]
             },
             {
               "type": "array",
@@ -74,7 +74,7 @@
                 "oneOf": [
                   {
                     "type": "string",
-                    "enum": ["coingecko", "coinpaprika"]
+                    "enum": ["coingecko", "coinmarketcap", "coinpaprika"]
                   },
                   {
                     "type": "object",
@@ -108,6 +108,26 @@
                         "not": {
                           "type": "object",
                           "required": ["demo_api_key", "pro_api_key"]
+                        }
+                      },
+                      "coinmarketcap": {
+                        "type": ["object", "null"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "api_url": {
+                            "$ref": "#/definitions/setting",
+                            "description": "The API base URL."
+                          },
+                          "api_key": {
+                            "$ref": "#/definitions/setting",
+                            "description": "A CoinMarketCap API key; the free Basic plan works. The default api_url is then the keyed API (https://pro-api.coinmarketcap.com/v2). Use ${VAR}."
+                          },
+                          "label": {
+                            "$ref": "#/definitions/label"
+                          },
+                          "serial": {
+                            "$ref": "#/definitions/serial"
+                          }
                         }
                       },
                       "coinpaprika": {
@@ -229,6 +249,12 @@
                                 "$ref": "#/definitions/setting",
                                 "description": "The JSON-RPC endpoint: your own node, or a provider's URL with its key, such as Infura or Alchemy."
                               },
+                              "batch_size": {
+                                "type": ["integer", "string"],
+                                "minimum": 1,
+                                "pattern": "^([1-9][0-9]*|\\$\\{[A-Za-z_][A-Za-z0-9_]*\\})$",
+                                "description": "The most calls in one request. Default: all the calls for a wallet in one request. Infura's free plan allows 6 calls a second: set 6, with serial: true."
+                              },
                               "label": {
                                 "$ref": "#/definitions/label"
                               },
@@ -300,6 +326,12 @@
                               "api_url": {
                                 "$ref": "#/definitions/setting",
                                 "description": "The JSON-RPC endpoint: your own node, or a provider's URL with its key, such as Infura or Alchemy."
+                              },
+                              "batch_size": {
+                                "type": ["integer", "string"],
+                                "minimum": 1,
+                                "pattern": "^([1-9][0-9]*|\\$\\{[A-Za-z_][A-Za-z0-9_]*\\})$",
+                                "description": "The most calls in one request. Default: all the calls for a wallet in one request. Infura's free plan allows 6 calls a second: set 6, with serial: true."
                               },
                               "label": {
                                 "$ref": "#/definitions/label"
@@ -454,6 +486,9 @@
             "additionalProperties": false,
             "properties": {
               "coingecko": {
+                "$ref": "#/definitions/text"
+              },
+              "coinmarketcap": {
                 "$ref": "#/definitions/text"
               },
               "coinpaprika": {

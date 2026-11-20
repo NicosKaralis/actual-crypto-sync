@@ -176,26 +176,32 @@ These settings work on all entries:
 
 Each explorer and provider also has its own settings:
 
-| Id              | Kind              | Setting        | Default                               | What it is                                                                                                                                                                                 |
-| --------------- | ----------------- | -------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `trongrid`      | TRON explorer     | `api_url`      | `https://api.trongrid.io`             | The TronGrid API.                                                                                                                                                                          |
-| `trongrid`      | TRON explorer     | `api_key`      |                                       | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                            |
-| `mempool-space` | Bitcoin explorer  | `api_url`      | `https://mempool.space/api`           | Any mempool or Esplora API, for example your own instance.                                                                                                                                 |
-| `json-rpc`      | Ethereum explorer | `api_url`      | `https://ethereum-rpc.publicnode.com` | Any Ethereum JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                           |
-| `json-rpc`      | BSC explorer      | `api_url`      | `https://bsc-rpc.publicnode.com`      | Any BNB Smart Chain JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                    |
-| `blockscout`    | Ethereum explorer | `api_url`      | `https://eth.blockscout.com/api`      | Any Blockscout API, up to and including `/api`.                                                                                                                                            |
-| `blockscout`    | Ethereum explorer | `api_key`      |                                       | A free Blockscout API key, from [dev.blockscout.com](https://dev.blockscout.com). It gives higher limits. The default `api_url` is then `https://api.blockscout.com/v2/api`. Use `${VAR}`. |
-| `etherscan`     | Ethereum explorer | `api_url`      | `https://api.etherscan.io/v2/api`     | The Etherscan API V2.                                                                                                                                                                      |
-| `etherscan`     | Ethereum explorer | `api_key`      |                                       | Required. A free Etherscan API key. Use `${VAR}`.                                                                                                                                          |
-| `etherscan`     | BSC explorer      | `api_url`      | `https://api.etherscan.io/v2/api`     | The Etherscan API V2.                                                                                                                                                                      |
-| `etherscan`     | BSC explorer      | `api_key`      |                                       | Required. An Etherscan API key of a paid plan: the free plan does not cover BNB Smart Chain. Use `${VAR}`.                                                                                 |
-| `coingecko`     | Price provider    | `api_url`      | `https://api.coingecko.com/api/v3`    | The CoinGecko API.                                                                                                                                                                         |
-| `coingecko`     | Price provider    | `demo_api_key` |                                       | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                     |
-| `coingecko`     | Price provider    | `pro_api_key`  |                                       | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`.                                                                              |
-| `coinpaprika`   | Price provider    | `api_url`      | `https://api.coinpaprika.com/v1`      | The CoinPaprika API.                                                                                                                                                                       |
-| `coinpaprika`   | Price provider    | `api_key`      |                                       | A CoinPaprika API key of a paid plan (pro, business or enterprise). A free plan's key does not work. The default `api_url` is then `https://api-pro.coinpaprika.com/v1`. Use `${VAR}`.     |
+| Id              | Kind              | Setting        | Default                                           | What it is                                                                                                                                                                                 |
+| --------------- | ----------------- | -------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `trongrid`      | TRON explorer     | `api_url`      | `https://api.trongrid.io`                         | The TronGrid API.                                                                                                                                                                          |
+| `trongrid`      | TRON explorer     | `api_key`      |                                                   | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                            |
+| `mempool-space` | Bitcoin explorer  | `api_url`      | `https://mempool.space/api`                       | Any mempool or Esplora API, for example your own instance.                                                                                                                                 |
+| `json-rpc`      | Ethereum explorer | `api_url`      | `https://ethereum-rpc.publicnode.com`             | Any Ethereum JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                           |
+| `json-rpc`      | Ethereum explorer | `batch_size`   |                                                   | The most calls in one request. Without it, all the calls for a wallet go in one request. See [Ethereum explorers](#ethereum-explorers).                                                    |
+| `json-rpc`      | BSC explorer      | `api_url`      | `https://bsc-rpc.publicnode.com`                  | Any BNB Smart Chain JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                    |
+| `json-rpc`      | BSC explorer      | `batch_size`   |                                                   | The most calls in one request. Without it, all the calls for a wallet go in one request. See [Ethereum explorers](#ethereum-explorers).                                                    |
+| `blockscout`    | Ethereum explorer | `api_url`      | `https://eth.blockscout.com/api`                  | Any Blockscout API, up to and including `/api`.                                                                                                                                            |
+| `blockscout`    | Ethereum explorer | `api_key`      |                                                   | A free Blockscout API key, from [dev.blockscout.com](https://dev.blockscout.com). It gives higher limits. The default `api_url` is then `https://api.blockscout.com/v2/api`. Use `${VAR}`. |
+| `etherscan`     | Ethereum explorer | `api_url`      | `https://api.etherscan.io/v2/api`                 | The Etherscan API V2.                                                                                                                                                                      |
+| `etherscan`     | Ethereum explorer | `api_key`      |                                                   | Required. A free Etherscan API key. Use `${VAR}`.                                                                                                                                          |
+| `etherscan`     | BSC explorer      | `api_url`      | `https://api.etherscan.io/v2/api`                 | The Etherscan API V2.                                                                                                                                                                      |
+| `etherscan`     | BSC explorer      | `api_key`      |                                                   | Required. An Etherscan API key of a paid plan: the free plan does not cover BNB Smart Chain. Use `${VAR}`.                                                                                 |
+| `coingecko`     | Price provider    | `api_url`      | `https://api.coingecko.com/api/v3`                | The CoinGecko API.                                                                                                                                                                         |
+| `coingecko`     | Price provider    | `demo_api_key` |                                                   | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                     |
+| `coingecko`     | Price provider    | `pro_api_key`  |                                                   | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`.                                                                              |
+| `coinpaprika`   | Price provider    | `api_url`      | `https://api.coinpaprika.com/v1`                  | The CoinPaprika API.                                                                                                                                                                       |
+| `coinpaprika`   | Price provider    | `api_key`      |                                                   | A CoinPaprika API key of a paid plan (pro, business or enterprise). A free plan's key does not work. The default `api_url` is then `https://api-pro.coinpaprika.com/v1`. Use `${VAR}`.     |
+| `coinmarketcap` | Price provider    | `api_url`      | `https://pro-api.coinmarketcap.com/public-api/v2` | The CoinMarketCap API without a key.                                                                                                                                                       |
+| `coinmarketcap` | Price provider    | `api_key`      |                                                   | A CoinMarketCap API key. The free Basic plan works. The default `api_url` is then `https://pro-api.coinmarketcap.com/v2`. Use `${VAR}`.                                                    |
 
 Any other setting is an error, so a misspelled setting cannot be ignored without a message.
+
+CoinMarketCap works without a key. All users on the same IP address then share one rate limit, so the tool tries a request again after 1, 2 and 4 seconds when the limit is reached. With `api_key`, the tool sends the key in a header to the keyed API, and does not try again.
 
 CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind with its own header, and a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
 
@@ -210,6 +216,7 @@ In serial mode, the wait after each request is:
 | `etherscan`     | 0.35 s |
 | `coingecko`     | 6 s    |
 | `coinpaprika`   | 0.1 s  |
+| `coinmarketcap` | 2 s    |
 
 ### Rate limits
 
@@ -217,11 +224,12 @@ When an API limits your requests, the tool logs a warning one time for each entr
 
 - TronGrid: add an `api_key`, or set `serial: true`.
 - mempool.space: set `serial: true`, or set `api_url` to your own mempool instance.
-- JSON-RPC: set `serial: true`, or set `api_url` to your own node or a provider with an API key.
+- JSON-RPC: set `serial: true` and a `batch_size`, or set `api_url` to your own node or a provider with an API key.
 - Blockscout: add a free `api_key`, or set `serial: true`.
 - Etherscan: set `serial: true`. In serial mode: run less often, or use a paid Etherscan plan.
 - CoinGecko: add a free Demo key with `demo_api_key`, run less often, or add another provider after it.
 - CoinPaprika: run less often, add an `api_key`, or add another provider after it.
+- CoinMarketCap: add an `api_key`, run less often, or add another provider after it.
 
 The run then continues with the next explorer or provider.
 
@@ -229,7 +237,7 @@ The run then continues with the next explorer or provider.
 
 - **`trongrid`** reads TRX and all TRC20 tokens of a wallet in one request. TRX includes the TRX that you staked, and the TRX that you staked and delegated to other accounts.
 - **`mempool-space`** reads BTC. It counts only confirmed transactions, because transactions in the mempool can still change.
-- **`json-rpc`** reads the coin (ETH or BNB) and each token of the wallet in one batch request.
+- **`json-rpc`** reads the coin (ETH or BNB) and each token of the wallet in one batch request, or in batches of `batch_size` calls.
 - **`blockscout`** and **`etherscan`** read the coin and each token with one request each.
 
 ### Ethereum explorers
@@ -245,6 +253,15 @@ chains:
       - json-rpc:
           api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}
       - blockscout
+```
+
+Some providers count each call in a batch against a limit per second. Infura's free plan allows 500 credits a second, and each balance costs 80 credits, so at most 6 calls a second. One wallet's batch is the coin and every token: 13 calls on Ethereum and 16 on BNB Smart Chain. Infura refuses part of it, and the tool logs a rate limit. To stay under the limit, set `batch_size` to send fewer calls in each request, and `serial: true` to send one request a second:
+
+```yaml
+- json-rpc:
+    api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}
+    batch_size: 6
+    serial: true
 ```
 
 The tool never shows a key in logs, traces or errors. In a URL path, it shows `***` in place of a long run of letters and digits.
