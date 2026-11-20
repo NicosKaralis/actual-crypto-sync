@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.2.0](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.3...v1.2.0) (2026-11-20)
+
+
+### Features
+
+* add a Blockscout explorer for EVM chains ([0af497b](https://github.com/NicosKaralis/actual-crypto-sync/commit/0af497b12d67894110a55ea606251507615d1084))
+* add a JSON-RPC explorer for EVM chains ([078d60e](https://github.com/NicosKaralis/actual-crypto-sync/commit/078d60e31291cad6381ee0fce5b85def0280232d))
+* add an Etherscan explorer for EVM chains ([869143a](https://github.com/NicosKaralis/actual-crypto-sync/commit/869143a9bdbfd927baf93030521676e069a8c5e8))
+* add an optional API key for CoinPaprika ([4428f4e](https://github.com/NicosKaralis/actual-crypto-sync/commit/4428f4ecae2de14ab13cfe216ce3e99d75d58b49))
+* add BNB Smart Chain with BNB and its tokens ([6d4529f](https://github.com/NicosKaralis/actual-crypto-sync/commit/6d4529f569f1107f5b7215c0e361cbbe3f3d9f02))
+* add BNB Smart Chain with BNB and its tokens ([14f1e13](https://github.com/NicosKaralis/actual-crypto-sync/commit/14f1e13e3878c9567f89155699b05eedb6a59776)), closes [#52](https://github.com/NicosKaralis/actual-crypto-sync/issues/52)
+* add CoinMarketCap as a price provider ([d815bb1](https://github.com/NicosKaralis/actual-crypto-sync/commit/d815bb147ac576d1fe3dcbe6878c4c2304f1d5db))
+* add CoinMarketCap as a price provider ([f1877fa](https://github.com/NicosKaralis/actual-crypto-sync/commit/f1877fa96167684113248746b7a47b515ac5dc30)), closes [#80](https://github.com/NicosKaralis/actual-crypto-sync/issues/80)
+* add CoinMarketCap slugs to the built-in tokens ([150016b](https://github.com/NicosKaralis/actual-crypto-sync/commit/150016b026833d937c31567cce93b4645c5a6c67))
+* add Ethereum with ETH and its tokens ([a5495db](https://github.com/NicosKaralis/actual-crypto-sync/commit/a5495db7a9bbfa90648b96861a6fc7fb1c0ebb6e))
+* add Ethereum with ETH and its tokens ([a9da262](https://github.com/NicosKaralis/actual-crypto-sync/commit/a9da262bf31d8753c1784551ef4523ce521928b9)), closes [#51](https://github.com/NicosKaralis/actual-crypto-sync/issues/51)
+* add the actual_crypto_sync_build_info metric ([826bb87](https://github.com/NicosKaralis/actual-crypto-sync/commit/826bb87993b256010e157e7a8e174f150f9767bd))
+* check EVM addresses with EIP-55 checksums ([3b92deb](https://github.com/NicosKaralis/actual-crypto-sync/commit/3b92deba74724b21609752e14f935f4083bdbe4b))
+* post JSON requests and hide API keys in URL paths ([91b926c](https://github.com/NicosKaralis/actual-crypto-sync/commit/91b926ca2eadd33813d79601fb63f94e22e56906))
+* several wallets in one account ([6e4cf01](https://github.com/NicosKaralis/actual-crypto-sync/commit/6e4cf01244e24416674fb8267d2c3a88bb3c3097))
+* several wallets in one account ([88ac92e](https://github.com/NicosKaralis/actual-crypto-sync/commit/88ac92eacfbaca55bfb0ef457bcdbcaaeea83b19)), closes [#56](https://github.com/NicosKaralis/actual-crypto-sync/issues/56)
+
+
+### Bug Fixes
+
+* don't take CoinPaprika's wrong-plan answer for a rate limit ([0fb9312](https://github.com/NicosKaralis/actual-crypto-sync/commit/0fb9312d2294b4376b8ce73c6abda2995be289e7))
+* fixed lint formating ([46bfe92](https://github.com/NicosKaralis/actual-crypto-sync/commit/46bfe9279741018ef84e4b8cb4a04d97fa54624e))
+* let json-rpc send a wallet's calls in smaller batches ([3497725](https://github.com/NicosKaralis/actual-crypto-sync/commit/349772548b3f3ee8a1e99c31da71c37f579667a8)), closes [#83](https://github.com/NicosKaralis/actual-crypto-sync/issues/83)
+* refuse unknown YAML tags in the config ([1787787](https://github.com/NicosKaralis/actual-crypto-sync/commit/178778713fcc7f9e7b6bca0f2a1d10b7114ba410))
+* report a JSON-RPC rate limit, not "no result" ([29e1ac2](https://github.com/NicosKaralis/actual-crypto-sync/commit/29e1ac2008f3a8311366d0cd8e83ef7703d646d9)), closes [#83](https://github.com/NicosKaralis/actual-crypto-sync/issues/83)
+* send the tool's version with metrics and traces ([381fd68](https://github.com/NicosKaralis/actual-crypto-sync/commit/381fd687047f4e93b8e7dbdc12d0cd56886fcc7c))
+* send the tool's version with metrics and traces ([7270c14](https://github.com/NicosKaralis/actual-crypto-sync/commit/7270c1404170f56f1ee7675c89a58cbee0289e53)), closes [#74](https://github.com/NicosKaralis/actual-crypto-sync/issues/74)
+
+
+### Documentation
+
+* add reviewing the price ids that differ by chain to the roadmap ([f377ef3](https://github.com/NicosKaralis/actual-crypto-sync/commit/f377ef32f3e350e306d1b43d2e48fb612f2036ea))
+* add reviewing the price ids that differ by chain to the roadmap ([7398952](https://github.com/NicosKaralis/actual-crypto-sync/commit/7398952155a6712731027e7124cab0549160e5d1))
+* document BNB Smart Chain, its explorers and tokens ([186f4cd](https://github.com/NicosKaralis/actual-crypto-sync/commit/186f4cdd7dd8572a0754c6d796c5b4c5e59bccd7))
+* document CoinMarketCap as a price provider ([c39877f](https://github.com/NicosKaralis/actual-crypto-sync/commit/c39877ff5704feb825f77e02e2e050625f8dc915))
+* document Ethereum, its explorers and the live-check keys ([4ee2e6f](https://github.com/NicosKaralis/actual-crypto-sync/commit/4ee2e6f9e283245bc2730ba04c98187a9455ddb9))
+* document json-rpc's batch_size for Infura's limit ([b6bb93b](https://github.com/NicosKaralis/actual-crypto-sync/commit/b6bb93b679afd39dcf4e7d8d9615f24fbc6b5a83)), closes [#83](https://github.com/NicosKaralis/actual-crypto-sync/issues/83)
+* document the scope version and the build info metric ([21e2fbc](https://github.com/NicosKaralis/actual-crypto-sync/commit/21e2fbc6281c35d7813e615d5583b800dbe9b3da))
+* drop one token across chains in one account ([9e4df43](https://github.com/NicosKaralis/actual-crypto-sync/commit/9e4df433e89e4c2d4e5489207afca95b1b11d4bc))
+* move Ethereum and several wallets to v1.2.0 ([d43516f](https://github.com/NicosKaralis/actual-crypto-sync/commit/d43516f8895879c47962e100667505e473765644))
+* move Ethereum and several wallets to v1.2.0 ([9b40de4](https://github.com/NicosKaralis/actual-crypto-sync/commit/9b40de4aa70719285866ff660812eea1a380989e))
+* move the price ids to one list per token ([a65652c](https://github.com/NicosKaralis/actual-crypto-sync/commit/a65652cce01d92a4ce97240c1c6e49afed47c1ec))
+* point to tokens.yml and tokens/ ([edc2d1e](https://github.com/NicosKaralis/actual-crypto-sync/commit/edc2d1e7435e4f32ba30eee4f52d245de9b940aa))
+* say that CoinPaprika's api_key needs a paid plan ([e0d04bf](https://github.com/NicosKaralis/actual-crypto-sync/commit/e0d04bf7118a0f667278beae4295fee290adfdac))
+* several wallets in one account ([a76ded0](https://github.com/NicosKaralis/actual-crypto-sync/commit/a76ded028b7f478a1accf85c32a32570c1bb586f))
+* show CoinPaprika's api_key and Pro API in the example config ([e6dd7cf](https://github.com/NicosKaralis/actual-crypto-sync/commit/e6dd7cfdb1aadd062f949c0973b9f2b89e1f80a1))
+* write the docs in clearer language ([acb6940](https://github.com/NicosKaralis/actual-crypto-sync/commit/acb6940cadbdcf8d1be2dfbe799dc3e888c32292))
+* write the docs in clearer language ([e5ffe58](https://github.com/NicosKaralis/actual-crypto-sync/commit/e5ffe58655af605d24c11fd147da9e281deb1ae7)), closes [#54](https://github.com/NicosKaralis/actual-crypto-sync/issues/54)
+
 ## [1.1.3](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.2...v1.1.3) (2026-11-14)
 
 This release sends metrics and traces with the standard OpenTelemetry configuration, and as protobuf by default, so backends that take only protobuf get them. The image is now built only from a release. Tested with Actual server 26.11.0.
