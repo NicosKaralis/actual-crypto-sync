@@ -43,5 +43,7 @@ jobs:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           BLOCKSCOUT_API_KEY: ${{ secrets.BLOCKSCOUT_API_KEY }}
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+          ETHERSCAN_BSC_API_KEY: ${{ secrets.ETHERSCAN_BSC_API_KEY }}
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
           COINPAPRIKA_API_KEY: ${{ secrets.COINPAPRIKA_API_KEY }}
