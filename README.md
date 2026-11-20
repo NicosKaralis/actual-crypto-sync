@@ -42,9 +42,9 @@ The tool runs once and exits. Run it on a schedule, for example with cron or a K
 
 Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
 
-- **Chains:** TRON (TRX), Bitcoin (BTC), Ethereum (ETH)
+- **Chains:** TRON (TRX), Bitcoin (BTC), Ethereum (ETH), BNB Smart Chain (BNB)
 - **Built-in tokens:** USDT, USDC, WBTC, WETH, DAI [and more](docs/supported.md#built-in-tokens)
-- **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance), any Ethereum JSON-RPC node, Blockscout, Etherscan
+- **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance), any Ethereum or BNB Smart Chain JSON-RPC node, Blockscout, Etherscan
 - **Price providers:** CoinGecko, CoinPaprika
 
 The [full list](docs/supported.md) has the ids, the contracts and the currencies.
@@ -69,7 +69,7 @@ The tool collects nothing, and it has no telemetry of its own. It contacts only 
 
 The tool needs only public addresses. It never asks for private keys or seed phrases, and it cannot move funds.
 
-A block explorer sees your full address and your IP address, and it can log them. To keep your addresses private, use your own instance with `api_url`: a mempool or Esplora instance for Bitcoin, or your own node for Ethereum. See [Supported](docs/supported.md).
+A block explorer sees your full address and your IP address, and it can log them. To keep your addresses private, use your own instance with `api_url`: a mempool or Esplora instance for Bitcoin, or your own node for Ethereum and BNB Smart Chain. See [Supported](docs/supported.md).
 
 Logs, traces and errors show only short addresses, and they never show secrets. See [SECURITY.md](SECURITY.md).
 

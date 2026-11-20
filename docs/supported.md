@@ -15,17 +15,20 @@ To add one yourself, see [docs/development.md](development.md).
 
 ## Chains and block explorers
 
-| Chain    | Id         | Coin | Coin's CoinGecko id | Coin's CoinPaprika id | Has tokens | Block explorers                                                                                                                                                                                             |
-| -------- | ---------- | ---- | ------------------- | --------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TRON     | `tron`     | TRX  | `tron`              | `trx-tron`            | Yes, TRC20 | [TronGrid](https://www.trongrid.io) (`trongrid`)                                                                                                                                                            |
-| Bitcoin  | `bitcoin`  | BTC  | `bitcoin`           | `btc-bitcoin`         | No         | [mempool.space](https://mempool.space) (`mempool-space`), and any mempool or Esplora instance                                                                                                               |
-| Ethereum | `ethereum` | ETH  | `ethereum`          | `eth-ethereum`        | Yes, ERC20 | JSON-RPC (`json-rpc`): [PublicNode](https://ethereum-rpc.publicnode.com) or any node; [Blockscout](https://eth.blockscout.com) (`blockscout`); [Etherscan](https://etherscan.io) (`etherscan`, needs a key) |
+| Chain           | Id         | Coin | Coin's CoinGecko id | Coin's CoinPaprika id | Has tokens | Block explorers                                                                                                                                                                                             |
+| --------------- | ---------- | ---- | ------------------- | --------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TRON            | `tron`     | TRX  | `tron`              | `trx-tron`            | Yes, TRC20 | [TronGrid](https://www.trongrid.io) (`trongrid`)                                                                                                                                                            |
+| Bitcoin         | `bitcoin`  | BTC  | `bitcoin`           | `btc-bitcoin`         | No         | [mempool.space](https://mempool.space) (`mempool-space`), and any mempool or Esplora instance                                                                                                               |
+| Ethereum        | `ethereum` | ETH  | `ethereum`          | `eth-ethereum`        | Yes, ERC20 | JSON-RPC (`json-rpc`): [PublicNode](https://ethereum-rpc.publicnode.com) or any node; [Blockscout](https://eth.blockscout.com) (`blockscout`); [Etherscan](https://etherscan.io) (`etherscan`, needs a key) |
+| BNB Smart Chain | `bsc`      | BNB  | `binancecoin`       | `bnb-binance-coin`    | Yes, BEP20 | JSON-RPC (`json-rpc`): [PublicNode](https://bsc-rpc.publicnode.com) or any node; [Etherscan](https://bscscan.com) (`etherscan`, needs a key of a paid plan)                                                 |
 
 An account uses a chain's coin by its symbol, for example `token: TRX`.
 
 To use your own mempool or Esplora instance, set `api_url` on the `mempool-space` explorer. See [Settings of each entry](configuration.md#settings-of-each-entry).
 
 On Ethereum, the tool uses `json-rpc` and then `blockscout` when the config lists no explorers. Neither needs a key. To use your own node, or a provider such as Infura or Alchemy, set `api_url` on `json-rpc` to its URL, with the key in it. The tool never shows that URL's path in logs or spans. `blockscout` takes an optional free API key for higher limits. `etherscan` needs a free API key, so it is used only when you list it. See [Ethereum explorers](configuration.md#ethereum-explorers).
+
+On BNB Smart Chain, the tool uses `json-rpc` when the config lists no explorers. It needs no key. For a backup, add a second `json-rpc` entry with BNB Chain's public node, `https://bsc-dataseed.bnbchain.org`. There is no public Blockscout for this chain. `etherscan` works here only with a key of a paid Etherscan plan. See [BNB Smart Chain explorers](configuration.md#bnb-smart-chain-explorers).
 
 ## Price providers
 
@@ -72,3 +75,23 @@ An account uses a built-in token by its symbol only. To use another token, [add 
 | `ethereum` | `UNI`   | ERC20    | 18       | 8                 | `0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984` | `uniswap`         | `uni-uniswap`             |
 
 `STETH` is Lido's staked ether (stETH). Its balance grows every day without a transfer, so the account shows a change on each run.
+
+| Chain | Symbol  | Standard | Decimals | Decimals in notes | Contract                                     | CoinGecko id                           | CoinPaprika id            |
+| ----- | ------- | -------- | -------- | ----------------- | -------------------------------------------- | -------------------------------------- | ------------------------- |
+| `bsc` | `USDT`  | BEP20    | 18       | 8                 | `0x55d398326f99059fF775485246999027B3197955` | `binance-bridged-usdt-bnb-smart-chain` | `usdt-tether`             |
+| `bsc` | `USDC`  | BEP20    | 18       | 8                 | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | `binance-bridged-usdc-bnb-smart-chain` | `usdc-usd-coin`           |
+| `bsc` | `DAI`   | BEP20    | 18       | 8                 | `0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3` | `binance-peg-dai`                      | `dai-dai`                 |
+| `bsc` | `TUSD`  | BEP20    | 18       | 8                 | `0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9` | `true-usd`                             | `tusd-trueusd`            |
+| `bsc` | `USD1`  | BEP20    | 18       | 8                 | `0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d` | `usd1-wlfi`                            | `usd1-usd1`               |
+| `bsc` | `FDUSD` | BEP20    | 18       | 8                 | `0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409` | `first-digital-usd`                    | `fdusd-first-digital-usd` |
+| `bsc` | `BTT`   | BEP20    | 18       | 8                 | `0x352Cb5E19b12FC216548a2677bD0fce83BaE434B` | `bittorrent`                           | `bttc-bittorrent-chain`   |
+| `bsc` | `WIN`   | BEP20    | 18       | 8                 | `0xaeF0d72a118ce24feE3cD1d43d383897D05B4e99` | `winklink-bsc`                         | `win-winklink`            |
+| `bsc` | `TRX`   | BEP20    | 6        | 6                 | `0xCE7de646e7208a4Ef112cb6ed5038FA6cC6b12e3` | `tron-bsc`                             | `trx-tron`                |
+| `bsc` | `BTCB`  | BEP20    | 18       | 8                 | `0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c` | `binance-bitcoin`                      | `btcb-binance-bitcoin`    |
+| `bsc` | `WBTC`  | BEP20    | 8        | 8                 | `0x0555E30da8f98308EdB960aa94C0Db47230d2B9c` | `wrapped-bitcoin`                      | `wbtc-wrapped-bitcoin`    |
+| `bsc` | `ETH`   | BEP20    | 18       | 8                 | `0x2170Ed0880ac9A755fd29B2688956BD959F933F8` | `binance-peg-weth`                     | `eth-ethereum-token`      |
+| `bsc` | `WBNB`  | BEP20    | 18       | 8                 | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` | `wbnb`                                 | `wbnb-wrapped-bnb`        |
+| `bsc` | `CAKE`  | BEP20    | 18       | 8                 | `0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82` | `pancakeswap-token`                    | `cake-pancakeswap`        |
+| `bsc` | `LINK`  | BEP20    | 18       | 8                 | `0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD` | `chainlink`                            | `link-chainlink`          |
+
+On BNB Smart Chain, `USDT` and `USDC` have 18 decimals, not 6 as on Ethereum and TRON. `ETH` is Binance-Peg Ether, a BEP20 token, not ETH on Ethereum. `TRX`, `WIN` and `BTT` are bridged copies of the TRON tokens. CoinPaprika does not list `TRX` and `WBTC` on BNB Smart Chain, so it uses its price of TRX on TRON and of WBTC on Ethereum. CoinGecko has its own ids for the bridged USDT, USDC, DAI, ETH, TRX and WIN on this chain.

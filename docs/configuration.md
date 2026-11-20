@@ -125,6 +125,7 @@ chains:
 | `tron`     | `trongrid`               |
 | `bitcoin`  | `mempool-space`          |
 | `ethereum` | `json-rpc`, `blockscout` |
+| `bsc`      | `json-rpc`               |
 
 ### How the tool uses the explorers
 
@@ -181,10 +182,13 @@ Each explorer and provider also has its own settings:
 | `trongrid`      | TRON explorer     | `api_key`      |                                       | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                            |
 | `mempool-space` | Bitcoin explorer  | `api_url`      | `https://mempool.space/api`           | Any mempool or Esplora API, for example your own instance.                                                                                                                                 |
 | `json-rpc`      | Ethereum explorer | `api_url`      | `https://ethereum-rpc.publicnode.com` | Any Ethereum JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                           |
+| `json-rpc`      | BSC explorer      | `api_url`      | `https://bsc-rpc.publicnode.com`      | Any BNB Smart Chain JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                    |
 | `blockscout`    | Ethereum explorer | `api_url`      | `https://eth.blockscout.com/api`      | Any Blockscout API, up to and including `/api`.                                                                                                                                            |
 | `blockscout`    | Ethereum explorer | `api_key`      |                                       | A free Blockscout API key, from [dev.blockscout.com](https://dev.blockscout.com). It gives higher limits. The default `api_url` is then `https://api.blockscout.com/v2/api`. Use `${VAR}`. |
 | `etherscan`     | Ethereum explorer | `api_url`      | `https://api.etherscan.io/v2/api`     | The Etherscan API V2.                                                                                                                                                                      |
 | `etherscan`     | Ethereum explorer | `api_key`      |                                       | Required. A free Etherscan API key. Use `${VAR}`.                                                                                                                                          |
+| `etherscan`     | BSC explorer      | `api_url`      | `https://api.etherscan.io/v2/api`     | The Etherscan API V2.                                                                                                                                                                      |
+| `etherscan`     | BSC explorer      | `api_key`      |                                       | Required. An Etherscan API key of a paid plan: the free plan does not cover BNB Smart Chain. Use `${VAR}`.                                                                                 |
 | `coingecko`     | Price provider    | `api_url`      | `https://api.coingecko.com/api/v3`    | The CoinGecko API.                                                                                                                                                                         |
 | `coingecko`     | Price provider    | `demo_api_key` |                                       | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                     |
 | `coingecko`     | Price provider    | `pro_api_key`  |                                       | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`.                                                                              |
@@ -225,8 +229,8 @@ The run then continues with the next explorer or provider.
 
 - **`trongrid`** reads TRX and all TRC20 tokens of a wallet in one request. TRX includes the TRX that you staked, and the TRX that you staked and delegated to other accounts.
 - **`mempool-space`** reads BTC. It counts only confirmed transactions, because transactions in the mempool can still change.
-- **`json-rpc`** reads ETH and each ERC20 token of the wallet in one batch request.
-- **`blockscout`** and **`etherscan`** read ETH and each ERC20 token with one request each.
+- **`json-rpc`** reads the coin (ETH or BNB) and each token of the wallet in one batch request.
+- **`blockscout`** and **`etherscan`** read the coin and each token with one request each.
 
 ### Ethereum explorers
 
@@ -257,6 +261,33 @@ chains:
 ```
 
 `json-rpc` reads at the latest block. The other explorers can be a few seconds behind it, so two explorers can give slightly different balances for a wallet that just received a transaction.
+
+### BNB Smart Chain explorers
+
+With no `explorers` for `bsc`, the tool asks `json-rpc` (a public PublicNode endpoint). It needs no key. There is no public Blockscout instance for BNB Smart Chain. To use your own node or a provider, set `api_url` on `json-rpc`, as on Ethereum.
+
+The default is the only explorer, so a run fails for your BNB Smart Chain accounts when PublicNode is down. To have a backup, add a second `json-rpc` entry with another public node, for example BNB Chain's own `https://bsc-dataseed.bnbchain.org`. It needs no key either. The tool asks it only when PublicNode fails. Give it a `label`, so that logs and metrics tell the two entries apart:
+
+```yaml
+chains:
+  bsc:
+    explorers:
+      - json-rpc
+      - json-rpc:
+          api_url: https://bsc-dataseed.bnbchain.org
+          label: bnb-dataseed
+```
+
+`etherscan` works on BNB Smart Chain only with a key of a paid Etherscan plan. With a free key, Etherscan answers "Free API access is not supported for this chain".
+
+```yaml
+chains:
+  bsc:
+    explorers:
+      - json-rpc
+      - etherscan:
+          api_key: ${ETHERSCAN_API_KEY}
+```
 
 ## `tokens`
 
@@ -309,8 +340,8 @@ accounts:
 | Key       | Required | What it is                                                                                |
 | --------- | -------- | ----------------------------------------------------------------------------------------- |
 | `name`    | Yes      | The Actual account, by its name or its id. Each account can be in the list one time only. |
-| `chain`   | Yes      | `tron`, `bitcoin` or `ethereum`.                                                          |
-| `token`   | Yes      | The chain's coin (TRX, BTC or ETH), a built-in token, or a token from `tokens`.           |
+| `chain`   | Yes      | `tron`, `bitcoin`, `ethereum` or `bsc`.                                                   |
+| `token`   | Yes      | The chain's coin (TRX, BTC, ETH or BNB), a built-in token, or a token from `tokens`.      |
 | `wallets` | Yes      | The wallet addresses. The account shows the total of all its wallets.                     |
 
 The account in Actual must be open and off budget. Each account holds one token on one chain. For TRX and USDT on the same wallet, make two accounts.
@@ -326,7 +357,7 @@ wallets: ["${BTC_ADDRESS}"]
 
 In an inline list, put quotes around `${...}`. If you do not, YAML reads it as a map.
 
-An Ethereum address is `0x` and 40 hex digits. The tool reads it as text with or without quotes, but put quotes around it if you write it in the file: your editor reads `0x...` without quotes as a number. If the address has upper and lower case letters, the case is its checksum (EIP-55), and the tool checks it. An address all in lower case or all in upper case has no checksum.
+An Ethereum or BNB Smart Chain address is `0x` and 40 hex digits. The same address works on both chains. The tool reads it as text with or without quotes, but put quotes around it if you write it in the file: your editor reads `0x...` without quotes as a number. If the address has upper and lower case letters, the case is its checksum (EIP-55), and the tool checks it. An address all in lower case or all in upper case has no checksum.
 
 You can use the same wallet in more than one account. The tool reads it one time.
 
