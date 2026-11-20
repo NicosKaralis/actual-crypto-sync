@@ -182,6 +182,23 @@ describe('coinpaprika', () => {
       }
     });
 
+    test("a key of a free plan, refused by the paid API, isn't a rate limit", async () => {
+      // The paid API's answer to a key of the free plan.
+      const error = await failure(
+        jsonResponse(
+          {
+            error:
+              'Invalid API plan. Only users with a pro, business or enterprise plan are allowed for https://api-pro.coinpaprika.com. Check plans on coinpaprika.com/api',
+          },
+          402,
+        ),
+      );
+      assert.equal(
+        coinpaprika.rateLimitAdvice(error, { settings: { api_key: 'k' }, serial: false }),
+        null,
+      );
+    });
+
     test('other errors are not rate limits', async () => {
       for (const error of [
         await failure(jsonResponse({ error: 'Invalid parameters' }, 400)),

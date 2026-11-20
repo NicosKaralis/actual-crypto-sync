@@ -24,7 +24,7 @@ const CURRENCIES = new Set(
  * `GET /tickers/{id}?quotes=EUR`: the API prices one coin per request, so
  * each id is one request. An id it doesn't know (404) is left out. With
  * `api_key`, it asks the paid API, with the key as the whole `Authorization`
- * header (no `Bearer`).
+ * header (no `Bearer`). Only a key of a paid plan works there.
  */
 export const coinpaprika: PriceProvider = {
   id: ID,
@@ -35,6 +35,11 @@ export const coinpaprika: PriceProvider = {
   rateLimitAdvice(error, { settings }) {
     // 402 when the monthly or hourly limit is used up, 429 when requests come too fast.
     if (!(error instanceof ApiError && (error.status === 429 || error.status === 402))) {
+      return null;
+    }
+    // A 402 for a key of a free plan, which the paid API refuses: no limit, a wrong plan.
+    const message = isRecord(error.body) ? error.body.error : undefined;
+    if (typeof message === 'string' && /invalid api plan/i.test(message)) {
       return null;
     }
     return settings.api_key
