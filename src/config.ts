@@ -2,7 +2,14 @@ import { parseDocument } from 'yaml';
 
 import { CHAINS, getChain } from './chains/index.ts';
 import { getPriceProvider, PRICE_PROVIDERS } from './prices/index.ts';
-import { BUILTIN_TOKENS, checkUnique, readToken, resolveToken, TokenError } from './tokens.ts';
+import {
+  BUILTIN_TOKENS,
+  checkUnique,
+  readToken,
+  resolveToken,
+  TokenError,
+  withoutHexIntegers,
+} from './tokens.ts';
 import type { Chain, ChainId, Currency, Explorer, PriceProvider, Token, Wallet } from './types.ts';
 
 export type ActualAuth =
@@ -76,7 +83,7 @@ export function loadConfig(
     tokens: BUILTIN_TOKENS,
   },
 ): Config {
-  const doc = parseDocument(text, { uniqueKeys: true });
+  const doc = parseDocument(text, { uniqueKeys: true, customTags: withoutHexIntegers });
   // A warning too: an unknown tag (`!import`) would otherwise load as a plain string.
   const [problem] = [...doc.errors, ...doc.warnings];
   if (problem) {
@@ -383,7 +390,7 @@ class Loader {
       if (!chain.isValidAddress(token.contract)) {
         throw new ConfigError(`${path}.contract`, `not a valid ${chain.id} address`);
       }
-      tokenAt(() => checkUnique(token, tokens, path));
+      tokenAt(() => checkUnique(token, tokens, path, chain.normalizeAddress));
       for (const providerId of Object.keys(token.priceIds)) {
         at(`${path}.price_ids.${providerId}`, () =>
           getPriceProvider(providerId, this.registries.priceProviders),

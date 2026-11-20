@@ -17,7 +17,7 @@
       "type": "object",
       "minProperties": 1,
       "propertyNames": {
-        "enum": ["bitcoin", "tron"]
+        "enum": ["bitcoin", "ethereum", "tron"]
       },
       "additionalProperties": {
         "oneOf": [

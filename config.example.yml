@@ -57,6 +57,14 @@ chains:                                        # optional, settings per chain
       - mempool-space                          # ...then the public one (https://mempool.space/api)
       # - mempool-space:
       #     serial: true                       # one request at a time, 1 s apart
+  ethereum:
+    explorers:                                 # the default: json-rpc, then blockscout; neither needs a key
+      - json-rpc                               # a public node (https://ethereum-rpc.publicnode.com)
+      # - json-rpc:
+      #     api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}  # your own node, Infura or Alchemy
+      - blockscout                             # https://eth.blockscout.com/api
+      # - etherscan:
+      #     api_key: ${ETHERSCAN_API_KEY}      # required: a free key from etherscan.io
 
 tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
@@ -69,7 +77,7 @@ tokens:                                        # optional, tokens that aren't bu
 
 accounts:                                      # the off-budget Actual accounts to keep in line
   - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
-    chain: tron                                # tron or bitcoin
+    chain: tron                                # tron, bitcoin or ethereum
     token: TRX                                 # a built-in token or one from tokens:
     wallets:                                   # a list (the account shows their total),
       - ${TRON_WALLET_ADDRESS}                 # an inline list or a single address (below)
@@ -84,3 +92,8 @@ accounts:                                      # the off-budget Actual accounts 
     chain: bitcoin
     token: BTC
     wallets: ${BTC_ADDRESS}                    # a single address
+
+  - name: "Ethereum: USDC"
+    chain: ethereum
+    token: USDC
+    wallets: ${ETH_ADDRESS}                    # 0x and 40 hex digits; quote it if you write it here
