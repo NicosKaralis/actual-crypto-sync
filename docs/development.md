@@ -103,11 +103,23 @@ The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not ru
 
 ### Live checks
 
-`npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes about half a minute and needs no keys.
+`npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes a few minutes, and needs no keys.
 
-- **Tokens:** the decimals of each contract on chain are the decimals in the token files (`tokens.yml` and `tokens/`). The CoinGecko id of each token belongs to the same contract on CoinGecko.
+- **Tokens:** the decimals and the symbol of each contract on chain are the ones in the token files (`tokens.yml` and `tokens/`). The CoinGecko id and the CoinPaprika id of each token belong to the same contract at that provider.
 - **Explorers:** each explorer reads the public exchange wallets of its chain. The read must give a balance for each token. A balance of 0 is correct, because any wallet can be emptied.
 - **Price providers:** each provider gives a price for each token that has an id for it. A normal run stops at the first provider that gives a price. The live checks ask every provider.
+- **Keys:** each explorer and provider is checked without a key if it allows that, and with its key if it has one. Without a key, an entry that also has a key reads only one wallet and two tokens, because public endpoints allow few requests. With a key, it reads everything. The keys come from these environment variables. A check with a key is skipped if its variable is not set.
+
+  | Variable              | Entry                                                 |
+  | --------------------- | ----------------------------------------------------- |
+  | `TRONGRID_API_KEY`    | `trongrid`                                            |
+  | `ETHEREUM_RPC_URL`    | `json-rpc` on Ethereum: a node URL with its key in it |
+  | `BLOCKSCOUT_API_KEY`  | `blockscout`                                          |
+  | `ETHERSCAN_API_KEY`   | `etherscan`, which needs a key                        |
+  | `COINGECKO_API_KEY`   | `coingecko`, as a Demo key                            |
+  | `COINPAPRIKA_API_KEY` | `coinpaprika`, for the paid API                       |
+
+  To set them locally, copy `.env.live.example` to `.env.live` and fill in your keys. Git ignores `.env.live`, and `npm run test:live` reads it. A variable already set in the environment wins over the file. The workflow gets the keys from repository secrets with the same names. A new explorer or provider with a key setting goes in `KEYS` in `test/live/registries.live.ts`; a check fails until it does.
 
 The checks take the chains, explorers, providers and tokens from the registries and the token files, so a new one is checked without a change to the test. The test reads only the wallets in `test/live/registries.live.ts`, and test names show them as short addresses.
 
@@ -120,6 +132,7 @@ The file ends in `.live.ts`, so `npm test` and the image build do not run it.
 1. Call the API with one of the public exchange wallets. Use only these wallets:
    - TRON: `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`, `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`
    - Bitcoin: `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`, `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`, `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v`
+   - Ethereum: `0xF977814e90dA44bFA03b6295A0616a897441aceC`, `0x742d35Cc6634C0532925a3b844Bc454e4438f44e`, `0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43`
 2. Do not send an API key, or remove it from all that you save.
 3. Save the response as JSON in `test/fixtures/<explorer or provider>/`. Format it, so that a review can read it.
 4. Read it in a test with `fixture('<explorer or provider>/<file>.json')` from `test/fakes.ts`.
@@ -140,6 +153,7 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 1. Create `src/chains/<chain>/index.ts`. Export a `Chain` (see `src/types.ts`):
    - `id`, the native symbol, and if the chain has tokens.
    - `isValidAddress`, with the full checksum check of the chain. A typo in an address must be an error.
+   - `normalizeAddress`, the one spelling of an address, so that the tool never reads or sums one wallet twice. For example, bech32 and EVM addresses are case-insensitive, so their spelling is lower case.
    - its explorers, and the default explorer list.
 2. Add at least one explorer. See [Add an explorer](#add-an-explorer).
 3. Register the chain in `src/chains/index.ts`.
@@ -147,8 +161,19 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 4. Add the native token, and popular tokens. See [The token files](#the-token-files). A chain with tokens gets its own file, `tokens/<chain>.yml`, and the line `<chain>: !import tokens/<chain>.yml` in `tokens.yml`. A chain with only its native token is listed in `tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
-7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a reader of contract decimals to `CONTRACT_DECIMALS`, and the CoinGecko platform id to `COINGECKO_PLATFORMS`. The [live checks](#live-checks) fail until you do.
+7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a way to call a contract to `CONTRACT_CALLS`, and the platform ids to `COINGECKO_PLATFORMS` and `COINPAPRIKA_PLATFORMS`. The [live checks](#live-checks) fail until you do.
 8. Add the chain to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 chains.
+
+### An EVM chain
+
+An EVM chain needs only a chain file. The address check and the explorers are shared, in `src/chains/evm/`:
+
+- `isValidEvmAddress` and `normalizeEvmAddress` (`address.ts`): `0x` and 40 hex digits, with the EIP-55 checksum when the case is mixed.
+- `jsonRpcExplorer({ defaultUrl })` (`jsonrpc.ts`): any JSON-RPC endpoint. Give it a public endpoint with no key.
+- `blockscoutExplorer({ defaultUrl })` (`blockscout.ts`): the chain's public Blockscout instance, up to and including `/api`.
+- `etherscanExplorer({ chainId })` (`etherscan.ts`): Etherscan API V2, with the chain's id. Check that the free tier of Etherscan covers the chain.
+
+See `src/chains/ethereum/index.ts`. The other steps above stay the same. For `CONTRACT_CALLS` in the live checks, use `eth_call` on a public endpoint, as Ethereum does.
 
 ## Add an explorer
 
@@ -160,7 +185,8 @@ Open an issue with the [new explorer form](https://github.com/NicosKaralis/actua
    - `settingKeys` lists its settings in the config, for example `api_url`. The config refuses any other setting.
    - `serialIntervalMs` is the wait after each request in serial mode. Use the rate limit of the API without a key.
    - `rateLimitAdvice` tells the user what to do when the API limits requests, or returns `null` for other errors.
-2. Use `getJson`, `apiUrl` and `ApiError` from `src/http.ts`. Errors must never show the URL, the headers or the body, because they can hold a wallet address or a key.
+2. Use `getJson` (or `postJson`), `apiUrl` and `ApiError` from `src/http.ts`. Errors must never show the URL, the headers or the body, because they can hold a wallet address or a key.
+   - If the API needs a setting, such as a key, add `checkSettings`. It returns the config error, or `null`. In `config.schema.json`, such an explorer is then not allowed as a name alone.
 3. Register the explorer in the `explorers` of its chain.
    Add it, with its settings, to the `explorers` of its chain in `config.schema.json`. The schema tests fail until you do.
 4. Record fixtures, and test the parse of the response, each error, and `rateLimitAdvice`.

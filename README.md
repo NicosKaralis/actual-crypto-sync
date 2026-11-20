@@ -42,9 +42,9 @@ The tool runs once and exits. Run it on a schedule, for example with cron or a K
 
 Popular tokens are built in, so you need only their symbol in the config. Any other token works too: you [define it in the config](docs/configuration.md#tokens).
 
-- **Chains:** TRON (TRX), Bitcoin (BTC)
-- **Built-in tokens:** USDT, WBTC, WETH, USDD, SUNDOG [and more](docs/supported.md#built-in-tokens)
-- **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance)
+- **Chains:** TRON (TRX), Bitcoin (BTC), Ethereum (ETH)
+- **Built-in tokens:** USDT, USDC, WBTC, WETH, DAI [and more](docs/supported.md#built-in-tokens)
+- **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance), any Ethereum JSON-RPC node, Blockscout, Etherscan
 - **Price providers:** CoinGecko, CoinPaprika
 
 The [full list](docs/supported.md) has the ids, the contracts and the currencies.
@@ -69,7 +69,7 @@ The tool collects nothing, and it has no telemetry of its own. It contacts only 
 
 The tool needs only public addresses. It never asks for private keys or seed phrases, and it cannot move funds.
 
-A block explorer sees your full address and your IP address, and it can log them. To keep your Bitcoin addresses private, use your own mempool or Esplora instance with `api_url`. See [Supported](docs/supported.md).
+A block explorer sees your full address and your IP address, and it can log them. To keep your addresses private, use your own instance with `api_url`: a mempool or Esplora instance for Bitcoin, or your own node for Ethereum. See [Supported](docs/supported.md).
 
 Logs, traces and errors show only short addresses, and they never show secrets. See [SECURITY.md](SECURITY.md).
 
@@ -97,6 +97,7 @@ The tool is a Docker image on GitHub Container Registry, for amd64 and arm64. [d
    ACTUAL_SESSION_TOKEN=...
    TRON_WALLET_ADDRESS=TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
    BTC_ADDRESS=bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v
+   ETH_ADDRESS=0xF977814e90dA44bFA03b6295A0616a897441aceC
    ```
 
 6. **Run it one time with `--dry-run`.** The tool reads everything and logs the transactions that it would write:
