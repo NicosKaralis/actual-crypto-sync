@@ -32,10 +32,13 @@ On BNB Smart Chain, the tool uses `json-rpc` when the config lists no explorers.
 
 ## Price providers
 
-| Price provider                         | Id            | Currencies                                              |
-| -------------------------------------- | ------------- | ------------------------------------------------------- |
-| [CoinGecko](https://www.coingecko.com) | `coingecko`   | Most fiat currencies, for example EUR, USD, GBP and JPY |
-| [CoinPaprika](https://coinpaprika.com) | `coinpaprika` | 40 fiat currencies, for example EUR, USD, GBP and JPY   |
+| Price provider                             | Id              | Currencies                                              |
+| ------------------------------------------ | --------------- | ------------------------------------------------------- |
+| [CoinGecko](https://www.coingecko.com)     | `coingecko`     | Most fiat currencies, for example EUR, USD, GBP and JPY |
+| [CoinMarketCap](https://coinmarketcap.com) | `coinmarketcap` | 93 fiat currencies, for example EUR, USD, GBP and JPY   |
+| [CoinPaprika](https://coinpaprika.com)     | `coinpaprika`   | 40 fiat currencies, for example EUR, USD, GBP and JPY   |
+
+CoinMarketCap needs no key. Without a key, all users on the same IP address share one rate limit, so the tool tries again after 1, 2 and 4 seconds when the limit is reached. A free key of the Basic plan gives you a limit of your own. A run sends one request for all tokens. CoinMarketCap knows a token by its slug, for example `tether`, never by its symbol: one symbol can belong to several coins.
 
 CoinPaprika's free API needs no key. It allows 20,000 requests a month and is for personal use only. A run sends one request for each token that your accounts use.
 
@@ -57,7 +60,7 @@ An account uses a built-in token by its symbol only. To use another token, [add 
 | `tron` | `WIN`    | TRC20    | 6        | 6                 | `TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7` |
 | `tron` | `SUNDOG` | TRC20    | 18       | 8                 | `TXL6rJbvmjD46zeN1JssfgxvSo99qC8MRT` |
 
-`WBTC` and `WETH` on TRON are wrapped bitcoin and ether: TRC20 tokens, not BTC on Bitcoin or ETH on Ethereum. Each has its own price at the providers. CoinPaprika does not list WETH on TRON, so it uses its price of WETH on Ethereum, the same as CoinGecko's `weth`.
+`WBTC` and `WETH` on TRON are wrapped bitcoin and ether: TRC20 tokens, not BTC on Bitcoin or ETH on Ethereum. Each has its own price at the providers. CoinPaprika and CoinMarketCap do not list WETH on TRON, so they use their price of WETH on Ethereum, the same as CoinGecko's `weth`.
 
 | Chain      | Symbol  | Standard | Decimals | Decimals in notes | Contract                                     |
 | ---------- | ------- | -------- | -------- | ----------------- | -------------------------------------------- |
@@ -94,7 +97,7 @@ An account uses a built-in token by its symbol only. To use another token, [add 
 | `bsc` | `CAKE`  | BEP20    | 18       | 8                 | `0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82` |
 | `bsc` | `LINK`  | BEP20    | 18       | 8                 | `0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD` |
 
-On BNB Smart Chain, `USDT` and `USDC` have 18 decimals, not 6 as on Ethereum and TRON. `ETH` is Binance-Peg Ether, a BEP20 token, not ETH on Ethereum. `TRX`, `WIN` and `BTT` are bridged copies of the TRON tokens. CoinPaprika does not list `TRX` and `WBTC` on BNB Smart Chain, so it uses its price of TRX on TRON and of WBTC on Ethereum. CoinGecko has its own ids for the bridged USDT, USDC, DAI, ETH, TRX and WIN on this chain.
+On BNB Smart Chain, `USDT` and `USDC` have 18 decimals, not 6 as on Ethereum and TRON. `ETH` is Binance-Peg Ether, a BEP20 token, not ETH on Ethereum. `TRX`, `WIN` and `BTT` are bridged copies of the TRON tokens. CoinPaprika does not list `TRX` and `WBTC` on BNB Smart Chain, so it uses its price of TRX on TRON and of WBTC on Ethereum. CoinMarketCap does not list `WBTC` on BNB Smart Chain, so it uses its price of WBTC on Ethereum. CoinGecko has its own ids for the bridged USDT, USDC, DAI, ETH, TRX and WIN on this chain.
 
 The price providers know each coin and token by an id of their own. The same token on several chains has the same id, because it has the same price, unless the provider lists that chain's copy as a coin of its own.
 
@@ -103,75 +106,99 @@ The price providers know each coin and token by an id of their own. The same tok
 
 - **BNB**
   - CoinGecko id: `binancecoin`
+  - CoinMarketCap slug: `bnb`
   - CoinPaprika id: `bnb-binance-coin`
 - **BTC**
   - CoinGecko id: `bitcoin`
+  - CoinMarketCap slug: `bitcoin`
   - CoinPaprika id: `btc-bitcoin`
 - **BTCB**
   - CoinGecko id: `binance-bitcoin`
+  - CoinMarketCap slug: `bitcoin-bep2`
   - CoinPaprika id: `btcb-binance-bitcoin`
 - **BTT**
   - CoinGecko id: `bittorrent`
+  - CoinMarketCap slug: `bittorrent-new`
   - CoinPaprika id: `bttc-bittorrent-chain`
 - **CAKE**
   - CoinGecko id: `pancakeswap-token`
+  - CoinMarketCap slug: `pancakeswap`
   - CoinPaprika id: `cake-pancakeswap`
 - **DAI**
   - CoinGecko id: `dai`; on BNB Smart Chain: `binance-peg-dai`
+  - CoinMarketCap slug: `multi-collateral-dai`
   - CoinPaprika id: `dai-dai`
 - **ETH**
   - CoinGecko id: `ethereum`; on BNB Smart Chain: `binance-peg-weth`
+  - CoinMarketCap slug: `ethereum`
   - CoinPaprika id: `eth-ethereum`; on BNB Smart Chain: `eth-ethereum-token`
 - **FDUSD**
   - CoinGecko id: `first-digital-usd`
+  - CoinMarketCap slug: `first-digital-usd`
   - CoinPaprika id: `fdusd-first-digital-usd`
 - **JST**
   - CoinGecko id: `just`
+  - CoinMarketCap slug: `just`
   - CoinPaprika id: `jst-just`
 - **LINK**
   - CoinGecko id: `chainlink`
+  - CoinMarketCap slug: `chainlink`
   - CoinPaprika id: `link-chainlink`
 - **STETH**
   - CoinGecko id: `staked-ether`
+  - CoinMarketCap slug: `steth`
   - CoinPaprika id: `steth-lido-staked-ether`
 - **SUN**
   - CoinGecko id: `sun-token`
+  - CoinMarketCap slug: `sun-token`
   - CoinPaprika id: `sun-sun`
 - **SUNDOG**
   - CoinGecko id: `sundog`
+  - CoinMarketCap slug: `sundog`
   - CoinPaprika id: `sundog-sundog`
 - **TRX**
   - CoinGecko id: `tron`; on BNB Smart Chain: `tron-bsc`
+  - CoinMarketCap slug: `tron`
   - CoinPaprika id: `trx-tron`
 - **TUSD**
   - CoinGecko id: `true-usd`
+  - CoinMarketCap slug: `trueusd`
   - CoinPaprika id: `tusd-trueusd`
 - **UNI**
   - CoinGecko id: `uniswap`
+  - CoinMarketCap slug: `uniswap`
   - CoinPaprika id: `uni-uniswap`
 - **USD1**
   - CoinGecko id: `usd1-wlfi`
+  - CoinMarketCap slug: `usd1`
   - CoinPaprika id: `usd1-usd1`
 - **USDC**
   - CoinGecko id: `usd-coin`; on BNB Smart Chain: `binance-bridged-usdc-bnb-smart-chain`
+  - CoinMarketCap slug: `usd-coin`
   - CoinPaprika id: `usdc-usd-coin`
 - **USDD**
   - CoinGecko id: `usdd`
+  - CoinMarketCap slug: `usdd`
   - CoinPaprika id: `usdd-usdd`
 - **USDT**
   - CoinGecko id: `tether`; on BNB Smart Chain: `binance-bridged-usdt-bnb-smart-chain`
+  - CoinMarketCap slug: `tether`
   - CoinPaprika id: `usdt-tether`
 - **WBNB**
   - CoinGecko id: `wbnb`
+  - CoinMarketCap slug: `wbnb`
   - CoinPaprika id: `wbnb-wrapped-bnb`
 - **WBTC**
   - CoinGecko id: `wrapped-bitcoin`; on TRON: `bitcoin-trc20`
+  - CoinMarketCap slug: `wrapped-bitcoin`; on TRON: `bitcoin-trc20`
   - CoinPaprika id: `wbtc-wrapped-bitcoin`; on TRON: `btct-bitcoin-trc20`
 - **WETH**
   - CoinGecko id: `weth`
+  - CoinMarketCap slug: `weth`
   - CoinPaprika id: `weth-weth`
 - **WIN**
   - CoinGecko id: `wink`; on BNB Smart Chain: `winklink-bsc`
+  - CoinMarketCap slug: `wink`
   - CoinPaprika id: `win-winklink`
 
 </details>

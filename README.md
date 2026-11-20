@@ -45,7 +45,7 @@ Popular tokens are built in, so you need only their symbol in the config. Any ot
 - **Chains:** TRON (TRX), Bitcoin (BTC), Ethereum (ETH), BNB Smart Chain (BNB)
 - **Built-in tokens:** USDT, USDC, WBTC, WETH, DAI [and more](docs/supported.md#built-in-tokens)
 - **Block explorers:** TronGrid, mempool.space (or any mempool or Esplora instance), any Ethereum or BNB Smart Chain JSON-RPC node, Blockscout, Etherscan
-- **Price providers:** CoinGecko, CoinPaprika
+- **Price providers:** CoinGecko, CoinMarketCap, CoinPaprika
 
 The [full list](docs/supported.md) has the ids, the contracts and the currencies.
 
