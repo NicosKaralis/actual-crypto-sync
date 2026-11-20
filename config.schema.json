@@ -195,6 +195,78 @@
             }
           }
         },
+        "bsc": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "explorers": {
+              "description": "The block explorers, in the order the tool tries them: a name, a list of names, or names with their settings. etherscan needs its api_key, so it's never a bare name.",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["json-rpc"]
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": ["json-rpc"]
+                      },
+                      {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "additionalProperties": false,
+                        "properties": {
+                          "json-rpc": {
+                            "type": ["object", "null"],
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The JSON-RPC endpoint: your own node, or a provider's URL with its key, such as Infura or Alchemy."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            }
+                          },
+                          "etherscan": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The API base URL."
+                              },
+                              "api_key": {
+                                "$ref": "#/definitions/setting",
+                                "description": "An API key on a paid plan: the free tier doesn't cover BNB Smart Chain. Use ${VAR}."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            },
+                            "required": ["api_key"]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
         "ethereum": {
           "type": ["object", "null"],
           "additionalProperties": false,
@@ -353,7 +425,7 @@
         "required": ["chain", "symbol", "contract", "decimals", "price_ids"],
         "properties": {
           "chain": {
-            "enum": ["ethereum", "tron"],
+            "enum": ["bsc", "ethereum", "tron"],
             "description": "A chain with tokens."
           },
           "symbol": {
@@ -406,7 +478,7 @@
             "description": "The Actual account, by its name or its id."
           },
           "chain": {
-            "enum": ["bitcoin", "ethereum", "tron"],
+            "enum": ["bitcoin", "bsc", "ethereum", "tron"],
             "description": "The chain of the wallet."
           },
           "token": {

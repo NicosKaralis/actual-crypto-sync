@@ -29,7 +29,11 @@ chains:
   ethereum:
     explorers:
       - json-rpc:
-          api_url: ${MOCK_URL}/json-rpc
+          api_url: ${MOCK_URL}/ethereum/json-rpc
+  bsc:
+    explorers:
+      - json-rpc:
+          api_url: ${MOCK_URL}/bsc/json-rpc
 
 accounts:
   - name: "TRON: TRX"
@@ -62,4 +66,14 @@ accounts:
   - name: "Ethereum: USDC"
     chain: ethereum
     token: USDC
+    wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "BNB Smart Chain: BNB"
+    chain: bsc
+    token: BNB
+    wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "BNB Smart Chain: USDT"
+    chain: bsc
+    token: USDT
     wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"

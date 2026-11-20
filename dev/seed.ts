@@ -28,6 +28,8 @@ export const ACCOUNTS = [
   'Bitcoin',
   'Ethereum: ETH',
   'Ethereum: USDC',
+  'BNB Smart Chain: BNB',
+  'BNB Smart Chain: USDT',
 ];
 const SCRATCH_ACCOUNT = 'Cutoff check';
 

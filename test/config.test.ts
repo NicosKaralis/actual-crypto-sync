@@ -939,6 +939,7 @@ describe('config.example.yml', () => {
         ['WTRX Account', 'tron', 'WTRX', TRON_WALLET],
         ['Bitcoin', 'bitcoin', 'BTC', BTC_WALLET],
         ['Ethereum: USDC', 'ethereum', 'USDC', ETH_WALLET.toLowerCase()],
+        ['BNB Smart Chain: USDT', 'bsc', 'USDT', ETH_WALLET.toLowerCase()],
       ],
     );
     assert.deepEqual(
@@ -952,6 +953,10 @@ describe('config.example.yml', () => {
     assert.deepEqual(
       config.chains.ethereum?.explorers.map((e) => e.label),
       ['json-rpc', 'blockscout'],
+    );
+    assert.deepEqual(
+      config.chains.bsc?.explorers.map((e) => e.label),
+      ['json-rpc'],
     );
   });
 });

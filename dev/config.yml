@@ -50,3 +50,15 @@ accounts:
     token: USDC
     wallets:
       - "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "BNB Smart Chain: BNB"
+    chain: bsc
+    token: BNB
+    wallets:
+      - "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "BNB Smart Chain: USDT"
+    chain: bsc
+    token: USDT
+    wallets:
+      - "0xF977814e90dA44bFA03b6295A0616a897441aceC"
