@@ -22,7 +22,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import { CHAINS } from '../../src/chains/index.ts';
 import { walletPrefix } from '../../src/format.ts';
-import { entryFetch, getJson, isRecord, postJson } from '../../src/http.ts';
+import { ApiError, entryFetch, getJson, isRecord, postJson } from '../../src/http.ts';
 import { PRICE_PROVIDERS } from '../../src/prices/index.ts';
 import { BUILTIN_TOKENS, tokenKey } from '../../src/tokens.ts';
 import type { ChainId, Token } from '../../src/types.ts';
@@ -51,13 +51,19 @@ const WALLETS: Record<ChainId, string[]> = {
  * one: the environment variable that holds it, and the setting it goes in.
  * The workflow sets them from repository secrets of the same names. A node
  * provider's key is part of its URL, so json-rpc gets a whole api_url.
+ * `settings` are added to the keyed check's settings.
  */
-const KEYS: Record<string, { env: string; setting: string }> = {
+const KEYS: Record<string, { env: string; setting: string; settings?: Record<string, string> }> = {
   'tron/trongrid': { env: 'TRONGRID_API_KEY', setting: 'api_key' },
-  'ethereum/json-rpc': { env: 'ETHEREUM_RPC_URL', setting: 'api_url' },
+  // Infura's free plan allows 6 calls a second, and a batch counts each call.
+  'ethereum/json-rpc': {
+    env: 'ETHEREUM_RPC_URL',
+    setting: 'api_url',
+    settings: { batch_size: '6' },
+  },
   'ethereum/blockscout': { env: 'BLOCKSCOUT_API_KEY', setting: 'api_key' },
   'ethereum/etherscan': { env: 'ETHERSCAN_API_KEY', setting: 'api_key' },
-  'bsc/json-rpc': { env: 'BSC_RPC_URL', setting: 'api_url' },
+  'bsc/json-rpc': { env: 'BSC_RPC_URL', setting: 'api_url', settings: { batch_size: '6' } },
   // Etherscan's free tier doesn't cover BNB Smart Chain: a paid key, kept apart.
   'bsc/etherscan': { env: 'ETHERSCAN_BSC_API_KEY', setting: 'api_key' },
   coingecko: { env: 'COINGECKO_API_KEY', setting: 'demo_api_key' },
@@ -105,6 +111,8 @@ const COINMARKETCAP_WITHOUT_CONTRACT = new Set(['tron:WETH', 'bsc:WBTC']);
 const ONCHAIN_SYMBOLS: Record<string, string> = { 'tron:WBTC': 'BTC', 'tron:WETH': 'ETH' };
 
 const RATE_LIMIT_RETRY_MS = 60_000;
+/** JSON-RPC nodes: the wait before the one retry of a rate-limited answer. */
+const JSON_RPC_RETRY_MS = 1000;
 
 // One fetch per service, shared by every test, so the service's pacing holds
 // across tests: one request at a time, its serial interval apart.
@@ -113,7 +121,8 @@ const fetches = new Map<string, typeof fetch>();
 function serviceFetch(service: string, intervalMs: number): typeof fetch {
   let serviceFetch = fetches.get(service);
   if (!serviceFetch) {
-    serviceFetch = retryOnRateLimit(entryFetch(globalThis.fetch, { serial: true, intervalMs }));
+    const paced = entryFetch(globalThis.fetch, { serial: true, intervalMs });
+    serviceFetch = retryOnRateLimit(service.includes('/json-rpc') ? jsonRpcRetry(paced) : paced);
     fetches.set(service, serviceFetch);
   }
   return serviceFetch;
@@ -129,6 +138,38 @@ function retryOnRateLimit(fetch: typeof globalThis.fetch): typeof globalThis.fet
     await delay(RATE_LIMIT_RETRY_MS);
     return fetch(input, init);
   }) as typeof globalThis.fetch;
+}
+
+/**
+ * A JSON-RPC node's rate-limited answer is tried once more, 1 s later. Some
+ * nodes (Infura) answer a rate limit with HTTP 200 and the refused calls as
+ * errors in the batch, so the body is checked with the json-rpc explorer's
+ * own rule.
+ */
+function jsonRpcRetry(fetch: typeof globalThis.fetch): typeof globalThis.fetch {
+  return (async (input, init) => {
+    const response = await fetch(input, init);
+    if (!(await jsonRpcRateLimited(response.clone()))) {
+      return response;
+    }
+    await delay(JSON_RPC_RETRY_MS);
+    return fetch(input, init);
+  }) as typeof globalThis.fetch;
+}
+
+async function jsonRpcRateLimited(response: Response): Promise<boolean> {
+  const explorer = CHAINS.ethereum?.explorers['json-rpc'];
+  assert.ok(explorer);
+  const limited = (body: unknown) =>
+    explorer.rateLimitAdvice(new ApiError('json-rpc', 'live check', response.status, body), {
+      settings: {},
+      serial: true,
+    }) !== null;
+  if (limited(undefined)) {
+    return true; // HTTP 429
+  }
+  const body: unknown = await response.json().catch(() => undefined);
+  return (Array.isArray(body) ? body : [body]).some(limited);
 }
 
 /**
@@ -155,7 +196,7 @@ function modes(
     const value = process.env[key.env];
     result.push({
       name: 'with a key',
-      settings: value ? { [key.setting]: value } : {},
+      settings: value ? { ...key.settings, [key.setting]: value } : {},
       sample: false,
       skip: value ? false : `set ${key.env} to check it`,
     });
