@@ -112,7 +112,7 @@ describe('tokens.schema.json and the loader agree on the shape', () => {
   // The loader reads any chain and provider name; the rules of the built-in
   // database (tokens.test.ts) check that each one is registered.
   const schemaOnly: [string, string][] = [
-    ['an unknown chain', `ethereum:\n  - ${TRX}\n`],
+    ['an unknown chain', `solana:\n  - ${TRX}\n`],
     [
       'an unknown price provider',
       `tron:\n  - { symbol: TRX, decimals: 6, price_ids: { kraken: trx } }\n`,

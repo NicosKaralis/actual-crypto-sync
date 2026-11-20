@@ -1,0 +1,12 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": "0x1041c4bb1b7e5140409a"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": "0x"
+  }
+]

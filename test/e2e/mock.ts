@@ -1,4 +1,4 @@
-// A stand-in for TronGrid, mempool.space, CoinGecko and CoinPaprika, run inside the e2e
+// A stand-in for TronGrid, mempool.space, an Ethereum JSON-RPC node, CoinGecko and CoinPaprika, run inside the e2e
 // test process. It answers from the recorded responses in test/fixtures/, and
 // the tests change its state between runs. The e2e config points each
 // explorer and provider at it through api_url: <url>/trongrid, and so on.
@@ -31,6 +31,8 @@ export const COINPAPRIKA_PRICES: Record<string, number> = {
   'trx-tron': 0.2836451012079849,
   'usdt-tether': 0.9042,
   'btc-bitcoin': 62519,
+  'eth-ethereum': 2290.17,
+  'usdc-usd-coin': 0.9043,
 };
 
 export interface Mock {
@@ -51,10 +53,14 @@ export async function startMock(): Promise<Mock> {
   };
   const requests: string[] = [];
 
-  const server = createServer((request, response) => {
+  const server = createServer(async (request, response) => {
     const path = new URL(request.url ?? '/', 'http://mock').pathname;
     requests.push(`${request.method} ${path}`);
-    const [status, body] = answer(path, state);
+    let text = '';
+    for await (const chunk of request) {
+      text += chunk;
+    }
+    const [status, body] = path === '/json-rpc' ? jsonRpc(text) : answer(path, state);
     response.writeHead(status, { 'content-type': 'application/json' });
     response.end(JSON.stringify(body));
   });
@@ -67,6 +73,42 @@ export async function startMock(): Promise<Mock> {
     requests,
     close: () => new Promise((resolve, reject) => server.close((e) => (e ? reject(e) : resolve()))),
   };
+}
+
+/**
+ * A JSON-RPC batch, answered from test/fixtures/json-rpc/balances.json:
+ * ETH_WALLET's ETH for eth_getBalance, and its USDT, USDC or DAI for an
+ * eth_call to that contract, whatever the address asked for.
+ */
+function jsonRpc(text: string): [number, unknown] {
+  const recorded = fixture('json-rpc/balances.json') as { result: string }[];
+  // The recorded batch's order: ETH, then these contracts.
+  const contracts = [
+    '0xdac17f958d2ee523a2206206994597c13d831ec7',
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+    '0x6b175474e89094c44da98b954eedeac495271d0f',
+  ];
+  const calls = JSON.parse(text) as {
+    id: number;
+    method: string;
+    params: [{ to?: string } | string, string];
+  }[];
+  return [
+    200,
+    calls.map(({ id, method, params }) => {
+      const to = typeof params[0] === 'object' ? (params[0].to ?? '').toLowerCase() : '';
+      const contract = contracts.indexOf(to);
+      const result =
+        method === 'eth_getBalance'
+          ? recorded[0]?.result
+          : contract >= 0
+            ? recorded[contract + 1]?.result
+            : undefined;
+      return result === undefined
+        ? { jsonrpc: '2.0', id, error: { code: -32000, message: 'no mock for this call' } }
+        : { jsonrpc: '2.0', id, result };
+    }),
+  ];
 }
 
 function answer(path: string, state: MockState): [number, unknown] {

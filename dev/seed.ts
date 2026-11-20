@@ -21,7 +21,14 @@ import { LOOKBACK_TRANSACTIONS, openBudget } from '../src/actual.ts';
 const SERVER_URL = env.ACTUAL_SERVER_URL || 'http://localhost:5006';
 const BUDGET = 'Dev';
 // The names dev/config.yml, dev/config.password.yml and test/e2e/config.yml use.
-export const ACCOUNTS = ['TRON: TRX', 'TRON: USDT', 'TRON: TRX, two wallets', 'Bitcoin'];
+export const ACCOUNTS = [
+  'TRON: TRX',
+  'TRON: USDT',
+  'TRON: TRX, two wallets',
+  'Bitcoin',
+  'Ethereum: ETH',
+  'Ethereum: USDC',
+];
 const SCRATCH_ACCOUNT = 'Cutoff check';
 
 class SeedError extends Error {}

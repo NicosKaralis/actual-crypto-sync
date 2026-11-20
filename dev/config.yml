@@ -38,3 +38,15 @@ accounts:
     token: BTC
     wallets:
       - bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v
+
+  - name: "Ethereum: ETH"
+    chain: ethereum
+    token: ETH
+    wallets:
+      - "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "Ethereum: USDC"
+    chain: ethereum
+    token: USDC
+    wallets:
+      - "0xF977814e90dA44bFA03b6295A0616a897441aceC"

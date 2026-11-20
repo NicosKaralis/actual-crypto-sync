@@ -12,15 +12,18 @@ If a pull request breaks a rule in this document, ask for a change. Do not appro
 
 Tests, fixtures, examples and docs use only these public exchange wallets:
 
-| Chain   | Address                                      |
-| ------- | -------------------------------------------- |
-| TRON    | `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`         |
-| TRON    | `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`         |
-| Bitcoin | `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`         |
-| Bitcoin | `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`         |
-| Bitcoin | `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v` |
+| Chain    | Address                                      |
+| -------- | -------------------------------------------- |
+| TRON     | `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`         |
+| TRON     | `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`         |
+| Bitcoin  | `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`         |
+| Bitcoin  | `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`         |
+| Bitcoin  | `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v` |
+| Ethereum | `0xF977814e90dA44bFA03b6295A0616a897441aceC` |
+| Ethereum | `0x742d35Cc6634C0532925a3b844Bc454e4438f44e` |
+| Ethereum | `0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43` |
 
-Bitcoin address tests can also use the test vectors of BIP-173 and BIP-350.
+Bitcoin address tests can also use the test vectors of BIP-173 and BIP-350. EVM address tests can also use the test vectors of EIP-55.
 
 ## Secrets and logs
 

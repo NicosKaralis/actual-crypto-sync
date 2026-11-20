@@ -5,7 +5,7 @@ import { describe, test } from 'node:test';
 import { stringify } from 'yaml';
 
 import { type Config, ConfigError, loadConfig } from '../src/config.ts';
-import { BTC_WALLET, fakeRegistries, TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
+import { BTC_WALLET, ETH_WALLET, fakeRegistries, TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
 
 const SESSION = 'a8f1c2d3-0000-4000-8000-123456789abc';
 const API_KEY = `actual_${'A'.repeat(43)}`;
@@ -339,8 +339,8 @@ describe('loadConfig: actual.auth', () => {
 describe('loadConfig: chains and wallets', () => {
   test('an account on an unknown chain is an error', () => {
     assertConfigError(
-      () => load((raw) => Object.assign(firstAccount(raw), { chain: 'ethereum' })),
-      'accounts[0].chain: unknown chain "ethereum"; supported: tron, bitcoin',
+      () => load((raw) => Object.assign(firstAccount(raw), { chain: 'solana' })),
+      'accounts[0].chain: unknown chain "solana"; supported: tron, bitcoin',
     );
   });
 
@@ -626,8 +626,8 @@ describe('loadConfig: providers and explorers lists', () => {
 
   test('an unknown chain under chains: is an error', () => {
     assertConfigError(
-      () => load((raw) => Object.assign(raw, { chains: { ethereum: null } })),
-      'chains.ethereum: unknown chain "ethereum"; supported: tron, bitcoin',
+      () => load((raw) => Object.assign(raw, { chains: { solana: null } })),
+      'chains.solana: unknown chain "solana"; supported: tron, bitcoin',
     );
   });
 
@@ -928,6 +928,7 @@ describe('config.example.yml', () => {
       ACTUAL_SESSION_TOKEN: SESSION,
       TRON_WALLET_ADDRESS: TRON_WALLET,
       BTC_ADDRESS: BTC_WALLET,
+      ETH_ADDRESS: ETH_WALLET,
     });
     assert.deepEqual(config.actual.auth, { kind: 'session', token: SESSION });
     assert.equal(config.prices.currency, 'eur');
@@ -937,6 +938,7 @@ describe('config.example.yml', () => {
         ['TC9F...R2MJ: TRX', 'tron', 'TRX', TRON_WALLET],
         ['WTRX Account', 'tron', 'WTRX', TRON_WALLET],
         ['Bitcoin', 'bitcoin', 'BTC', BTC_WALLET],
+        ['Ethereum: USDC', 'ethereum', 'USDC', ETH_WALLET.toLowerCase()],
       ],
     );
     assert.deepEqual(
@@ -947,5 +949,75 @@ describe('config.example.yml', () => {
       config.chains.bitcoin?.explorers.map((e) => e.label),
       ['mempool-space'],
     );
+    assert.deepEqual(
+      config.chains.ethereum?.explorers.map((e) => e.label),
+      ['json-rpc', 'blockscout'],
+    );
+  });
+});
+
+describe('loadConfig: Ethereum', () => {
+  // The real registries: the fakes have no EVM chain.
+  const TEXT = `actual:
+  server_url: http://actual:5006
+  sync_id: \${SYNC_ID}
+  auth:
+    session: \${ACTUAL_SESSION_TOKEN}
+prices:
+  currency: eur
+  providers: [coingecko]
+tokens:
+  - chain: ethereum
+    symbol: SHIB
+    contract: 0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE
+    decimals: 18
+    price_ids: { coingecko: shiba-inu }
+accounts:
+  - name: ETH
+    chain: ethereum
+    token: ETH
+    wallets: ${ETH_WALLET}
+  - name: SHIB
+    chain: ethereum
+    token: SHIB
+    wallets: ${ETH_WALLET}
+`;
+
+  test('a 0x address without quotes is text, not a hex number', () => {
+    const config = loadConfig(TEXT, ENV);
+    assert.equal(config.accounts[0]?.wallets[0]?.address, ETH_WALLET.toLowerCase());
+    assert.equal(config.accounts[1]?.token.contract, '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE');
+  });
+
+  test('json-rpc then blockscout by default, as neither needs a key', () => {
+    const config = loadConfig(TEXT, ENV);
+    assert.deepEqual(
+      config.chains.ethereum?.explorers.map((e) => e.label),
+      ['json-rpc', 'blockscout'],
+    );
+  });
+
+  test('etherscan needs its api_key', () => {
+    assertConfigError(
+      () => loadConfig(`${TEXT}chains:\n  ethereum:\n    explorers: [etherscan]\n`, ENV),
+      'chains.ethereum.explorers[0].etherscan: add an API key (api_key: ${ETHERSCAN_API_KEY}): Etherscan answers no request without one',
+    );
+  });
+
+  test('a checksum typo in a wallet is an error', () => {
+    const typo = `${ETH_WALLET.slice(0, -1)}c`;
+    assertConfigError(
+      () => loadConfig(TEXT.replace(ETH_WALLET, typo), ENV),
+      'accounts[0].wallets: not a valid ethereum address',
+    );
+  });
+
+  test('one contract in two spellings is one contract', () => {
+    const lower = '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce';
+    const text = TEXT.replace(
+      'accounts:',
+      `  - chain: ethereum\n    symbol: SHIB2\n    contract: ${lower}\n    decimals: 18\n    price_ids: { coingecko: shiba-inu }\naccounts:`,
+    );
+    assertConfigError(() => loadConfig(text, ENV), 'tokens[1].contract: already used by SHIB');
   });
 });

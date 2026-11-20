@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { parseDocument, type ScalarTag } from 'yaml';
+import { parseDocument, type ScalarTag, type Tags } from 'yaml';
 
 import type { ChainId, Token } from './types.ts';
 
@@ -100,16 +100,29 @@ export function readToken(
     : { chain, symbol, kind: 'contract', contract, decimals, displayDecimals, priceIds };
 }
 
-/** A symbol or a contract used twice on one chain would make tokens ambiguous. */
-export function checkUnique(token: Token, others: readonly Token[], path: string) {
+/**
+ * A symbol or a contract used twice on one chain would make tokens ambiguous.
+ * `normalize` is the chain's one spelling of an address: EVM contracts are
+ * case-insensitive.
+ */
+export function checkUnique(
+  token: Token,
+  others: readonly Token[],
+  path: string,
+  normalize: (address: string) => string = (address) => address,
+) {
   const onChain = others.filter((other) => other.chain === token.chain);
   if (onChain.some((other) => other.symbol === token.symbol)) {
     throw new TokenError(`${path}.symbol`, `${token.symbol} is already defined on ${token.chain}`);
   }
+  const contract = token.contract;
   const sameContract =
-    token.contract === undefined
+    contract === undefined
       ? undefined
-      : onChain.find((other) => other.contract === token.contract);
+      : onChain.find(
+          (other) =>
+            other.contract !== undefined && normalize(other.contract) === normalize(contract),
+        );
   if (sameContract) {
     throw new TokenError(`${path}.contract`, `already used by ${sameContract.symbol}`);
   }
@@ -166,9 +179,20 @@ export function parseTokens(
   }
 }
 
+/**
+ * YAML's tags without its `0x…` integers, so an EVM address or contract stays
+ * the text it is, not a number. Nothing in a config or token file is a hex number.
+ */
+export function withoutHexIntegers(tags: Tags): Tags {
+  return tags.filter((tag) => typeof tag === 'string' || tag.format !== 'HEX');
+}
+
 /** A YAML file's content. Unknown tags are errors too, not plain strings. */
 function readYaml(text: string, importTag: ScalarTag): unknown {
-  const doc = parseDocument(text, { uniqueKeys: true, customTags: [importTag] });
+  const doc = parseDocument(text, {
+    uniqueKeys: true,
+    customTags: (tags) => [...withoutHexIntegers(tags), importTag],
+  });
   const [problem] = [...doc.errors, ...doc.warnings];
   if (problem) {
     throw new TokenError('file', problem.message.split('\n')[0]?.replace(/:$/, '') ?? '');

@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.live.example
 dev/.env
 
 # Actual budget cache (ACTUAL_DATA_DIR) used during development

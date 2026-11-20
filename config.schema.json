@@ -118,6 +118,10 @@
                             "$ref": "#/definitions/setting",
                             "description": "The API base URL."
                           },
+                          "api_key": {
+                            "$ref": "#/definitions/setting",
+                            "description": "A CoinPaprika API key, for the paid API (https://api-pro.coinpaprika.com/v1). Use ${VAR}."
+                          },
                           "label": {
                             "$ref": "#/definitions/label"
                           },
@@ -181,6 +185,98 @@
                                 "$ref": "#/definitions/serial"
                               }
                             }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "ethereum": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "explorers": {
+              "description": "The block explorers, in the order the tool tries them: a name, a list of names, or names with their settings. etherscan needs its api_key, so it's never a bare name.",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["json-rpc", "blockscout"]
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": ["json-rpc", "blockscout"]
+                      },
+                      {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "additionalProperties": false,
+                        "properties": {
+                          "json-rpc": {
+                            "type": ["object", "null"],
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The JSON-RPC endpoint: your own node, or a provider's URL with its key, such as Infura or Alchemy."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            }
+                          },
+                          "blockscout": {
+                            "type": ["object", "null"],
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The API base URL, up to and including /api."
+                              },
+                              "api_key": {
+                                "$ref": "#/definitions/setting",
+                                "description": "Optional: a free Blockscout API key, for the keyed API and its higher limits. Use ${VAR}."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            }
+                          },
+                          "etherscan": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "api_url": {
+                                "$ref": "#/definitions/setting",
+                                "description": "The API base URL."
+                              },
+                              "api_key": {
+                                "$ref": "#/definitions/setting",
+                                "description": "An API key. Use ${VAR}."
+                              },
+                              "label": {
+                                "$ref": "#/definitions/label"
+                              },
+                              "serial": {
+                                "$ref": "#/definitions/serial"
+                              }
+                            },
+                            "required": ["api_key"]
                           }
                         }
                       }
@@ -257,7 +353,7 @@
         "required": ["chain", "symbol", "contract", "decimals", "price_ids"],
         "properties": {
           "chain": {
-            "enum": ["tron"],
+            "enum": ["ethereum", "tron"],
             "description": "A chain with tokens."
           },
           "symbol": {
@@ -310,7 +406,7 @@
             "description": "The Actual account, by its name or its id."
           },
           "chain": {
-            "enum": ["bitcoin", "tron"],
+            "enum": ["bitcoin", "ethereum", "tron"],
             "description": "The chain of the wallet."
           },
           "token": {

@@ -4,6 +4,8 @@ import type { PriceProvider, Quote } from '../types.ts';
 
 const ID = 'coinpaprika';
 const DEFAULT_API_URL = 'https://api.coinpaprika.com/v1';
+// A key is for the paid plans' API, a different URL.
+const PRO_API_URL = 'https://api-pro.coinpaprika.com/v1';
 
 /**
  * The fiat currencies among CoinPaprika's `quotes` (API docs, 2026-11-13).
@@ -20,32 +22,46 @@ const CURRENCIES = new Set(
 
 /**
  * `GET /tickers/{id}?quotes=EUR`: the API prices one coin per request, so
- * each id is one request. An id it doesn't know (404) is left out.
+ * each id is one request. An id it doesn't know (404) is left out. With
+ * `api_key`, it asks the paid API, with the key as the whole `Authorization`
+ * header (no `Bearer`). Only a key of a paid plan works there.
  */
 export const coinpaprika: PriceProvider = {
   id: ID,
   supportsCurrency: (currency) => CURRENCIES.has(currency),
-  settingKeys: ['api_url'],
+  settingKeys: ['api_url', 'api_key'],
   // The API allows 10 requests a second.
   serialIntervalMs: 100,
-  rateLimitAdvice(error) {
-    // 402 when the monthly limit is used up, 429 when requests come too fast.
-    return error instanceof ApiError && (error.status === 429 || error.status === 402)
-      ? "run less often, or list another price provider after it: CoinPaprika's free API allows 20,000 requests a month"
-      : null;
+  rateLimitAdvice(error, { settings }) {
+    // 402 when the monthly or hourly limit is used up, 429 when requests come too fast.
+    if (!(error instanceof ApiError && (error.status === 429 || error.status === 402))) {
+      return null;
+    }
+    // A 402 for a key of a free plan, which the paid API refuses: no limit, a wrong plan.
+    const message = isRecord(error.body) ? error.body.error : undefined;
+    if (typeof message === 'string' && /invalid api plan/i.test(message)) {
+      return null;
+    }
+    return settings.api_key
+      ? 'run less often, or list another price provider after it'
+      : "run less often, add an API key (api_key: ${COINPAPRIKA_API_KEY}), or list another price provider after it: CoinPaprika's free API allows 20,000 requests a month";
   },
   async getQuotes({ tokens, currency, settings, fetch }) {
     const ids = [...new Set(tokens.map((token) => token.priceIds[ID]))].filter(
       (id): id is string => id !== undefined,
     );
     const code = currency.toUpperCase();
+    const base = apiUrl(settings, settings.api_key ? PRO_API_URL : DEFAULT_API_URL);
+    const headers: Record<string, string> = settings.api_key
+      ? { authorization: settings.api_key }
+      : {};
     const prices = new Map<string, number>();
     // One at a time: the tokens of a run are a few requests, well under the limit.
     for (const id of ids) {
-      const url = `${apiUrl(settings, DEFAULT_API_URL)}/tickers/${encodeURIComponent(id)}?quotes=${encodeURIComponent(code)}`;
+      const url = `${base}/tickers/${encodeURIComponent(id)}?quotes=${encodeURIComponent(code)}`;
       let body: unknown;
       try {
-        body = await getJson(ID, url, fetch);
+        body = await getJson(ID, url, fetch, headers);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           continue;

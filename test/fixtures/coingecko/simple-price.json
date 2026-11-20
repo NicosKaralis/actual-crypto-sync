@@ -7,5 +7,11 @@
   },
   "bitcoin": {
     "eur": 65005
+  },
+  "ethereum": {
+    "eur": 2315.42
+  },
+  "usd-coin": {
+    "eur": 0.904211
   }
 }
