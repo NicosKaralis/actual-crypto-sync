@@ -26,7 +26,13 @@ import { createLog } from '../../src/log.ts';
 import { run } from '../../src/main.ts';
 import { VERSION } from '../../src/otel-env.ts';
 import { startTelemetry } from '../../src/telemetry.ts';
-import { COINPAPRIKA_PRICES, type Mock, startMock, TRON_WALLET_2_SUN } from './mock.ts';
+import {
+  COINMARKETCAP_PRICES,
+  COINPAPRIKA_PRICES,
+  type Mock,
+  startMock,
+  TRON_WALLET_2_SUN,
+} from './mock.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CONFIG = join(ROOT, 'test/e2e/config.yml');
@@ -288,10 +294,29 @@ describe('e2e', () => {
     }
   });
 
+  test('when CoinGecko and CoinPaprika fail, CoinMarketCap gives the prices', async () => {
+    mock.state.coingeckoStatus = 429;
+    mock.state.coinpaprikaStatus = 429;
+    try {
+      const { code, entries } = await sync({ now: DAY3, dryRun: true });
+      assert.equal(code, 0);
+      const writes = messages(entries, 'dry run: would create a transaction');
+      assert.equal(writes.length, ACCOUNTS.length);
+      assert.ok(writes.every((e) => e.source === 'coinmarketcap'));
+      const usdt = writes.find((e) => e.account === 'TRON: USDT');
+      assert.match(String(usdt?.note), new RegExp(`@ ${COINMARKETCAP_PRICES.tether} EUR/USDT`));
+    } finally {
+      mock.state.coingeckoStatus = null;
+      mock.state.coinpaprikaStatus = null;
+    }
+  });
+
   test('every price provider failing exits 1 and changes nothing', async () => {
     const before = await budget();
     mock.state.coingeckoStatus = 429;
     mock.state.coinpaprikaStatus = 429;
+    // Not 429: without a key, CoinMarketCap would retry it, waiting 7 s.
+    mock.state.coinmarketcapStatus = 500;
     try {
       const { code, entries } = await sync({ now: DAY3 });
       assert.equal(code, 1);
@@ -303,6 +328,7 @@ describe('e2e', () => {
     } finally {
       mock.state.coingeckoStatus = null;
       mock.state.coinpaprikaStatus = null;
+      mock.state.coinmarketcapStatus = null;
     }
     assert.deepEqual(await budget(), before);
   });

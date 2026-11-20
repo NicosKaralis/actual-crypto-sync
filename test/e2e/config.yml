@@ -16,6 +16,8 @@ prices:
         api_url: ${MOCK_URL}/coingecko
     - coinpaprika:
         api_url: ${MOCK_URL}/coinpaprika
+    - coinmarketcap:
+        api_url: ${MOCK_URL}/coinmarketcap
 
 chains:
   tron:

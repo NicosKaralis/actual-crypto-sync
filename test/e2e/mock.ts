@@ -1,4 +1,4 @@
-// A stand-in for TronGrid, mempool.space, Ethereum and BNB Smart Chain JSON-RPC nodes, CoinGecko and CoinPaprika, run inside the e2e
+// A stand-in for TronGrid, mempool.space, Ethereum and BNB Smart Chain JSON-RPC nodes, CoinGecko, CoinPaprika and CoinMarketCap, run inside the e2e
 // test process. It answers from the recorded responses in test/fixtures/, and
 // the tests change its state between runs. The e2e config points each
 // explorer and provider at it through api_url: <url>/trongrid, and so on.
@@ -15,6 +15,8 @@ export interface MockState {
   coingeckoStatus: number | null;
   /** When set, CoinPaprika answers with this HTTP status and its error body. */
   coinpaprikaStatus: number | null;
+  /** When set, CoinMarketCap answers with this HTTP status and its error body. */
+  coinmarketcapStatus: number | null;
   /** Addresses that TronGrid answers with HTTP 500. */
   failingWallets: Set<string>;
 }
@@ -36,6 +38,16 @@ export const COINPAPRIKA_PRICES: Record<string, number> = {
   'bnb-binance-coin': 517.88,
 };
 
+/** CoinMarketCap's EUR price of each slug it knows; other slugs are left out. */
+export const COINMARKETCAP_PRICES: Record<string, number> = {
+  tron: 0.28044356337231524,
+  tether: 0.9117,
+  bitcoin: 56360.09528772283,
+  ethereum: 1596.91,
+  'usd-coin': 0.9123,
+  bnb: 521.39,
+};
+
 export interface Mock {
   /** The base URL, reachable from the test process and the processes it starts. */
   url: string;
@@ -50,19 +62,20 @@ export async function startMock(): Promise<Mock> {
     extraSun: 0,
     coingeckoStatus: null,
     coinpaprikaStatus: null,
+    coinmarketcapStatus: null,
     failingWallets: new Set(),
   };
   const requests: string[] = [];
 
   const server = createServer(async (request, response) => {
-    const path = new URL(request.url ?? '/', 'http://mock').pathname;
+    const { pathname: path, searchParams } = new URL(request.url ?? '/', 'http://mock');
     requests.push(`${request.method} ${path}`);
     let text = '';
     for await (const chunk of request) {
       text += chunk;
     }
     const node = JSON_RPC_NODES[path];
-    const [status, body] = node ? jsonRpc(text, node) : answer(path, state);
+    const [status, body] = node ? jsonRpc(text, node) : answer(path, searchParams, state);
     response.writeHead(status, { 'content-type': 'application/json' });
     response.end(JSON.stringify(body));
   });
@@ -131,7 +144,7 @@ function jsonRpc(
   ];
 }
 
-function answer(path: string, state: MockState): [number, unknown] {
+function answer(path: string, query: URLSearchParams, state: MockState): [number, unknown] {
   if (path.startsWith('/trongrid/v1/accounts/')) {
     const address = decodeURIComponent(path.slice('/trongrid/v1/accounts/'.length));
     if (state.failingWallets.has(address)) {
@@ -175,6 +188,28 @@ function answer(path: string, state: MockState): [number, unknown] {
     };
     body.id = id;
     body.quotes.EUR.price = price;
+    return [200, body];
+  }
+  if (path === '/coinmarketcap/simple/price') {
+    if (state.coinmarketcapStatus !== null) {
+      return [
+        state.coinmarketcapStatus,
+        { status: { error_code: '1011', error_message: "You've hit an IP rate limit." } },
+      ];
+    }
+    // The recorded answer's shape, with an entry for each slug it knows.
+    const body = structuredClone(fixture('coinmarketcap/simple-price.json')) as {
+      data: { slug: string; quotes: { symbol: string; price: number }[] }[];
+    };
+    const recorded = body.data[0];
+    body.data = (query.get('slug') ?? '')
+      .split(',')
+      .filter((slug) => COINMARKETCAP_PRICES[slug] !== undefined)
+      .map((slug) => ({
+        ...recorded,
+        slug,
+        quotes: [{ symbol: 'EUR', price: COINMARKETCAP_PRICES[slug] as number }],
+      }));
     return [200, body];
   }
   return [404, { error: `no mock for ${path}` }];
