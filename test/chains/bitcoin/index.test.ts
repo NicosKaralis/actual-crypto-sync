@@ -71,4 +71,12 @@ describe('bitcoin', () => {
       assert.equal(bitcoin.isValidAddress(address), false, JSON.stringify(address));
     }
   });
+
+  test('normalizeAddress makes bech32 lower case and keeps base58 as it is', () => {
+    // bech32 is case-insensitive; base58 isn't.
+    assert.equal(bitcoin.normalizeAddress(BTC_WALLET.toUpperCase()), BTC_WALLET);
+    assert.equal(bitcoin.normalizeAddress(BTC_WALLET), BTC_WALLET);
+    assert.equal(bitcoin.normalizeAddress(BTC_P2PKH_WALLET), BTC_P2PKH_WALLET);
+    assert.equal(bitcoin.normalizeAddress(BTC_P2SH_WALLET), BTC_P2SH_WALLET);
+  });
 });

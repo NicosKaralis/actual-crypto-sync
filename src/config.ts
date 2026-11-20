@@ -2,7 +2,14 @@ import { parseDocument } from 'yaml';
 
 import { CHAINS, getChain } from './chains/index.ts';
 import { getPriceProvider, PRICE_PROVIDERS } from './prices/index.ts';
-import { BUILTIN_TOKENS, checkUnique, readToken, resolveToken, TokenError } from './tokens.ts';
+import {
+  BUILTIN_TOKENS,
+  checkUnique,
+  readToken,
+  resolveToken,
+  TokenError,
+  withoutHexIntegers,
+} from './tokens.ts';
 import type { Chain, ChainId, Currency, Explorer, PriceProvider, Token, Wallet } from './types.ts';
 
 export type ActualAuth =
@@ -76,11 +83,12 @@ export function loadConfig(
     tokens: BUILTIN_TOKENS,
   },
 ): Config {
-  const doc = parseDocument(text, { uniqueKeys: true });
-  const [syntaxError] = doc.errors;
-  if (syntaxError) {
+  const doc = parseDocument(text, { uniqueKeys: true, customTags: withoutHexIntegers });
+  // A warning too: an unknown tag (`!import`) would otherwise load as a plain string.
+  const [problem] = [...doc.errors, ...doc.warnings];
+  if (problem) {
     // Only the first line: the rest quotes the file, which may hold a secret.
-    throw new ConfigError('config', syntaxError.message.split('\n')[0]?.replace(/:$/, '') ?? '');
+    throw new ConfigError('config', problem.message.split('\n')[0]?.replace(/:$/, '') ?? '');
   }
   const raw: unknown = doc.toJS();
   if (raw === null || raw === undefined) {
@@ -245,7 +253,7 @@ class Loader {
   /**
    * A providers or explorers list: a name, a list of names, or a list of names
    * and one-key maps of name to settings. Repeats are labelled `id#2`, `id#3`
-   * unless they set `label`. `serial` puts the entry in serial mode (C27).
+   * unless they set `label`. `serial` puts the entry in serial mode.
    */
   entries<T extends Pick<PriceProvider, 'settingKeys' | 'checkSettings'>>(
     value: unknown,
@@ -382,7 +390,7 @@ class Loader {
       if (!chain.isValidAddress(token.contract)) {
         throw new ConfigError(`${path}.contract`, `not a valid ${chain.id} address`);
       }
-      tokenAt(() => checkUnique(token, tokens, path));
+      tokenAt(() => checkUnique(token, tokens, path, chain.normalizeAddress));
       for (const providerId of Object.keys(token.priceIds)) {
         at(`${path}.price_ids.${providerId}`, () =>
           getPriceProvider(providerId, this.registries.priceProviders),
@@ -456,7 +464,10 @@ class Loader {
     return accounts;
   }
 
-  /** One address, or a list of them (block or inline), the same forms as explorers take. */
+  /**
+   * One address, or a list of them (block or inline), the same forms as explorers take.
+   * The account's balance is the sum of its wallets, so each wallet can appear only once.
+   */
   wallets(value: unknown, path: string, chain: Chain): Wallet[] {
     if (typeof value === 'string') {
       return [this.wallet(value, path, chain)];
@@ -467,13 +478,17 @@ class Loader {
     if (value.length === 0) {
       throw new ConfigError(path, 'list one wallet');
     }
-    if (value.length > 1) {
-      throw new ConfigError(
-        path,
-        "several wallets per account isn't supported yet (see ROADMAP.md)",
-      );
-    }
-    return value.map((entry: unknown, index) => this.wallet(entry, `${path}[${index}]`, chain));
+    const wallets = value.map((entry: unknown, index) =>
+      this.wallet(entry, `${path}[${index}]`, chain),
+    );
+    wallets.forEach((wallet, index) => {
+      const first = wallets.findIndex((other) => other.address === wallet.address);
+      if (first < index) {
+        // Paths only: the address may be someone's wallet.
+        throw new ConfigError(`${path}[${index}]`, `the same wallet as ${path}[${first}]`);
+      }
+    });
+    return wallets;
   }
 
   wallet(value: unknown, path: string, chain: Chain): Wallet {
@@ -482,7 +497,7 @@ class Loader {
       // The address isn't shown: it may be someone's wallet.
       throw new ConfigError(path, `not a valid ${chain.id} address`);
     }
-    return { address };
+    return { address: chain.normalizeAddress(address) };
   }
 
   str(value: unknown, path: string): string {

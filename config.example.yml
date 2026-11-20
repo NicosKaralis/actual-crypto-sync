@@ -1,24 +1,25 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/NicosKaralis/actual-crypto-sync/main/config.schema.json
-# actual-crypto-sync config. Every key is shown; the commented ones are optional.
+# actual-crypto-sync config. It shows every key; the commented-out keys are optional.
 #
-# Secrets never go in this file: write ${NAME} and the value is read from the
-# environment variable NAME when the program starts. ${NAME} works in any string
-# value; an unset variable is an error naming it, and its value is never logged.
+# Never write a secret in this file. Write ${NAME}: when the program starts, it
+# reads the value from the environment variable NAME. ${NAME} works in any string
+# value. An unset variable is an error that names it. The program never logs the value.
 #
-# Set through the environment, not this file:
-#   CONFIG_FILE        this file's path (default /config/config.yml; --config overrides it)
-#   ACTUAL_DATA_DIR    where the budget's local copy is kept (default /cache); created
-#                      when missing, and must be writable
-#   TZ                 the time zone that decides what "today" is, e.g. Europe/Lisbon
+# Set these in the environment, not in this file:
+#   CONFIG_FILE        the path of this file (default /config/config.yml; --config overrides it)
+#   ACTUAL_DATA_DIR    where the program keeps its copy of the budget (default /cache);
+#                      the program creates it, and it must be writable
+#   TZ                 the time zone that sets the date of "today", e.g. Europe/Lisbon
 #                      (default UTC in the image)
 #
-# Telemetry (OpenTelemetry over OTLP/HTTP), also through the environment. Nothing is
-# sent unless an endpoint is set:
-#   OTEL_EXPORTER_OTLP_ENDPOINT          base URL for both signals; /v1/traces and
-#                                        /v1/metrics are added, e.g. http://otel-collector:4318
-#   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT   full URL for traces only, overriding the base
-#   OTEL_EXPORTER_OTLP_METRICS_ENDPOINT  full URL for metrics only, overriding the base
-#   OTEL_EXPORTER_OTLP_TIMEOUT           export timeout in milliseconds (default 5000)
+# Telemetry (OpenTelemetry over OTLP) is also set in the environment. The program
+# sends nothing until you set an endpoint. docs/opentelemetry.md lists all the variables:
+#   OTEL_EXPORTER_OTLP_ENDPOINT          the base URL for both signals; for HTTP, the program
+#                                        adds /v1/traces and /v1/metrics, e.g. http://otel-collector:4318
+#   OTEL_EXPORTER_OTLP_PROTOCOL          http/protobuf (default), http/json or grpc
+#   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT   the full URL for traces only; it overrides the base
+#   OTEL_EXPORTER_OTLP_METRICS_ENDPOINT  the full URL for metrics only; it overrides the base
+#   OTEL_EXPORTER_OTLP_TIMEOUT           the export timeout in milliseconds (default 5000)
 
 actual:
   server_url: http://actual:5006               # the Actual server, as the program reaches it
@@ -31,7 +32,7 @@ actual:
 
 prices:
   currency: eur                                # ISO 4217 code, any case; at least one provider must support it
-  providers:                                   # required; tried in order, each a name, or a name with its settings
+  providers:                                   # required; tried in order; each entry is a name, or a name with its settings
     - coingecko
     # - coingecko:
     #     demo_api_key: ${COINGECKO_API_KEY}   # a free Demo key raises the rate limit
@@ -39,7 +40,17 @@ prices:
     #     api_url: https://api.coingecko.com/api/v3  # the default
     #     label: coingecko-main                # the name in logs, spans and metric labels (default: the id)
     #     serial: true                         # one request at a time, 6 s apart, if it rate-limits you
-    - coinpaprika                              # asked for the prices that CoinGecko didn't give
+    - coinpaprika                              # the program asks it for the prices that CoinGecko didn't give
+    # - coinpaprika:
+    #     api_key: ${COINPAPRIKA_API_KEY}      # a paid plan's key (pro, business or enterprise); a free key doesn't work
+    #     api_url: https://api-pro.coinpaprika.com/v1  # the default with api_key (without: https://api.coinpaprika.com/v1)
+    #     label: coinpaprika-pro               # the name in logs, spans and metric labels (default: the id)
+    #     serial: true                         # one request at a time, 0.1 s apart, if it rate-limits you
+    # - coinmarketcap:                         # works without a key too
+    #     api_key: ${COINMARKETCAP_API_KEY}    # the free Basic plan works; without one, the keyless API's limit is shared per IP
+    #     api_url: https://pro-api.coinmarketcap.com/v2  # the default with api_key (without: https://pro-api.coinmarketcap.com/public-api/v2)
+    #     label: coinmarketcap                 # the name in logs, spans and metric labels (default: the id)
+    #     serial: true                         # one request at a time, 2 s apart, if it rate-limits you
 
 chains:                                        # optional, settings per chain
   tron:
@@ -57,6 +68,24 @@ chains:                                        # optional, settings per chain
       - mempool-space                          # ...then the public one (https://mempool.space/api)
       # - mempool-space:
       #     serial: true                       # one request at a time, 1 s apart
+  ethereum:
+    explorers:                                 # the default: json-rpc, then blockscout; neither needs a key
+      - json-rpc                               # a public node (https://ethereum-rpc.publicnode.com)
+      # - json-rpc:
+      #     api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}  # your own node, Infura or Alchemy
+      #     batch_size: 6                      # at most 6 calls per request: Infura's free plan allows 6 a second
+      #     serial: true                       # one request a second
+      - blockscout                             # https://eth.blockscout.com/api
+      # - etherscan:
+      #     api_key: ${ETHERSCAN_API_KEY}      # required: a free key from etherscan.io
+  bsc:                                         # BNB Smart Chain
+    explorers:                                 # the default: json-rpc, which needs no key
+      - json-rpc                               # a public node (https://bsc-rpc.publicnode.com)
+      # - json-rpc:                            # a backup if the default fails: BNB Chain's own public node
+      #     api_url: https://bsc-dataseed.bnbchain.org
+      #     label: bnb-dataseed                # tells the two json-rpc entries apart in logs and metrics
+      # - etherscan:
+      #     api_key: ${ETHERSCAN_API_KEY}      # required: a key on a paid plan (the free one doesn't cover BNB Smart Chain)
 
 tokens:                                        # optional, tokens that aren't built in (docs/supported.md lists those)
   - chain: tron                                # a chain with tokens (not bitcoin)
@@ -69,18 +98,28 @@ tokens:                                        # optional, tokens that aren't bu
 
 accounts:                                      # the off-budget Actual accounts to keep in line
   - name: "TC9F...R2MJ: TRX"                   # the Actual account, by name or id; each appears once
-    chain: tron                                # tron or bitcoin
+    chain: tron                                # tron, bitcoin, ethereum or bsc
     token: TRX                                 # a built-in token or one from tokens:
-    wallets:                                   # one wallet per account for now: a list,
-      - ${TRON_WALLET_ADDRESS}                 # an inline list or a single address (below)
+    wallets:                                   # a list; the account shows the total of its wallets
+      - ${TRON_WALLET_ADDRESS}                 # an inline list and a single address also work (below)
 
   - name: "WTRX Account"                       # any name you like, as long as it matches the account in Actual
     chain: tron
     token: WTRX                                # defined in tokens: above; a built-in one (USDT) needs only its name
     wallets: ["${TRON_WALLET_ADDRESS}"]        # an inline list; quote ${...} inside [ ], or YAML reads it as a map
-                                               # same address as above, fetched once
+                                               # the same address as above; the program reads it once
 
   - name: Bitcoin
     chain: bitcoin
     token: BTC
     wallets: ${BTC_ADDRESS}                    # a single address
+
+  - name: "Ethereum: USDC"
+    chain: ethereum
+    token: USDC
+    wallets: ${ETH_ADDRESS}                    # 0x and 40 hex digits; quote it if you write it here
+
+  - name: "BNB Smart Chain: USDT"
+    chain: bsc
+    token: USDT                                # each chain has its own built-in tokens
+    wallets: ${ETH_ADDRESS}                    # an EVM address works on Ethereum and BNB Smart Chain alike

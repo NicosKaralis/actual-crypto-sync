@@ -16,7 +16,7 @@ import { parse, stringify } from 'yaml';
 import { CHAINS } from '../src/chains/index.ts';
 import { ConfigError, loadConfig } from '../src/config.ts';
 import { PRICE_PROVIDERS } from '../src/prices/index.ts';
-import { TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
+import { ETH_WALLET, TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -46,7 +46,7 @@ const sorted = (items: readonly string[]) => [...items].sort();
 /** The ids of an entries list (providers, explorers) and each id's own settings. */
 function entries(...path: (string | number)[]): Record<string, string[]> {
   const settings: Record<string, string[]> = {};
-  for (const id of at(...path, 'oneOf', 0, 'enum') as string[]) {
+  for (const id of keys(...path, 'oneOf', 1, 'items', 'oneOf', 1, 'properties')) {
     settings[id] = keys(...path, 'oneOf', 1, 'items', 'oneOf', 1, 'properties', id, 'properties')
       .filter((key) => key !== 'label' && key !== 'serial')
       .sort();
@@ -105,6 +105,17 @@ describe('the schema lists what the registries hold', () => {
         expected,
         chain.id,
       );
+    }
+  });
+
+  test("an explorer that needs settings isn't allowed as a bare name", () => {
+    for (const chain of Object.values(CHAINS)) {
+      const bare = Object.values(chain.explorers)
+        .filter((explorer) => !explorer.checkSettings?.({}))
+        .map((explorer) => explorer.id);
+      const explorers = ['properties', 'chains', 'properties', chain.id, 'properties', 'explorers'];
+      assert.deepEqual(at(...explorers, 'oneOf', 0, 'enum'), bare, chain.id);
+      assert.deepEqual(at(...explorers, 'oneOf', 1, 'items', 'oneOf', 0, 'enum'), bare, chain.id);
     }
   });
 
@@ -179,6 +190,10 @@ describe('the schema and the loader agree on the shape', () => {
   }
 
   const accepted: [string, (raw: Raw) => void][] = [
+    [
+      'accounts: two wallets',
+      (raw) => Object.assign(account(raw), { wallets: [TRON_WALLET, TRON_WALLET_2] }),
+    ],
     ['the base config', () => {}],
     ['one provider by name', (raw) => Object.assign(prices(raw), { providers: 'coingecko' })],
     [
@@ -214,6 +229,55 @@ describe('the schema and the loader agree on the shape', () => {
         }),
     ],
     ['wallets as a list', (raw) => Object.assign(account(raw), { wallets: ['${TRON_WALLET}'] })],
+    [
+      'an Ethereum account, with its three explorers',
+      (raw) =>
+        Object.assign(raw, {
+          chains: {
+            ethereum: {
+              explorers: [
+                { 'json-rpc': { api_url: 'https://rpc.example' } },
+                'blockscout',
+                { etherscan: { api_key: '${KEY}' } },
+              ],
+            },
+          },
+          accounts: [{ name: 'ETH', chain: 'ethereum', token: 'USDC', wallets: ETH_WALLET }],
+        }),
+    ],
+    [
+      'a BNB Smart Chain account, with its two explorers',
+      (raw) =>
+        Object.assign(raw, {
+          chains: {
+            bsc: {
+              explorers: [
+                { 'json-rpc': { api_url: 'https://rpc.example' } },
+                { etherscan: { api_key: '${KEY}' } },
+              ],
+            },
+          },
+          accounts: [{ name: 'BNB', chain: 'bsc', token: 'USDT', wallets: ETH_WALLET }],
+        }),
+    ],
+    [
+      'json-rpc with a batch_size, as a number or a string',
+      (raw) =>
+        Object.assign(raw, {
+          chains: {
+            ethereum: { explorers: [{ 'json-rpc': { batch_size: 6, serial: true } }] },
+            bsc: { explorers: [{ 'json-rpc': { batch_size: '6' } }] },
+          },
+        }),
+    ],
+    [
+      'a custom BEP20 token',
+      token({ chain: 'bsc', contract: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE' }),
+    ],
+    [
+      'a custom ERC20 token',
+      token({ chain: 'ethereum', contract: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE' }),
+    ],
     ['a custom token with a built-in symbol', token({ symbol: 'USDT' })],
     [
       'a custom token in an account',
@@ -285,10 +349,39 @@ describe('the schema and the loader agree on the shape', () => {
           providers: [{ coingecko: { demo_api_key: '${KEY}', pro_api_key: '${KEY}' } }],
         }),
     ],
-    ['chains: an unknown chain', (raw) => Object.assign(raw, { chains: { ethereum: null } })],
+    ['chains: an unknown chain', (raw) => Object.assign(raw, { chains: { solana: null } })],
     [
       "chains: another chain's explorer",
       (raw) => Object.assign(raw, { chains: { tron: { explorers: ['mempool-space'] } } }),
+    ],
+    [
+      'chains: a batch_size of 0',
+      (raw) =>
+        Object.assign(raw, {
+          chains: { ethereum: { explorers: [{ 'json-rpc': { batch_size: 0 } }] } },
+        }),
+    ],
+    [
+      'chains: a batch_size that is not a whole number',
+      (raw) =>
+        Object.assign(raw, {
+          chains: { bsc: { explorers: [{ 'json-rpc': { batch_size: 1.5 } }] } },
+        }),
+    ],
+    [
+      'chains: etherscan without its key',
+      (raw) => Object.assign(raw, { chains: { ethereum: { explorers: ['etherscan'] } } }),
+    ],
+    [
+      'chains: blockscout on BNB Smart Chain',
+      (raw) => Object.assign(raw, { chains: { bsc: { explorers: ['blockscout'] } } }),
+    ],
+    [
+      'chains: etherscan with settings but no key',
+      (raw) =>
+        Object.assign(raw, {
+          chains: { ethereum: { explorers: [{ etherscan: { serial: true } }] } },
+        }),
     ],
     [
       'chains: an unknown key',
@@ -312,12 +405,12 @@ describe('the schema and the loader agree on the shape', () => {
     ],
     ['accounts: no wallets', (raw) => delete account(raw).wallets],
     ['accounts: no token', (raw) => delete account(raw).token],
-    ['accounts: an unknown chain', (raw) => Object.assign(account(raw), { chain: 'ethereum' })],
+    ['accounts: an unknown chain', (raw) => Object.assign(account(raw), { chain: 'solana' })],
     ['accounts: a lower-case token', (raw) => Object.assign(account(raw), { token: 'trx' })],
     ['accounts: an empty wallet list', (raw) => Object.assign(account(raw), { wallets: [] })],
     [
-      'accounts: two wallets',
-      (raw) => Object.assign(account(raw), { wallets: [TRON_WALLET, TRON_WALLET_2] }),
+      'accounts: the same wallet twice',
+      (raw) => Object.assign(account(raw), { wallets: [TRON_WALLET, TRON_WALLET] }),
     ],
   ];
 

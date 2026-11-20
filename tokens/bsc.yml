@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=../tokens.schema.json
+# The built-in tokens on BNB Smart Chain, imported by tokens.yml. The fields are explained there.
+# Contracts are in their EIP-55 spelling, quoted so that editors read them as text.
+# Most BEP20 tokens here have 18 decimals, USDT and USDC too (6 on Ethereum and TRON).
+# ETH is Binance-Peg Ether, a token on this chain, not Ethereum's coin.
+
+- symbol: BNB
+  decimals: 18
+  price_ids:
+    coingecko: binancecoin
+    coinmarketcap: bnb
+    coinpaprika: bnb-binance-coin
+- symbol: USDT
+  contract: "0x55d398326f99059fF775485246999027B3197955"
+  decimals: 18
+  price_ids:
+    coingecko: binance-bridged-usdt-bnb-smart-chain
+    coinmarketcap: tether
+    coinpaprika: usdt-tether
+- symbol: USDC
+  contract: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+  decimals: 18
+  price_ids:
+    coingecko: binance-bridged-usdc-bnb-smart-chain
+    coinmarketcap: usd-coin
+    coinpaprika: usdc-usd-coin
+- symbol: DAI
+  contract: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3"
+  decimals: 18
+  price_ids:
+    coingecko: binance-peg-dai
+    coinmarketcap: multi-collateral-dai
+    coinpaprika: dai-dai
+- symbol: TUSD
+  contract: "0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9"
+  decimals: 18
+  price_ids:
+    coingecko: true-usd
+    coinmarketcap: trueusd
+    coinpaprika: tusd-trueusd
+- symbol: USD1
+  contract: "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d"
+  decimals: 18
+  price_ids:
+    coingecko: usd1-wlfi
+    coinmarketcap: usd1
+    coinpaprika: usd1-usd1
+- symbol: FDUSD
+  contract: "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409"
+  decimals: 18
+  price_ids:
+    coingecko: first-digital-usd
+    coinmarketcap: first-digital-usd
+    coinpaprika: fdusd-first-digital-usd
+- symbol: BTT
+  contract: "0x352Cb5E19b12FC216548a2677bD0fce83BaE434B"
+  decimals: 18
+  price_ids:
+    coingecko: bittorrent
+    coinmarketcap: bittorrent-new
+    coinpaprika: bttc-bittorrent-chain
+- symbol: WIN
+  contract: "0xaeF0d72a118ce24feE3cD1d43d383897D05B4e99"
+  decimals: 18
+  price_ids:
+    coingecko: winklink-bsc
+    coinmarketcap: wink
+    coinpaprika: win-winklink
+- symbol: TRX
+  contract: "0xCE7de646e7208a4Ef112cb6ed5038FA6cC6b12e3"
+  decimals: 6
+  price_ids:
+    coingecko: tron-bsc
+    coinmarketcap: tron
+    # CoinPaprika has no BNB Smart Chain contract for TRX: TRON's own TRX.
+    coinpaprika: trx-tron
+- symbol: BTCB
+  contract: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
+  decimals: 18
+  price_ids:
+    coingecko: binance-bitcoin
+    coinmarketcap: bitcoin-bep2
+    coinpaprika: btcb-binance-bitcoin
+- symbol: WBTC
+  contract: "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c"
+  decimals: 8
+  price_ids:
+    coingecko: wrapped-bitcoin
+    # CoinMarketCap has no BNB Smart Chain contract for WBTC: the WBTC on Ethereum.
+    coinmarketcap: wrapped-bitcoin
+    # CoinPaprika has no BNB Smart Chain contract for WBTC: the WBTC on Ethereum.
+    coinpaprika: wbtc-wrapped-bitcoin
+- symbol: ETH
+  contract: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8"
+  decimals: 18
+  price_ids:
+    coingecko: binance-peg-weth
+    coinmarketcap: ethereum
+    coinpaprika: eth-ethereum-token
+- symbol: WBNB
+  contract: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+  decimals: 18
+  price_ids:
+    coingecko: wbnb
+    coinmarketcap: wbnb
+    coinpaprika: wbnb-wrapped-bnb
+- symbol: CAKE
+  contract: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
+  decimals: 18
+  price_ids:
+    coingecko: pancakeswap-token
+    coinmarketcap: pancakeswap
+    coinpaprika: cake-pancakeswap
+- symbol: LINK
+  contract: "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD"
+  decimals: 18
+  price_ids:
+    coingecko: chainlink
+    coinmarketcap: chainlink
+    coinpaprika: link-chainlink

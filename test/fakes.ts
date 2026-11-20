@@ -39,6 +39,7 @@ export const fakeChains: Record<string, Chain> = {
     nativeSymbol: 'TRX',
     supportsTokens: true,
     isValidAddress: (address) => new RegExp(`^T${BASE58}{33}$`).test(address),
+    normalizeAddress: (address) => address,
     explorers: {
       trongrid: explorer('trongrid', true),
       'tron-native-only': explorer('tron-native-only', false),
@@ -50,7 +51,9 @@ export const fakeChains: Record<string, Chain> = {
     nativeSymbol: 'BTC',
     supportsTokens: false,
     isValidAddress: (address) =>
-      new RegExp(`^[13]${BASE58}{25,34}$`).test(address) || /^bc1[a-z0-9]{11,71}$/.test(address),
+      new RegExp(`^[13]${BASE58}{25,34}$`).test(address) ||
+      /^(bc1[a-z0-9]{11,71}|BC1[A-Z0-9]{11,71})$/.test(address),
+    normalizeAddress: (address) => (/^bc1/i.test(address) ? address.toLowerCase() : address),
     explorers: { 'mempool-space': explorer('mempool-space', false) },
     defaultExplorers: ['mempool-space'],
   },
@@ -82,6 +85,10 @@ export const BTC_P2PKH_WALLET = '1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP';
 export const BTC_P2SH_WALLET = '3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba';
 // A BIP-350 test vector, not a wallet: none of the exchange wallets above is bech32m.
 export const BTC_BECH32M_VECTOR = 'bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0';
+// Etherscan labels: Binance 8, Bitfinex 2, Coinbase 10; in their EIP-55 spelling.
+export const ETH_WALLET = '0xF977814e90dA44bFA03b6295A0616a897441aceC';
+export const ETH_WALLET_2 = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+export const ETH_WALLET_3 = '0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43';
 
 /** A recorded API response from test/fixtures/, e.g. `fixture('trongrid/account.json')`. */
 export function fixture(path: string): unknown {
@@ -97,16 +104,24 @@ export function jsonResponse(body: unknown, status = 200): Response {
 
 export interface FetchCall {
   url: string;
+  method: string;
   headers: Record<string, string>;
+  body: string | undefined;
 }
 
 /** A `fetch` that answers every request with `respond` and records what was asked. */
-export function fakeFetch(respond: (url: string) => Response) {
+export function fakeFetch(respond: (url: string, body: string | undefined) => Response) {
   const calls: FetchCall[] = [];
   const fetch = (input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input);
-    calls.push({ url, headers: Object.fromEntries(new Headers(init?.headers)) });
-    return Promise.resolve(respond(url));
+    const body = typeof init?.body === 'string' ? init.body : undefined;
+    calls.push({
+      url,
+      method: init?.method ?? 'GET',
+      headers: Object.fromEntries(new Headers(init?.headers)),
+      body,
+    });
+    return Promise.resolve(respond(url, body));
   };
   return { fetch: fetch as typeof globalThis.fetch, calls };
 }

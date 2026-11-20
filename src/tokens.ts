@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { parseDocument } from 'yaml';
+import { parseDocument, type ScalarTag, type Tags } from 'yaml';
 
 import type { ChainId, Token } from './types.ts';
 
@@ -27,6 +27,28 @@ export class TokenError extends Error {
     this.detail = detail;
   }
 }
+
+/** `chain: !import <path>` in tokens.yml: the chain's list is in that file. */
+class TokenImport {
+  readonly path: string;
+
+  constructor(path: string) {
+    this.path = path;
+  }
+}
+
+const IMPORT_TAG: ScalarTag = { tag: '!import', resolve: (path) => new TokenImport(path) };
+// Only tokens.yml imports, so an imported file can't import again (no cycles).
+const NO_IMPORT_TAG: ScalarTag = {
+  tag: '!import',
+  resolve: (_path, onError) => {
+    onError('!import is only allowed in tokens.yml');
+    return null;
+  },
+};
+// Relative, segments that start with a letter or digit (no `.`, `..`, empty or
+// hidden ones), and a .yml or .yaml file.
+export const IMPORT_PATH = /^[A-Za-z0-9][\w.-]*(?:\/[A-Za-z0-9][\w.-]*)*\.ya?ml$/;
 
 /**
  * One token entry, from `tokens.yml` or the config's `tokens:`. An entry with
@@ -78,16 +100,29 @@ export function readToken(
     : { chain, symbol, kind: 'contract', contract, decimals, displayDecimals, priceIds };
 }
 
-/** A symbol or a contract used twice on one chain would make tokens ambiguous. */
-export function checkUnique(token: Token, others: readonly Token[], path: string) {
+/**
+ * A symbol or a contract used twice on one chain would make tokens ambiguous.
+ * `normalize` is the chain's one spelling of an address: EVM contracts are
+ * case-insensitive.
+ */
+export function checkUnique(
+  token: Token,
+  others: readonly Token[],
+  path: string,
+  normalize: (address: string) => string = (address) => address,
+) {
   const onChain = others.filter((other) => other.chain === token.chain);
   if (onChain.some((other) => other.symbol === token.symbol)) {
     throw new TokenError(`${path}.symbol`, `${token.symbol} is already defined on ${token.chain}`);
   }
+  const contract = token.contract;
   const sameContract =
-    token.contract === undefined
+    contract === undefined
       ? undefined
-      : onChain.find((other) => other.contract === token.contract);
+      : onChain.find(
+          (other) =>
+            other.contract !== undefined && normalize(other.contract) === normalize(contract),
+        );
   if (sameContract) {
     throw new TokenError(`${path}.contract`, `already used by ${sameContract.symbol}`);
   }
@@ -95,38 +130,44 @@ export function checkUnique(token: Token, others: readonly Token[], path: string
 
 /**
  * The token database: a map of chain id to its tokens, exactly one of them
- * native. Errors start with `source`, the file's name.
+ * native. A chain's list can be `!import <path>` when `readImport` reads that
+ * path. Errors start with the name of the file that has the problem: `source`,
+ * or the import path.
  */
-export function parseTokens(text: string, source: string): Token[] {
+export function parseTokens(
+  text: string,
+  source: string,
+  readImport?: (path: string) => string,
+): Token[] {
   try {
-    const doc = parseDocument(text, { uniqueKeys: true });
-    const [syntaxError] = doc.errors;
-    if (syntaxError) {
-      throw new TokenError('file', syntaxError.message.split('\n')[0]?.replace(/:$/, '') ?? '');
-    }
-    const raw: unknown = doc.toJS();
-    if (raw === null || raw === undefined) {
-      throw new TokenError('file', 'is empty');
-    }
     const tokens: Token[] = [];
-    for (const [chain, list] of Object.entries(map(raw, 'file'))) {
-      if (!Array.isArray(list) || list.length === 0) {
-        throw new TokenError(chain, 'expected a list of tokens');
+    for (const [chain, value] of Object.entries(map(readYaml(text, IMPORT_TAG), 'file'))) {
+      if (!(value instanceof TokenImport)) {
+        readChain(value, chain, tokens);
+        continue;
       }
-      list.forEach((entry: unknown, index) => {
-        const path = `${chain}[${index}]`;
-        const token = readToken(entry, path, chain);
-        checkUnique(token, tokens, path);
-        if (
-          token.kind === 'native' &&
-          tokens.some((t) => t.chain === chain && t.kind === 'native')
-        ) {
-          throw new TokenError(path, `${chain} already has a native token; set contract`);
+      if (readImport === undefined) {
+        throw new TokenError(chain, "!import isn't allowed in this file");
+      }
+      if (!IMPORT_PATH.test(value.path)) {
+        throw new TokenError(
+          chain,
+          '!import needs a relative path to a .yml or .yaml file, such as tokens/tron.yml',
+        );
+      }
+      let imported: string;
+      try {
+        imported = readImport(value.path);
+      } catch {
+        throw new TokenError(chain, `can't read ${value.path}`);
+      }
+      try {
+        readChain(readYaml(imported, NO_IMPORT_TAG), chain, tokens);
+      } catch (error) {
+        if (error instanceof TokenError) {
+          throw new Error(`${value.path}: ${error.message}`);
         }
-        tokens.push(token);
-      });
-      if (!tokens.some((token) => token.chain === chain && token.kind === 'native')) {
-        throw new TokenError(chain, 'list the native token (the one without a contract)');
+        throw error;
       }
     }
     return tokens;
@@ -139,13 +180,64 @@ export function parseTokens(text: string, source: string): Token[] {
 }
 
 /**
- * Popular tokens, picked in the config by symbol, read from `tokens.yml` when
- * the program starts. Adding one is an entry there.
+ * YAML's tags without its `0x…` integers, so an EVM address or contract stays
+ * the text it is, not a number. Nothing in a config or token file is a hex number.
  */
-export const BUILTIN_TOKENS: readonly Token[] = parseTokens(
-  readFileSync(new URL('./tokens.yml', import.meta.url), 'utf8'),
-  'src/tokens.yml',
-);
+export function withoutHexIntegers(tags: Tags): Tags {
+  return tags.filter((tag) => typeof tag === 'string' || tag.format !== 'HEX');
+}
+
+/** A YAML file's content. Unknown tags are errors too, not plain strings. */
+function readYaml(text: string, importTag: ScalarTag): unknown {
+  const doc = parseDocument(text, {
+    uniqueKeys: true,
+    customTags: (tags) => [...withoutHexIntegers(tags), importTag],
+  });
+  const [problem] = [...doc.errors, ...doc.warnings];
+  if (problem) {
+    throw new TokenError('file', problem.message.split('\n')[0]?.replace(/:$/, '') ?? '');
+  }
+  const raw: unknown = doc.toJS();
+  if (raw === null || raw === undefined) {
+    throw new TokenError('file', 'is empty');
+  }
+  return raw;
+}
+
+/** One chain's list, added to `tokens`. */
+function readChain(list: unknown, chain: ChainId, tokens: Token[]) {
+  if (!Array.isArray(list) || list.length === 0) {
+    throw new TokenError(chain, 'expected a list of tokens');
+  }
+  list.forEach((entry: unknown, index) => {
+    const path = `${chain}[${index}]`;
+    const token = readToken(entry, path, chain);
+    checkUnique(token, tokens, path);
+    if (token.kind === 'native' && tokens.some((t) => t.chain === chain && t.kind === 'native')) {
+      throw new TokenError(path, `${chain} already has a native token; set contract`);
+    }
+    tokens.push(token);
+  });
+  if (!tokens.some((token) => token.chain === chain && token.kind === 'native')) {
+    throw new TokenError(chain, 'list the native token (the one without a contract)');
+  }
+}
+
+/** The built-in token list, at the root of the project. */
+export const TOKENS_FILE = new URL('../tokens.yml', import.meta.url);
+
+/** The token database in `file`, whose `!import` paths are relative to it. */
+export function loadTokens(file: URL, source: string): Token[] {
+  return parseTokens(readFileSync(file, 'utf8'), source, (path) =>
+    readFileSync(new URL(path, file), 'utf8'),
+  );
+}
+
+/**
+ * Popular tokens, picked in the config by symbol, read from `tokens.yml` and
+ * the files it imports when the program starts. Adding one is an entry there.
+ */
+export const BUILTIN_TOKENS: readonly Token[] = loadTokens(TOKENS_FILE, 'tokens.yml');
 
 /** How quotes are keyed: `tron:USDT`. */
 export function tokenKey(token: Token): string {
@@ -178,6 +270,9 @@ export function resolveToken(
 }
 
 function map(value: unknown, path: string): Record<string, unknown> {
+  if (value instanceof TokenImport) {
+    throw new TokenError(path, "!import must be a chain's whole list");
+  }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new TokenError(path, 'expected a map');
   }

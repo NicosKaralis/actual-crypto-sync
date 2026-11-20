@@ -12,15 +12,20 @@ If a pull request breaks a rule in this document, ask for a change. Do not appro
 
 Tests, fixtures, examples and docs use only these public exchange wallets:
 
-| Chain   | Address                                      |
-| ------- | -------------------------------------------- |
-| TRON    | `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`         |
-| TRON    | `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`         |
-| Bitcoin | `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`         |
-| Bitcoin | `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`         |
-| Bitcoin | `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v` |
+| Chain           | Address                                      |
+| --------------- | -------------------------------------------- |
+| TRON            | `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`         |
+| TRON            | `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`         |
+| Bitcoin         | `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`         |
+| Bitcoin         | `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`         |
+| Bitcoin         | `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v` |
+| Ethereum        | `0xF977814e90dA44bFA03b6295A0616a897441aceC` |
+| Ethereum        | `0x742d35Cc6634C0532925a3b844Bc454e4438f44e` |
+| Ethereum        | `0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43` |
+| BNB Smart Chain | `0xF977814e90dA44bFA03b6295A0616a897441aceC` |
+| BNB Smart Chain | `0x742d35Cc6634C0532925a3b844Bc454e4438f44e` |
 
-Bitcoin address tests can also use the test vectors of BIP-173 and BIP-350.
+Bitcoin address tests can also use the test vectors of BIP-173 and BIP-350. EVM address tests can also use the test vectors of EIP-55.
 
 ## Secrets and logs
 
@@ -44,7 +49,7 @@ Bitcoin address tests can also use the test vectors of BIP-173 and BIP-350.
 
 The tool writes to the budget of the user. A mistake can change the money that a user sees. Examine these items carefully:
 
-- **One sync transaction per account per day.** The code sorts the transactions by date (newest first), then by id. Then it keeps the first sync transaction of the day and deletes the others. Thus, two runs at the same time keep the same transaction. The code never changes a transaction that the user added.
+- **One sync transaction per account per day.** The code sorts the transactions by date (newest first), then by id. Then it keeps the first sync transaction of the day and deletes the others. So two runs at the same time keep the same transaction. The code never changes a transaction that the user added.
 - **No price, no write.** If no price provider gives a price for a token, the tool must not write to the accounts of that token. A price of 0 sets the account to zero.
 - **One explorer per wallet in a run.** If an explorer fails for one token of a wallet, the next explorer reads all the tokens of that wallet. The tool does not mix two explorers for one wallet.
 - **Notes from earlier versions.** The tool must read the notes of all earlier versions. A change to `parseNote` or `buildNote` needs a test with an earlier note.
@@ -78,7 +83,7 @@ A change to one of these items is a breaking change. The commit must have `!` af
 
 These changes are not breaking changes: a new chain, explorer, price provider, built-in token or optional config key. A config that already defines a token with the symbol of a new built-in token keeps its own token.
 
-The TypeScript interfaces in `src/types.ts` are not public. They can change in all versions.
+The TypeScript interfaces in `src/types.ts` are not public. They can change in any version.
 
 ## Dependencies and workflows
 
@@ -91,7 +96,7 @@ The TypeScript interfaces in `src/types.ts` are not public. They can change in a
 ## Docs
 
 - A change that a user can see updates the docs and `config.example.yml`.
-- A new chain, explorer, price provider or built-in token is added to `docs/supported.md`. The README shows at most 5 of each, the most popular.
+- Each new chain, explorer, price provider or built-in token goes in `docs/supported.md`. The README shows at most 5 of each, the most popular.
 
 ## Related documents
 

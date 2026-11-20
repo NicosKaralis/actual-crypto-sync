@@ -15,8 +15,8 @@ These pages tell you how to install, configure and run actual-crypto-sync, and h
 
 ## Work on the tool
 
-| Page                          | What it tells you                                                                                                                              |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Development](development.md) | How to set up the project, run it against a local Actual server, test it, add a chain, explorer, provider or token, and how a release happens. |
+| Page                          | What it tells you                                                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Development](development.md) | How to set up the project and run it against a local Actual server. How to test it, and how to add a chain, explorer, provider or token. How a release happens. |
 
 Read [CONTRIBUTING.md](../CONTRIBUTING.md) and [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md) before you open a pull request.

@@ -79,7 +79,7 @@ Examples:
 | `OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318` and `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://vm:8428/opentelemetry/v1/metrics` | `http://collector:4318/v1/traces`         | `http://vm:8428/opentelemetry/v1/metrics`  |
 | `OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317` and `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`                                            | `collector:4317`                          | `collector:4317`                           |
 
-For `grpc`, the endpoint can also be `host:port` without a scheme, for example `collector:4317`. Then the tool uses TLS, unless `OTEL_EXPORTER_OTLP_INSECURE=true`. With `http://` the tool never uses TLS, and with `https://` it always does. A path in a gRPC endpoint has no effect.
+For `grpc`, the endpoint can also be `host:port` without a scheme, for example `collector:4317`. Then the tool uses TLS, unless `OTEL_EXPORTER_OTLP_INSECURE=true`. With `http://`, the tool never uses TLS. With `https://`, it always does. A path in a gRPC endpoint has no effect.
 
 An endpoint must be an `http://` or `https://` URL (or `host:port` for gRPC). Anything else is an [error](#warnings-and-errors).
 
@@ -96,10 +96,10 @@ OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20my-token,X-Scope-OrgID=home
 ```
 
 - The values are URL-encoded. Write a space as `%20`, a comma as `%2C` and `=` as `%3D`.
-- `OTEL_EXPORTER_OTLP_TRACES_HEADERS` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS` add headers for one signal. When a key is in both, the one of the signal wins.
-- With `grpc`, the headers are sent as gRPC metadata.
+- `OTEL_EXPORTER_OTLP_TRACES_HEADERS` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS` add headers for one signal. When a key is in both, the value for the signal wins.
+- With `grpc`, the tool sends the headers as gRPC metadata.
 
-Headers are secrets. The tool never logs them, and never shows them in an error. Keep them out of your config file and your compose file: pass them from a secret, for example a Kubernetes Secret or a Docker Compose `env_file` that is not in git.
+Headers are secrets. The tool never logs them, and never shows them in an error. Keep them out of your config file and your compose file. Pass them from a secret, for example a Kubernetes Secret or a Docker Compose `env_file` that is not in git.
 
 ### TLS
 
@@ -111,7 +111,7 @@ With an `https://` endpoint, the tool checks the certificate of the collector ag
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | The client certificate, for mutual TLS.                                        |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY`         | The private key of the client certificate. Set it with the client certificate. |
 
-Each one also has a `_TRACES_` and a `_METRICS_` variable. In Docker or Kubernetes, mount the files into the container and give their paths. If the tool cannot read a file, it is an [error](#warnings-and-errors).
+Each one also has a `_TRACES_` and a `_METRICS_` variable. In Docker or Kubernetes, mount the files into the container and give their paths. If the tool cannot read a file, that is an [error](#warnings-and-errors).
 
 `OTEL_EXPORTER_OTLP_INSECURE=true` turns TLS off for a gRPC endpoint without a scheme. It has no effect on HTTP endpoints: for those, the scheme (`http://` or `https://`) decides.
 
@@ -156,12 +156,14 @@ When `OTEL_SERVICE_NAME` is set, it wins over a `service.name` in `OTEL_RESOURCE
 
 Use these variables to tell two installations apart, for example two budgets. Many backends turn the resource attributes into labels.
 
+Each metric and each span also carries the instrumentation scope: the name `actual-crypto-sync` and the version of the tool, for example `1.2.0`. Backends that keep the scope as labels, such as VictoriaMetrics, show it as `scope.name` and `scope.version`. When you update the tool, each series gets a new `scope.version`, so the series change one time for each release. To use the version in a query, use the `version` label of `actual_crypto_sync_build_info`. See [Metrics](monitoring.md#metrics).
+
 > [!WARNING]
 > If you change the service name or the attributes, the labels of every metric change. Update your dashboards and your alerts at the same time, or they stop matching the new series.
 
 ## Sampling
 
-By default, the tool traces every run. Each run is one trace, so a sampler decides which runs are traced.
+By default, the tool traces every run. Each run is one trace, so the sampler decides which runs the tool traces.
 
 | `OTEL_TRACES_SAMPLER`             | What it does                                                  |
 | --------------------------------- | ------------------------------------------------------------- |
@@ -187,9 +189,9 @@ The specification also lists `jaeger_remote`, `parentbased_jaeger_remote` and `x
 
 Propagation sends the ID of the current trace with a request, in a header such as `traceparent`. If the server that gets the request also sends traces to your backend, its spans join the trace of the tool.
 
-The tool sends these headers **only to your Actual server**. Block explorers and price providers never get them. They are third-party services that do not send traces to your backend, so the headers would only give them an ID that links your requests together.
+The tool sends these headers **only to your Actual server**. Block explorers and price providers never get them. They are third-party services, and they do not send traces to your backend. The headers would only give them an ID that links your requests together.
 
-Actual does not use OpenTelemetry today, so it ignores the headers. If a future version of Actual sends traces, its spans join the trace of the tool, and you change nothing.
+Actual does not use OpenTelemetry today, so it ignores the headers. If a future version of Actual sends traces, its spans join the trace of the tool. You do not need to change anything.
 
 | `OTEL_PROPAGATORS` value | Header                                   |
 | ------------------------ | ---------------------------------------- |
@@ -207,7 +209,7 @@ The specification also lists `jaeger`, `xray` and `ottrace`. The tool does not h
 
 | Variables                                                                        | Why                                                                                                              |
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `OTEL_LOGS_EXPORTER`, `OTEL_EXPORTER_OTLP_LOGS_*`, `OTEL_BLRP_*`                 | The tool writes its logs to standard output. Your log collector reads them there; OTLP logs would be duplicates. |
+| `OTEL_LOGS_EXPORTER`, `OTEL_EXPORTER_OTLP_LOGS_*`, `OTEL_BLRP_*`                 | The tool writes its logs to standard output. Your log collector reads them there. OTLP logs would be duplicates. |
 | `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT`                      | The tool sends the metrics one time, when the run ends.                                                          |
 | `OTEL_BSP_*`                                                                     | The tool sends the spans when the run ends.                                                                      |
 | `OTEL_ATTRIBUTE_*_LIMIT`, `OTEL_SPAN_*_LIMIT` and the other limits               | The spans of the tool are small, so the default limits apply.                                                    |
@@ -323,7 +325,7 @@ environment:
   OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: grpc
 ```
 
-VictoriaMetrics keeps the resource attributes as labels, so the metrics have the label `service.name="actual-crypto-sync"`.
+VictoriaMetrics keeps the resource attributes and the scope as labels, so the metrics have the labels `service.name="actual-crypto-sync"`, `scope.name="actual-crypto-sync"` and `scope.version`, for example `"1.2.0"`.
 
 ### A hosted backend with an API key
 

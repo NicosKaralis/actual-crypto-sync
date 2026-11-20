@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 
 # Node runs the .ts files directly (type stripping), so there is no build stage.
 # Keep the version in line with .nvmrc.
@@ -28,6 +28,8 @@ COPY --from=test /tmp/tests-passed /tmp/tests-passed
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
+COPY tokens.yml ./
+COPY tokens ./tokens
 RUN mkdir -p /cache /config && chown node:node /cache
 USER node
 ENTRYPOINT ["node", "/app/src/main.ts"]

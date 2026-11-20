@@ -8,10 +8,11 @@ import { type Actual, type ActualApi, type OpenBudgetOptions, openBudget } from 
 import { type ActualAuth, type Config, ConfigError } from '../src/config.ts';
 import { createLog, LOG_FORMATS } from '../src/log.ts';
 import { main, run } from '../src/main.ts';
+import { VERSION } from '../src/otel-env.ts';
 import type { PlanTransaction } from '../src/plan.ts';
 import { type GaugeName, startTelemetry, type Telemetry } from '../src/telemetry.ts';
 import type { Chain, Explorer, PriceProvider, Quote, Token } from '../src/types.ts';
-import { BTC_WALLET, fakeChains, fakeTokens, TRON_WALLET } from './fakes.ts';
+import { BTC_WALLET, fakeChains, fakeTokens, TRON_WALLET, TRON_WALLET_2 } from './fakes.ts';
 
 const TRX = fakeTokens.find((t) => t.symbol === 'TRX') as Token;
 const USDT = fakeTokens.find((t) => t.symbol === 'USDT') as Token;
@@ -292,6 +293,7 @@ describe('run', () => {
     assert.equal(calls.at(-1), 'sync');
 
     assert.deepEqual(values('lastRun'), [{ value: NOW.getTime() / 1000 }]);
+    assert.deepEqual(values('buildInfo'), [{ value: 1, version: VERSION }]);
     assert.deepEqual(values('lastSuccess'), [{ value: NOW.getTime() / 1000 }]);
     assert.equal(values('runDuration').length, 1);
     assert.deepEqual(values('transactions'), [
@@ -312,6 +314,12 @@ describe('run', () => {
       symbol: 'TRX',
       account: 'TRX',
       explorer: 'trongrid',
+    });
+    assert.deepEqual(values('accountBalance')[0], {
+      value: 156.9193,
+      chain: 'tron',
+      symbol: 'TRX',
+      account: 'TRX',
     });
     assert.deepEqual(values('price')[0], {
       value: 0.297,
@@ -464,6 +472,8 @@ describe('run', () => {
     );
     assert.deepEqual(values('lastSuccess'), []);
     assert.deepEqual(values('lastRun'), [{ value: NOW.getTime() / 1000 }]);
+    // A failed run still says which version ran.
+    assert.deepEqual(values('buildInfo'), [{ value: 1, version: VERSION }]);
   });
 
   test('a token with no quote fails only its accounts', async () => {
@@ -492,6 +502,37 @@ describe('run', () => {
     assert.deepEqual(values('providerErrors'), [{ value: 1, kind: 'explorer', id: 'trongrid' }]);
     assert.equal(values('balance')[0]?.explorer, 'tron-backup');
     assert.equal(values('lastSuccess').length, 1);
+  });
+
+  test('an account with several wallets: one balance point per explorer, and the total', async () => {
+    // TRON_WALLET_2 falls back to tron-backup; the TRX account holds both wallets.
+    const calls: string[] = [];
+    const withTwo = config({
+      tronExplorers: [explorer('trongrid', calls, [TRON_WALLET_2]), explorer('tron-backup', calls)],
+    });
+    withTwo.accounts[0]?.wallets.push({ address: TRON_WALLET_2 });
+    const { code, values, entries, calls: actualCalls } = await runWith({ config: withTwo });
+    assert.equal(code, 0);
+
+    const labels = { chain: 'tron', symbol: 'TRX', account: 'TRX' };
+    assert.deepEqual(
+      values('balance').filter((point) => point.account === 'TRX'),
+      [
+        { value: 156.9193, ...labels, explorer: 'trongrid' },
+        { value: 156.9193, ...labels, explorer: 'tron-backup' },
+      ],
+    );
+    assert.deepEqual(
+      values('accountBalance').filter((point) => point.account === 'TRX'),
+      [{ value: 313.8386, ...labels }],
+    );
+    // The note and the transaction show the total.
+    assert.ok(
+      actualCalls.some((call) => call.startsWith(`create acc-trx ${TODAY} 9321 313.8386 TRX`)),
+      actualCalls.join('\n'),
+    );
+    const created = entries().find((entry) => entry.account === 'TRX' && 'explorer' in entry);
+    assert.equal(created?.explorer, 'tron-backup,trongrid');
   });
 
   test('a fallback price provider answering counts a provider error and still succeeds', async () => {
@@ -599,6 +640,7 @@ describe('run', () => {
       { value: 1, stage: 'config' },
     );
     assert.equal(values('lastRun').length, 1);
+    assert.deepEqual(values('buildInfo'), [{ value: 1, version: VERSION }]);
   });
 
   test('a rejected login exits 1 before any explorer or provider is called', async () => {

@@ -7,5 +7,17 @@
   },
   "bitcoin": {
     "eur": 65005
+  },
+  "ethereum": {
+    "eur": 2315.42
+  },
+  "usd-coin": {
+    "eur": 0.904211
+  },
+  "binancecoin": {
+    "eur": 523.41
+  },
+  "binance-bridged-usdt-bnb-smart-chain": {
+    "eur": 0.911394
   }
 }

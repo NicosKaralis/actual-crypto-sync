@@ -1,3 +1,4 @@
+import { decodeBase58Check } from './chains/base58check.ts';
 import type { Currency } from './types.ts';
 
 // The quote (price per token) keeps at most 4 decimals in notes, whatever the
@@ -31,14 +32,21 @@ export function walletPrefix(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
-// A path segment this long and alphanumeric is taken for a wallet address:
-// TRON's are 34 characters, Bitcoin's 26 to 62.
-const ADDRESS_SEGMENT = /^[A-Za-z0-9]{25,}$/;
+// Path segments that are wallet addresses: TRON and Bitcoin legacy (base58check,
+// checked below), Bitcoin segwit, and EVM.
+const BASE58_SEGMENT = /^[1-9A-HJ-NP-Za-km-z]{25,35}$/;
+const OTHER_ADDRESS_SEGMENT =
+  /^(bc1[02-9ac-hj-np-z]{8,87}|BC1[02-9AC-HJ-NP-Z]{8,87}|0x[0-9a-fA-F]{40})$/;
+// Any other long segment of letters and digits is taken for a secret: Infura,
+// Alchemy and other node providers put the API key in the path (/v3/<key>).
+const SECRET_SEGMENT = /^(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9_-]{20,}$/;
 
 /**
- * A URL safe to log or put on a span: no credentials, query or fragment, and
- * wallet addresses in the path shortened to their prefix.
+ * A URL safe to log or put on a span: no credentials, query or fragment,
+ * wallet addresses in the path shortened to their prefix, and other long
+ * tokens in the path hidden.
  * https://api.trongrid.io/v1/accounts/TC9F6tRX...R2MJ -> https://api.trongrid.io/v1/accounts/TC9F...R2MJ
+ * https://mainnet.infura.io/v3/<key> -> https://mainnet.infura.io/v3/***
  */
 export function redactUrl(url: string): string {
   let parsed: URL;
@@ -47,11 +55,18 @@ export function redactUrl(url: string): string {
   } catch {
     return '(invalid URL)';
   }
-  const path = parsed.pathname
-    .split('/')
-    .map((segment) => (ADDRESS_SEGMENT.test(segment) ? walletPrefix(segment) : segment))
-    .join('/');
+  const path = parsed.pathname.split('/').map(redactSegment).join('/');
   return `${parsed.protocol}//${parsed.host}${path}`;
+}
+
+function redactSegment(segment: string): string {
+  if (
+    OTHER_ADDRESS_SEGMENT.test(segment) ||
+    (BASE58_SEGMENT.test(segment) && decodeBase58Check(segment)?.length === 21)
+  ) {
+    return walletPrefix(segment);
+  }
+  return SECRET_SEGMENT.test(segment) ? '***' : segment;
 }
 
 /** The shortest exact decimal, never in exponent notation: 1.2e-7 -> "0.00000012". */

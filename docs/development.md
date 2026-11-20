@@ -17,9 +17,9 @@ You can work with Node.js on your computer, or with Docker only.
 
 ### Install scripts are off
 
-[`.npmrc`](../.npmrc) sets `ignore-scripts=true`, so npm does not run the install scripts of dependencies. No dependency needs one: `better-sqlite3`, which `@actual-app/api` uses, ships its own prebuilt binaries. Without this setting, newer npm versions compile `better-sqlite3` anyway.
+[`.npmrc`](../.npmrc) sets `ignore-scripts=true`, so npm does not run the install scripts of dependencies. No dependency needs one. `better-sqlite3`, which `@actual-app/api` uses, ships its own prebuilt binaries. Without this setting, newer npm versions compile `better-sqlite3` anyway.
 
-Thus, a new dependency that needs an install script does not work. Open an issue to discuss it first.
+So a new dependency that needs an install script does not work. Open an issue to discuss it first.
 
 `.npmrc` also sets `save-exact=true`. Each dependency has an exact version, and `package-lock.json` is committed.
 
@@ -27,7 +27,7 @@ Thus, a new dependency that needs an install script does not work. Open an issue
 
 Node.js runs the `.ts` files directly, with type stripping. There is no build step and no `dist/` folder. The Docker image runs `node src/main.ts`.
 
-Type stripping removes the types and does nothing else. Thus:
+Type stripping removes the types and does nothing else. So:
 
 - Use only TypeScript syntax that Node.js can remove. `enum`, `namespace` and parameter properties are not allowed. `tsconfig.json` sets `erasableSyntaxOnly`, so `tsc` finds them.
 - Imports use the `.ts` extension: `import { loadConfig } from './config.ts'`.
@@ -57,7 +57,7 @@ The dev stack is a local Actual server in Docker, at `http://localhost:5006`. It
 
 1. **Start the server:** `npm run dev:up`. The command waits until the server answers.
 2. **Make your env file:** copy `dev/.env.example` to `dev/.env`. Git ignores `dev/.env`.
-3. **Seed the budget:** `npm run dev:seed`. On a new server, it sets the server password from `dev/.env`. Then it creates a budget with the name `Dev` and the off-budget accounts of `dev/config.yml`. It prints the sync ID and a session token. Put them in `dev/.env`.
+3. **Seed the budget:** `npm run dev:seed`. On a new server, it sets the server password from `dev/.env`. Then it creates a budget with the name `Dev` and the off-budget accounts of `dev/config.yml`. If the `Dev` budget is already there, it adds only the accounts that the budget does not have. So you can run it again after you add an account to `dev/config.yml`. It prints the sync ID and a session token. Put them in `dev/.env`.
 4. **Run the tool:** `npm run dev:run`. Add `-- --dry-run` to write nothing, or `-- --debug` to see each request.
 5. **Log in with the password instead:** `npm run dev:run -- --config dev/config.password.yml`.
 
@@ -97,19 +97,34 @@ The command starts a throwaway stack from `test/e2e/compose.yml`, runs the tests
 
 The test seeds the server with `dev/seed.ts`. A mock server in the test process (`test/e2e/mock.ts`) answers as TronGrid, mempool.space and CoinGecko, with the responses in `test/fixtures/`. `test/e2e/config.yml` points each explorer and the price provider at the mock with `api_url`. The tests change the mock between runs, for example a new balance, or a price provider that fails. To test a new response, add it to `test/fixtures/`.
 
-The tests call `run()` from `src/main.ts` with the same setup as the CLI, but with their own clock. Thus, they can sync on several days without a change to the tool. The last tests run the real CLI: one dry run, and the telemetry tests against VictoriaMetrics and Jaeger.
+The tests call `run()` from `src/main.ts` with the same setup as the CLI, but with their own clock. So they can sync on several days without a change to the tool. The last tests run the real CLI: one dry run, and the telemetry tests against VictoriaMetrics and Jaeger.
 
 The end-to-end file ends in `.e2e.ts`, not `.test.ts`, so `npm test` does not run it.
 
 ### Live checks
 
-`npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes about half a minute and needs no keys.
+`npm run test:live` checks the built-in tokens, the explorers and the price providers against the real services. It takes a few minutes. It needs no keys.
 
-- **Tokens:** the decimals of each contract on chain are the decimals in `src/tokens.yml`. The CoinGecko id of each token belongs to the same contract on CoinGecko.
-- **Explorers:** each explorer reads the public exchange wallets of its chain. The read must give a balance for each token. A balance of 0 is correct, because any wallet can be emptied.
+- **Tokens:** the decimals and the symbol of each contract on chain must be the same as in the token files (`tokens.yml` and `tokens/`). The CoinGecko id, the CoinPaprika id and the CoinMarketCap slug of each token must belong to the same contract at that provider. The CoinMarketCap check needs `COINMARKETCAP_API_KEY`, because the keyless API has no endpoint for contracts.
+- **Explorers:** each explorer reads the public exchange wallets of its chain. The read must give a balance for each token. A balance of 0 is correct, because the owner can empty any wallet.
 - **Price providers:** each provider gives a price for each token that has an id for it. A normal run stops at the first provider that gives a price. The live checks ask every provider.
+- **Keys:** the checks call each explorer and provider without a key, if it allows that. They also call it with its key, if it has one. Without a key, an entry that also has a key reads only one wallet and two tokens, because public endpoints allow few requests. With a key, it reads everything. The keys come from these environment variables. If the variable of a key is not set, the checks skip the check with that key.
 
-The checks take the chains, explorers, providers and tokens from the registries and `src/tokens.yml`, so a new one is checked without a change to the test. The test reads only the wallets in `test/live/registries.live.ts`, and test names show them as short addresses.
+  | Variable                | Entry                                                 |
+  | ----------------------- | ----------------------------------------------------- |
+  | `TRONGRID_API_KEY`      | `trongrid`                                            |
+  | `ETHEREUM_RPC_URL`      | `json-rpc` on Ethereum: a node URL with its key in it |
+  | `BSC_RPC_URL`           | `json-rpc` on BNB Smart Chain: the same, for BSC      |
+  | `BLOCKSCOUT_API_KEY`    | `blockscout`                                          |
+  | `ETHERSCAN_API_KEY`     | `etherscan` on Ethereum, which needs a key            |
+  | `ETHERSCAN_BSC_API_KEY` | `etherscan` on BNB Smart Chain: a paid plan's key     |
+  | `COINGECKO_API_KEY`     | `coingecko`, as a Demo key                            |
+  | `COINPAPRIKA_API_KEY`   | `coinpaprika`, for the paid API                       |
+  | `COINMARKETCAP_API_KEY` | `coinmarketcap`; the free Basic plan works            |
+
+  To set them locally, copy `.env.live.example` to `.env.live` and fill in your keys. Git ignores `.env.live`, and `npm run test:live` reads it. A variable already set in the environment wins over the file. The workflow gets the keys from repository secrets with the same names. Add each new explorer or provider with a key setting to `KEYS` in `test/live/registries.live.ts`. A check fails until you do.
+
+The checks take the chains, explorers, providers and tokens from the registries and the token files, So the checks cover a new one with no change to the test. The test reads only the wallets in `test/live/registries.live.ts`, and test names show them as short addresses.
 
 The `Live checks` workflow runs them every Monday, on demand, and on pull requests that change the tokens, a chain, a price provider or the checks. It is not a required check: a service that is down for a short time must not block other work. A failed weekly run tells you that a contract, an API or a price id changed.
 
@@ -120,6 +135,8 @@ The file ends in `.live.ts`, so `npm test` and the image build do not run it.
 1. Call the API with one of the public exchange wallets. Use only these wallets:
    - TRON: `TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ`, `TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2`
    - Bitcoin: `1KfRJ2RpTKu25riKP7SeY2vDCQE5xutArP`, `3AqC1QhDAi5QU7QvTGEzpoxJ22uThQp1Ba`, `bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v`
+   - Ethereum: `0xF977814e90dA44bFA03b6295A0616a897441aceC`, `0x742d35Cc6634C0532925a3b844Bc454e4438f44e`, `0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43`
+   - BNB Smart Chain: `0xF977814e90dA44bFA03b6295A0616a897441aceC`, `0x742d35Cc6634C0532925a3b844Bc454e4438f44e`
 2. Do not send an API key, or remove it from all that you save.
 3. Save the response as JSON in `test/fixtures/<explorer or provider>/`. Format it, so that a review can read it.
 4. Read it in a test with `fixture('<explorer or provider>/<file>.json')` from `test/fakes.ts`.
@@ -140,15 +157,27 @@ Open an issue with the [new chain form](https://github.com/NicosKaralis/actual-c
 1. Create `src/chains/<chain>/index.ts`. Export a `Chain` (see `src/types.ts`):
    - `id`, the native symbol, and if the chain has tokens.
    - `isValidAddress`, with the full checksum check of the chain. A typo in an address must be an error.
+   - `normalizeAddress`, the one spelling of an address, so that the tool never reads or sums one wallet twice. For example, bech32 and EVM addresses are case-insensitive, so their spelling is lower case.
    - its explorers, and the default explorer list.
 2. Add at least one explorer. See [Add an explorer](#add-an-explorer).
 3. Register the chain in `src/chains/index.ts`.
    Add it to `config.schema.json`: under `chains`, to the chains of `accounts`, and to the chains of `tokens` if it has tokens. The schema tests fail until you do.
-4. Add the native token, and popular tokens, to `src/tokens.yml`.
+4. Add the native token, and popular tokens. See [The token files](#the-token-files). A chain with tokens gets its own file, `tokens/<chain>.yml`, and the line `<chain>: !import tokens/<chain>.yml` in `tokens.yml`. A chain with only its native token goes directly in `tokens.yml`.
 5. Add tests in `test/chains/<chain>/`: one test for each address rule, valid and not valid.
 6. Add public exchange wallets for the chain to the list of wallets in [CODE_REVIEW_GUIDELINES.md](../CODE_REVIEW_GUIDELINES.md#wallet-addresses), in the same pull request. Use wallets of a well-known exchange, with a verified checksum.
-7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a reader of contract decimals to `CONTRACT_DECIMALS`, and the CoinGecko platform id to `COINGECKO_PLATFORMS`. The [live checks](#live-checks) fail until you do.
-8. Add the chain to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 chains.
+7. Add the wallets to `WALLETS` in `test/live/registries.live.ts`. If the chain has tokens, also add a way to call a contract to `CONTRACT_CALLS`, and the platform ids to `COINGECKO_PLATFORMS`, `COINPAPRIKA_PLATFORMS` and `COINMARKETCAP_PLATFORMS`. The [live checks](#live-checks) fail until you do.
+8. Add the chain to [docs/supported.md](supported.md), and its coin's ids to the price providers' mapping there. Add it to the short list in the README only if the list has fewer than 5 chains.
+
+### An EVM chain
+
+An EVM chain needs only a chain file. The address check and the explorers are shared, in `src/chains/evm/`:
+
+- `isValidEvmAddress` and `normalizeEvmAddress` (`address.ts`): `0x` and 40 hex digits, with the EIP-55 checksum when the case is mixed.
+- `jsonRpcExplorer({ defaultUrl })` (`jsonrpc.ts`): any JSON-RPC endpoint. Give it a public endpoint with no key.
+- `blockscoutExplorer({ defaultUrl })` (`blockscout.ts`): the chain's public Blockscout instance, up to and including `/api`.
+- `etherscanExplorer({ chainId })` (`etherscan.ts`): Etherscan API V2, with the chain's id. Check that the free tier of Etherscan covers the chain. If it does not, give its key its own variable in the live checks' `KEYS`, as BNB Smart Chain does.
+
+See `src/chains/ethereum/index.ts`, and `src/chains/bsc/index.ts` for a chain with no public Blockscout. The other steps above stay the same. For `CONTRACT_CALLS` in the live checks, add `evmContractCall(<chain>, <public endpoint>)`.
 
 ## Add an explorer
 
@@ -160,7 +189,8 @@ Open an issue with the [new explorer form](https://github.com/NicosKaralis/actua
    - `settingKeys` lists its settings in the config, for example `api_url`. The config refuses any other setting.
    - `serialIntervalMs` is the wait after each request in serial mode. Use the rate limit of the API without a key.
    - `rateLimitAdvice` tells the user what to do when the API limits requests, or returns `null` for other errors.
-2. Use `getJson`, `apiUrl` and `ApiError` from `src/http.ts`. Errors must never show the URL, the headers or the body, because they can hold a wallet address or a key.
+2. Use `getJson` (or `postJson`), `apiUrl` and `ApiError` from `src/http.ts`. Errors must never show the URL, the headers or the body, because they can hold a wallet address or a key.
+   - If the API needs a setting, such as a key, add `checkSettings`. It returns the config error, or `null`. Then `config.schema.json` must not allow that explorer as a name alone.
 3. Register the explorer in the `explorers` of its chain.
    Add it, with its settings, to the `explorers` of its chain in `config.schema.json`. The schema tests fail until you do.
 4. Record fixtures, and test the parse of the response, each error, and `rateLimitAdvice`.
@@ -176,9 +206,9 @@ Open an issue with the [new price provider form](https://github.com/NicosKaralis
    - `settingKeys`, `serialIntervalMs` and `rateLimitAdvice`, as for an explorer.
 2. Register the provider in `src/prices/index.ts`.
    Add it, with its settings, to `providers` and `price_ids` in `config.schema.json`. The schema tests fail until you do.
-3. Add the id of each built-in token at the provider to `price_ids` in `src/tokens.yml`.
+3. Add the id of each built-in token at the provider to `price_ids` in the token files.
 4. Record fixtures, and test the currency mapping, the parse of the response and each error.
-5. Add the provider to [docs/supported.md](supported.md), and its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
+5. Add the provider to [docs/supported.md](supported.md), and its id of each token to the price providers' mapping there. Add its settings to [docs/configuration.md](configuration.md). Add it to the short list in the README only if the list has fewer than 5 providers.
 
 ## Add a built-in token
 
@@ -187,11 +217,36 @@ Open an issue with the [new token form](https://github.com/NicosKaralis/actual-c
 1. Check the contract on a block explorer of the chain, for example Tronscan for TRON. Many fake tokens copy the name of a real token.
 2. Copy the decimals from the contract.
 3. Find the id at each price provider. On CoinGecko, check that the contract on the token page is the same contract.
-4. Add the token to `src/tokens.yml`. Put the links that you checked in the pull request.
-5. Add the token to [docs/supported.md](supported.md). Add it to the short list in the README only if the list has fewer than 5 tokens.
+4. Add the token to the file of its chain, `tokens/<chain>.yml`. Put the links that you checked in the pull request.
+5. Add the token to [docs/supported.md](supported.md): to the table of its chain, and its ids to the price providers' mapping. Add it to the short list in the README only if the list has fewer than 5 tokens.
 6. Run `npm run test:live`. It checks the decimals on chain and the CoinGecko id of the new token. The pull request runs it too.
 
-The unit tests of `src/tokens.yml` check its rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) check its contents against the real services, so a new token needs no new test.
+The unit tests of the token files check their rules, for example that each contract is a valid address and each token has a CoinGecko id. The [live checks](#live-checks) compare their contents with the real services. So a new token needs no new test.
+
+## The token files
+
+The built-in tokens are in `tokens.yml`, at the root of the project. It is a map of chain id to the list of tokens of that chain.
+
+- A chain with contract tokens has its own file, `tokens/<chain>.yml`. That file holds only the list of tokens. `tokens.yml` imports it with the `!import` tag:
+
+  ```yaml
+  tron: !import tokens/tron.yml
+  ```
+
+- A chain with only its native token, such as Bitcoin, goes directly in `tokens.yml`.
+
+The rules for `!import`:
+
+- The path is relative to `tokens.yml`. It has no `.` or `..` segment, and it is not absolute.
+- The file ends in `.yml` or `.yaml`. The project uses `.yml`.
+- Only `tokens.yml` imports files. An imported file cannot use `!import`.
+- `!import` works only in the token files, not in the config.
+
+The unit tests fail if a file in `tokens/` is not imported, or if a list in `tokens.yml` has more than the native token.
+
+The token files name `tokens.schema.json` on their first line, as the config names `config.schema.json`. An editor with YAML support then checks the files and completes the keys. The schema checks the shape. The loader also checks that each chain has one native token, that symbols and contracts are unique, and that each contract is a valid address.
+
+The YAML language server (for example the YAML extension for VS Code) does not know the `!import` tag. The repository has a `.vscode/settings.json` with `"yaml.customTags": ["!import scalar"]`, so VS Code knows it. For another editor, add the same setting to its YAML language server.
 
 ## How a release happens
 
@@ -201,8 +256,8 @@ The unit tests of `src/tokens.yml` check its rules, for example that each contra
 2. When it is time for a release, the maintainer merges `develop` into `main` with a pull request, or a `release/<version>` branch if the release needs changes first.
 3. Each merge to `main` updates a release pull request. It has the next version and the changelog. Release Please opens it with the token of a GitHub App, so its checks run like on any other pull request. The `release` environment holds the app's `RELEASE_APP_CLIENT_ID` variable and `RELEASE_APP_PRIVATE_KEY` secret.
 4. The maintainer merges the release pull request. A release that has only Actual updates merges by itself. See [Actual updates](#actual-updates).
-5. Release Please then creates the tag and the GitHub release, and the release workflow builds the Docker image for amd64 and arm64 from the tag and pushes it to GHCR. Then it copies the image to Docker Hub as it is, so both registries have the same digest. It also copies `README.md` to the Docker Hub overview, with one line of text links in place of the badges between `<!-- badges -->` and `<!-- /badges -->`, because Docker Hub shows each badge on its own line. At the end, it adds a table to the release notes on GitHub, with the tags and the digest of the image on each registry. The changelog can't have them, because it is written before the image is built.
-6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning, so they can move to another milestone. The closed issues lose the `awaiting release` label, because their work is now released.
+5. Release Please then creates the tag and the GitHub release. The release workflow builds the Docker image for amd64 and arm64 from the tag, and pushes it to GHCR. Then it copies the image to Docker Hub as it is, so both registries have the same digest. It also copies `README.md` to the Docker Hub overview. In that copy, one line of text links replaces the badges between `<!-- badges -->` and `<!-- /badges -->`, because Docker Hub shows each badge on its own line. At the end, the workflow adds a table to the release notes on GitHub, with the tags and the digest of the image on each registry. The changelog cannot have them, because Release Please writes it before the image is built.
+6. The milestone with the same name as the version, for example `v1.0.0`, closes. If it still has open issues, the workflow shows a warning. Then the maintainer can move them to another milestone. The closed issues lose the `awaiting release` label, because their work is now released.
 7. A workflow merges `main` back into `develop`, so `develop` gets the new version number and the changelog. If the merge has a conflict, the workflow fails, and the maintainer merges by hand.
 
 Images come only from a release that Release Please creates. There is no way to build one by hand for another tag or commit. If the image build fails for a release:
@@ -214,11 +269,11 @@ An urgent fix goes on a `hotfix/<name>` branch from `main`, with a pull request 
 
 ### Actual updates
 
-The tool is tested with one Actual version, and `@actual-app/api` must match the server. So each new Actual version becomes a patch release, with no manual step:
+The tool is tested with one Actual version, and `@actual-app/api` must match the server. That is why each new Actual version becomes a patch release, with no manual step:
 
 1. Renovate opens a pull request into `main` when the new version is 1 day old. It changes `@actual-app/api`, the `actual-server` image of the dev stack and the end-to-end tests, and the Actual version in the README (the badge and the "tested with" line). Its commit is a `fix(deps):` commit, so the release is a patch version.
 2. Renovate merges the pull request when the checks pass. The end-to-end tests run against the new server.
-3. Release Please updates the release pull request. The release has only Actual updates, so the workflow turns on auto-merge, and the release pull request merges when its checks pass.
+3. Release Please updates the release pull request. The release has only Actual updates, so the workflow turns on auto-merge. The release pull request merges when its checks pass.
 4. Steps 5 to 7 above follow. The merge back brings the new Actual version into `develop`.
 
 Renovate updates the Actual version only on `main`, and every other dependency only on `develop`. If a check fails, nothing merges, and the maintainer fixes the update on a `hotfix/<name>` branch.

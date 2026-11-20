@@ -64,6 +64,7 @@ import {
   SERVICE_NAME,
   type Signal,
   TELEMETRY_OFF,
+  VERSION,
 } from './otel-env.ts';
 
 export { SERVICE_NAME };
@@ -73,12 +74,14 @@ const GAUGES = {
   lastRun: 'actual_crypto_sync_last_run_timestamp_seconds',
   lastSuccess: 'actual_crypto_sync_last_success_timestamp_seconds',
   runDuration: 'actual_crypto_sync_run_duration_seconds',
-  balance: 'actual_crypto_sync_balance', // {chain, symbol, account, explorer}
+  balance: 'actual_crypto_sync_balance', // {chain, symbol, account, explorer}: each explorer's part
+  accountBalance: 'actual_crypto_sync_account_balance', // {chain, symbol, account}: the total
   price: 'actual_crypto_sync_price', // {symbol, currency, source}
   value: 'actual_crypto_sync_value', // {chain, symbol, account, currency}
   transactions: 'actual_crypto_sync_transactions', // {action}
   errors: 'actual_crypto_sync_errors', // {stage}
   providerErrors: 'actual_crypto_sync_provider_errors', // {kind, id}
+  buildInfo: 'actual_crypto_sync_build_info', // {version}, always 1
 } as const;
 
 export type GaugeName = keyof typeof GAUGES;
@@ -198,7 +201,9 @@ export function startTelemetry({
         ]
       : [],
   });
-  const meter = meterProvider.getMeter(SERVICE_NAME);
+  // The version goes in the scope, not the resource: series change once per
+  // release, never per run.
+  const meter = meterProvider.getMeter(SERVICE_NAME, VERSION);
   const gauges = Object.fromEntries(
     Object.entries(GAUGES).map(([key, name]) => [key, meter.createGauge(name)]),
   ) as Record<GaugeName, Gauge>;
@@ -227,7 +232,7 @@ export function startTelemetry({
   }
 
   return {
-    tracer: tracerProvider.getTracer(SERVICE_NAME),
+    tracer: tracerProvider.getTracer(SERVICE_NAME, VERSION),
     gauges,
     propagateTo: (url) => {
       actualOrigin = originOf(url);

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createServer, type IncomingHttpHeaders, type IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { describe, test } from 'node:test';
@@ -11,6 +12,13 @@ import type { Log } from '../src/log.ts';
 import { parseTelemetryEnv } from '../src/otel-env.ts';
 import { exportError, startTelemetry } from '../src/telemetry.ts';
 import { TRON_WALLET } from './fakes.ts';
+
+/** The version in package.json, read here so the test doesn't trust the code under test. */
+const PACKAGE_VERSION = (
+  JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+    version: string;
+  }
+).version;
 
 function exporters() {
   return {
@@ -38,6 +46,33 @@ describe('startTelemetry', () => {
     assert.deepEqual(metrics?.resource.attributes, { 'service.name': 'actual-crypto-sync' });
   });
 
+  test("metrics and spans carry the tool's version in their scope", async () => {
+    const { spanExporter, metricExporter } = exporters();
+    const telemetry = startTelemetry({
+      spanExporter,
+      metricExporter,
+      instrumentFetch: false,
+    });
+    telemetry.tracer.startSpan('actual-crypto-sync.run').end();
+    telemetry.gauges.lastRun.record(1);
+    const [span] = spanExporter.getFinishedSpans();
+    await telemetry.shutdown();
+
+    const scope = { name: 'actual-crypto-sync', version: PACKAGE_VERSION };
+    assert.ok(PACKAGE_VERSION, 'package.json has no version');
+    assert.deepEqual(
+      { name: span?.instrumentationScope.name, version: span?.instrumentationScope.version },
+      scope,
+    );
+    const scopes = metricExporter
+      .getMetrics()
+      .flatMap((resource) => resource.scopeMetrics.map((metrics) => metrics.scope));
+    assert.deepEqual(
+      scopes.map(({ name, version }) => ({ name, version })),
+      [scope],
+    );
+  });
+
   test('gauges export under their metric names, with their labels', async () => {
     const { spanExporter, metricExporter } = exporters();
     const telemetry = startTelemetry({
@@ -55,11 +90,13 @@ describe('startTelemetry', () => {
       account: 'TRX',
       explorer: 'trongrid',
     });
+    gauges.accountBalance.record(156.9193, { chain: 'tron', symbol: 'TRX', account: 'TRX' });
     gauges.price.record(0.297, { symbol: 'TRX', currency: 'eur', source: 'coingecko' });
     gauges.value.record(46.6, { chain: 'tron', symbol: 'TRX', account: 'TRX', currency: 'eur' });
     gauges.transactions.record(1, { action: 'created' });
     gauges.errors.record(0, { stage: 'wallet' });
     gauges.providerErrors.record(1, { kind: 'explorer', id: 'trongrid' });
+    gauges.buildInfo.record(1, { version: '1.2.0' });
     await telemetry.shutdown();
 
     const exported = new Map(
@@ -69,7 +106,9 @@ describe('startTelemetry', () => {
         .map((metric) => [metric.descriptor.name, metric.dataPoints]),
     );
     assert.deepEqual([...exported.keys()].sort(), [
+      'actual_crypto_sync_account_balance',
       'actual_crypto_sync_balance',
+      'actual_crypto_sync_build_info',
       'actual_crypto_sync_errors',
       'actual_crypto_sync_last_run_timestamp_seconds',
       'actual_crypto_sync_last_success_timestamp_seconds',

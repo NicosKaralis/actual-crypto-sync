@@ -51,7 +51,7 @@ const failing = (message: string) => () => {
 
 function config(
   explorers: { label: string; explorer: Explorer; serial?: boolean }[],
-  accounts: { name: string; token: Token; wallet: string }[],
+  accounts: { name: string; token: Token; wallet: string | string[] }[],
 ): Config {
   return {
     actual: { serverURL: 'http://actual:5006', syncId: 'x', auth: { kind: 'session', token: 'x' } },
@@ -66,7 +66,7 @@ function config(
       name,
       chain: 'tron',
       token,
-      wallets: [{ address: wallet }],
+      wallets: (Array.isArray(wallet) ? wallet : [wallet]).map((address) => ({ address })),
     })),
   };
 }
@@ -105,10 +105,85 @@ describe('collectBalances', () => {
     assert.deepEqual(
       result,
       new Map([
-        ['trx', { raw: 5n, explorer: 'trongrid' }],
-        ['usdt', { raw: 5n, explorer: 'trongrid' }],
+        ['trx', { raw: 5n, byExplorer: new Map([['trongrid', 5n]]) }],
+        ['usdt', { raw: 5n, byExplorer: new Map([['trongrid', 5n]]) }],
       ]),
     );
+  });
+
+  test('an account sums its wallets, read once each', async () => {
+    const calls: Call[] = [];
+    const byWallet = (wallet: Wallet, tokens: Token[]) =>
+      new Map(tokens.map((t) => [t.symbol, wallet.address === TRON_WALLET ? 3n : 4n]));
+    const result = await collectBalances({
+      config: config(
+        [{ label: 'trongrid', explorer: explorer('trongrid', calls, byWallet) }],
+        [
+          { name: 'both', token: TRX, wallet: [TRON_WALLET, TRON_WALLET_2] },
+          { name: 'first', token: TRX, wallet: TRON_WALLET },
+        ],
+      ),
+      fetch,
+    });
+    assert.equal(calls.length, 2);
+    assert.deepEqual(result.get('both'), { raw: 7n, byExplorer: new Map([['trongrid', 7n]]) });
+    assert.deepEqual(result.get('first'), { raw: 3n, byExplorer: new Map([['trongrid', 3n]]) });
+  });
+
+  test("each explorer gets its part of an account's total", async () => {
+    // TRON_WALLET_2 falls back to the second explorer.
+    const calls: Call[] = [];
+    const first = (wallet: Wallet, tokens: Token[]) => {
+      if (wallet.address === TRON_WALLET_2) {
+        throw new Error('trongrid: HTTP 503');
+      }
+      return all(3n)(wallet, tokens);
+    };
+    const result = await collectBalances({
+      config: config(
+        [
+          { label: 'first', explorer: explorer('trongrid', calls, first) },
+          { label: 'second', explorer: explorer('trongrid', calls, all(4n)) },
+        ],
+        [{ name: 'both', token: TRX, wallet: [TRON_WALLET, TRON_WALLET_2] }],
+      ),
+      fetch,
+    });
+    assert.deepEqual(result.get('both'), {
+      raw: 7n,
+      byExplorer: new Map([
+        ['first', 3n],
+        ['second', 4n],
+      ]),
+    });
+  });
+
+  test('one wallet failing fails the whole account, and names that wallet', async () => {
+    // Never a partial total: the account gets no value at all.
+    const calls: Call[] = [];
+    const answer = (wallet: Wallet, tokens: Token[]) => {
+      if (wallet.address === TRON_WALLET_2) {
+        throw new Error('trongrid: HTTP 503');
+      }
+      return all(3n)(wallet, tokens);
+    };
+    const result = await collectBalances({
+      config: config(
+        [{ label: 'trongrid', explorer: explorer('trongrid', calls, answer) }],
+        [
+          { name: 'both', token: TRX, wallet: [TRON_WALLET, TRON_WALLET_2] },
+          { name: 'first', token: TRX, wallet: TRON_WALLET },
+        ],
+      ),
+      fetch,
+    });
+    const both = result.get('both');
+    assert.ok(
+      both && 'error' in both,
+      JSON.stringify(both, (_k, v) => String(v)),
+    );
+    assert.match(both.error.message, /^TF4E\.\.\.JKv2: every explorer failed/);
+    assert.deepEqual(result.get('first'), { raw: 3n, byExplorer: new Map([['trongrid', 3n]]) });
   });
 
   test('a failing first explorer passes the wallet to the second', async () => {
@@ -125,7 +200,7 @@ describe('collectBalances', () => {
       fetch,
       warn: (message) => warnings.push(message),
     });
-    assert.deepEqual(result.get('trx'), { raw: 7n, explorer: 'second' });
+    assert.deepEqual(result.get('trx'), { raw: 7n, byExplorer: new Map([['second', 7n]]) });
     assert.equal(calls.length, 2);
     assert.deepEqual(warnings, ['TC9F...R2MJ: first failed: trongrid: HTTP 503']);
   });
@@ -149,8 +224,8 @@ describe('collectBalances', () => {
       ),
       fetch,
     });
-    assert.deepEqual(result.get('trx'), { raw: 2n, explorer: 'second' });
-    assert.deepEqual(result.get('usdt'), { raw: 2n, explorer: 'second' });
+    assert.deepEqual(result.get('trx'), { raw: 2n, byExplorer: new Map([['second', 2n]]) });
+    assert.deepEqual(result.get('usdt'), { raw: 2n, byExplorer: new Map([['second', 2n]]) });
   });
 
   test('a native-only explorer is skipped for a wallet with a contract token', async () => {
@@ -168,9 +243,9 @@ describe('collectBalances', () => {
       ),
       fetch,
     });
-    assert.deepEqual(result.get('usdt'), { raw: 3n, explorer: 'trongrid' });
+    assert.deepEqual(result.get('usdt'), { raw: 3n, byExplorer: new Map([['trongrid', 3n]]) });
     // The native-only explorer still answers a wallet with only TRX.
-    assert.deepEqual(result.get('trx-2'), { raw: 1n, explorer: 'native' });
+    assert.deepEqual(result.get('trx-2'), { raw: 1n, byExplorer: new Map([['native', 1n]]) });
     assert.deepEqual(
       calls.filter((c) => c.explorer === 'tron-native-only').map((c) => c.wallet),
       [TRON_WALLET_2],
@@ -199,7 +274,7 @@ describe('collectBalances', () => {
       ),
       fetch,
     });
-    assert.deepEqual(result.get('trx-2'), { raw: 9n, explorer: 'first' });
+    assert.deepEqual(result.get('trx-2'), { raw: 9n, byExplorer: new Map([['first', 9n]]) });
     for (const name of ['trx', 'usdt']) {
       const entry = result.get(name);
       assert.ok(entry && 'error' in entry, name);
@@ -249,7 +324,7 @@ describe('collectBalances', () => {
         fetch,
         warn: (message) => warnings.push(message),
       });
-      assert.deepEqual(result.get('trx'), { raw: 4n, explorer: 'trongrid' });
+      assert.deepEqual(result.get('trx'), { raw: 4n, byExplorer: new Map([['trongrid', 4n]]) });
       assert.ok('error' in (result.get('trx-2') ?? {}));
       assert.deepEqual(warnings, [
         'TF4E...JKv2: trongrid failed: trongrid: HTTP 429',

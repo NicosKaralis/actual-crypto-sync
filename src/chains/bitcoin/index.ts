@@ -20,6 +20,8 @@ export const bitcoin: Chain = {
     const payload = decodeBase58Check(address);
     return payload?.length === 21 && (payload[0] === P2PKH || payload[0] === P2SH);
   },
+  // bech32 is case-insensitive, and its lower case is the usual form; base58 is case-sensitive.
+  normalizeAddress: (address) => (/^(bc|BC)1/.test(address) ? address.toLowerCase() : address),
   explorers: { 'mempool-space': mempoolSpace },
   defaultExplorers: ['mempool-space'],
 };

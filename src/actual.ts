@@ -7,8 +7,8 @@ import type { ActualAuth } from './config.ts';
 import type { PlanTransaction } from './plan.ts';
 
 /**
- * How many transactions before today are searched for the previous sync note
- * (C17), so a gap of more than a week between runs still finds it.
+ * How many transactions before today the search for the previous sync note
+ * covers. Enough to find it after a gap of more than a week between runs.
  */
 export const LOOKBACK_TRANSACTIONS = 50;
 
@@ -196,7 +196,7 @@ async function call<T>(name: string, fn: () => Promise<T>): Promise<T> {
 }
 
 const PLAN_FIELDS = ['id', 'date', 'amount', 'notes', 'cleared', 'reconciled'];
-// Newest first, then by id, the order planAccount sorts in too (C16).
+// Newest first, then by id: the same order as planAccount sorts in.
 const PLAN_ORDER = [{ date: 'desc' }, 'id'];
 
 function opened(api: ActualApi): Actual {

@@ -13,6 +13,7 @@ import {
   toUnits,
   walletPrefix,
 } from '../src/format.ts';
+import { BTC_P2PKH_WALLET, ETH_WALLET } from './fakes.ts';
 
 describe('toUnits', () => {
   test('converts raw integer units with the token decimals', () => {
@@ -49,6 +50,41 @@ describe('redactUrl', () => {
     assert.equal(
       redactUrl('https://mempool.space/api/address/bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v'),
       'https://mempool.space/api/address/bc1q...298v',
+    );
+  });
+
+  test('shortens EVM addresses and Bitcoin legacy addresses', () => {
+    assert.equal(
+      redactUrl(`https://eth.blockscout.com/api/v2/addresses/${ETH_WALLET}`),
+      'https://eth.blockscout.com/api/v2/addresses/0xF9...aceC',
+    );
+    assert.equal(
+      redactUrl(`https://mempool.space/api/address/${BTC_P2PKH_WALLET}`),
+      'https://mempool.space/api/address/1KfR...tArP',
+    );
+  });
+
+  test('hides an API key in the path, whole', () => {
+    // Made-up keys in the shape Infura (32 hex) and Alchemy (letters, digits, _ and -) use.
+    assert.equal(
+      redactUrl('https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'),
+      'https://mainnet.infura.io/v3/***',
+    );
+    assert.equal(
+      redactUrl('https://eth-mainnet.g.alchemy.com/v2/Ab3_dE-fGh1jKl2mNo3pQr4sTu5vWx6y'),
+      'https://eth-mainnet.g.alchemy.com/v2/***',
+    );
+    // Base58 by chance, but without a valid checksum it's no wallet.
+    assert.equal(
+      redactUrl('https://rpc.example/key/1aa3d95b3bc44efa88ea12eaa4456161'),
+      'https://rpc.example/key/***',
+    );
+  });
+
+  test('keeps long names without digits, such as price ids', () => {
+    assert.equal(
+      redactUrl('https://api.coinpaprika.com/v1/tickers/steth-lido-staked-ether'),
+      'https://api.coinpaprika.com/v1/tickers/steth-lido-staked-ether',
     );
   });
 

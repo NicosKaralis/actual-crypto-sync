@@ -9,9 +9,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import pkg from '../package.json' with { type: 'json' };
 import { redactUrl } from './format.ts';
 
 export const SERVICE_NAME = 'actual-crypto-sync';
+/** The tool's version, which Release Please sets in package.json at each release. */
+export const VERSION: string = pkg.version;
 
 const DEFAULT_TIMEOUT_MS = 5000;
 

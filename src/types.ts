@@ -1,7 +1,9 @@
 // What chains, explorers and price providers implement. Not a public API: these
 // can change in any version.
 
-export type ChainId = string; // 'tron', 'bitcoin'
+import type { Sleep } from './http.ts';
+
+export type ChainId = string; // 'tron', 'bitcoin', 'ethereum', 'bsc'
 
 /** Lowercase ISO 4217 code, normalized by the config loader: 'eur', 'usd'. */
 export type Currency = string;
@@ -25,6 +27,8 @@ export interface Chain {
   nativeSymbol: string;
   supportsTokens: boolean;
   isValidAddress(address: string): boolean;
+  /** One spelling for one wallet (bech32 is case-insensitive), so a wallet is never read or summed twice. */
+  normalizeAddress(address: string): string;
   explorers: Record<string, Explorer>;
   defaultExplorers: string[]; // used when the config doesn't list any
 }
@@ -73,5 +77,6 @@ export interface PriceProvider {
     currency: Currency;
     settings: Record<string, string>;
     fetch: typeof fetch;
+    sleep?: Sleep; // for a provider that waits between tries
   }): Promise<Map<string, Quote>>; // keyed by `${chain}:${symbol}`
 }

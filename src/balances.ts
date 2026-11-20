@@ -7,7 +7,8 @@ import type { ChainId, Token, Wallet } from './types.ts';
 
 type ExplorerEntry = Config['chains'][ChainId]['explorers'][number];
 
-export type BalanceResult = { raw: bigint; explorer: string } | { error: Error };
+/** An account's total raw balance, and each explorer's part of it, by label. */
+export type BalanceResult = { raw: bigint; byExplorer: Map<string, bigint> } | { error: Error };
 
 interface WalletBalance {
   raws: Map<string, bigint>;
@@ -89,10 +90,12 @@ export async function collectBalances({
     }),
   );
 
+  // An account is the sum of its wallets, or an error when one of them failed:
+  // never a partial sum.
   const result = new Map<string, BalanceResult>();
   for (const account of config.accounts) {
     let raw = 0n;
-    const explorers = new Set<string>();
+    const byExplorer = new Map<string, bigint>();
     let error: Error | undefined;
     for (const wallet of account.wallets) {
       const balance = read.get(walletKey(account.chain, wallet));
@@ -100,10 +103,11 @@ export async function collectBalances({
         error = balance ?? new Error(`${walletPrefix(wallet.address)}: not read`);
         break;
       }
-      raw += balance.raws.get(account.token.symbol) ?? 0n;
-      explorers.add(balance.explorer);
+      const part = balance.raws.get(account.token.symbol) ?? 0n;
+      raw += part;
+      byExplorer.set(balance.explorer, (byExplorer.get(balance.explorer) ?? 0n) + part);
     }
-    result.set(account.name, error ? { error } : { raw, explorer: [...explorers].join(', ') });
+    result.set(account.name, error ? { error } : { raw, byExplorer });
   }
   return result;
 }

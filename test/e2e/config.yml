@@ -16,6 +16,8 @@ prices:
         api_url: ${MOCK_URL}/coingecko
     - coinpaprika:
         api_url: ${MOCK_URL}/coinpaprika
+    - coinmarketcap:
+        api_url: ${MOCK_URL}/coinmarketcap
 
 chains:
   tron:
@@ -26,6 +28,14 @@ chains:
     explorers:
       - mempool-space:
           api_url: ${MOCK_URL}/mempool-space
+  ethereum:
+    explorers:
+      - json-rpc:
+          api_url: ${MOCK_URL}/ethereum/json-rpc
+  bsc:
+    explorers:
+      - json-rpc:
+          api_url: ${MOCK_URL}/bsc/json-rpc
 
 accounts:
   - name: "TRON: TRX"
@@ -38,7 +48,34 @@ accounts:
     token: USDT
     wallets: TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
 
+  - name: "TRON: TRX, two wallets" # the total of both wallets
+    chain: tron
+    token: TRX
+    wallets:
+      - TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ
+      - TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2
+
   - name: Bitcoin
     chain: bitcoin
     token: BTC
     wallets: bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v
+
+  - name: "Ethereum: ETH"
+    chain: ethereum
+    token: ETH
+    wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "Ethereum: USDC"
+    chain: ethereum
+    token: USDC
+    wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "BNB Smart Chain: BNB"
+    chain: bsc
+    token: BNB
+    wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+
+  - name: "BNB Smart Chain: USDT"
+    chain: bsc
+    token: USDT
+    wallets: "0xF977814e90dA44bFA03b6295A0616a897441aceC"

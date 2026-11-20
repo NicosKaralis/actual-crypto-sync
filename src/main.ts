@@ -16,7 +16,13 @@ import { type Config, ConfigError, loadConfig } from './config.ts';
 import { redactUrl, toUnits } from './format.ts';
 import type { Sleep } from './http.ts';
 import { createLog, errorMessage, type Log, type LogFormat, parseLogFormat } from './log.ts';
-import { OtelEnvError, parseTelemetryEnv, TELEMETRY_OFF, type TelemetryEnv } from './otel-env.ts';
+import {
+  OtelEnvError,
+  parseTelemetryEnv,
+  TELEMETRY_OFF,
+  type TelemetryEnv,
+  VERSION,
+} from './otel-env.ts';
 import { planAccount } from './plan.ts';
 import { collectQuotes } from './quotes.ts';
 import { startTelemetry, type Telemetry } from './telemetry.ts';
@@ -97,6 +103,7 @@ export async function run(options: RunOptions): Promise<number> {
   const { gauges } = telemetry;
   const startedSeconds = started.getTime() / 1000;
   gauges.lastRun.record(startedSeconds);
+  gauges.buildInfo.record(1, { version: VERSION });
   if (succeeded) {
     gauges.lastSuccess.record(startedSeconds);
   }
@@ -232,12 +239,14 @@ async function syncAccounts(
     const synced = await tracer.startActiveSpan(`account ${name}`, async (span) => {
       try {
         const amount = toUnits(balance.raw, token.decimals);
-        gauges.balance.record(amount, {
-          chain,
-          symbol: token.symbol,
-          account: name,
-          explorer: balance.explorer,
-        });
+        const labels = { chain, symbol: token.symbol, account: name };
+        // One point per explorer, so the explorer label always holds one name;
+        // the total has its own metric, which a sum over explorers can't double count.
+        for (const [explorer, raw] of balance.byExplorer) {
+          gauges.balance.record(toUnits(raw, token.decimals), { ...labels, explorer });
+        }
+        gauges.accountBalance.record(amount, labels);
+        const explorers = [...balance.byExplorer.keys()].sort().join(',');
 
         const { id } = await actual.findAccount(name);
         const txs = await actual.transactionsForPlan(id, today);
@@ -263,7 +272,7 @@ async function syncAccounts(
           amount_cents: plan.amountCents,
           value_cents: plan.valueCents,
           note: plan.note,
-          explorer: balance.explorer,
+          explorer: explorers,
           source: quote.source,
         };
 

@@ -1,9 +1,10 @@
 // Seeds the dev Actual server (dev/compose.yml): sets its password, creates a
-// `Dev` budget with the off-budget accounts dev/config.yml names, and prints
-// the sync id and a session token to put in dev/.env.
+// `Dev` budget with the off-budget accounts dev/config.yml names (or adds the
+// ones an existing budget lacks), and prints the sync id and a session token
+// to put in dev/.env.
 //
 // `--cutoff-check` instead checks, against the real server, what src/actual.ts
-// assumes about Actual (C18): which transactions balanceThrough counts, and
+// assumes about Actual: which transactions balanceThrough counts, and
 // which transactionsForPlan returns, in what order.
 //
 // The e2e tests (test/e2e/) seed their own server with seedBudget.
@@ -20,7 +21,16 @@ import { LOOKBACK_TRANSACTIONS, openBudget } from '../src/actual.ts';
 const SERVER_URL = env.ACTUAL_SERVER_URL || 'http://localhost:5006';
 const BUDGET = 'Dev';
 // The names dev/config.yml, dev/config.password.yml and test/e2e/config.yml use.
-export const ACCOUNTS = ['TRON: TRX', 'TRON: USDT', 'Bitcoin'];
+export const ACCOUNTS = [
+  'TRON: TRX',
+  'TRON: USDT',
+  'TRON: TRX, two wallets',
+  'Bitcoin',
+  'Ethereum: ETH',
+  'Ethereum: USDC',
+  'BNB Smart Chain: BNB',
+  'BNB Smart Chain: USDT',
+];
 const SCRATCH_ACCOUNT = 'Cutoff check';
 
 class SeedError extends Error {}
@@ -71,11 +81,24 @@ async function login(serverURL: string, password: string): Promise<string> {
   return data.token;
 }
 
-/** The `Dev` budget's sync id, creating and uploading the budget when the server has none. */
-async function devBudget(): Promise<string> {
+/**
+ * The `Dev` budget's sync id, creating and uploading the budget when the server
+ * has none. On an existing budget, creates the ACCOUNTS it lacks, so a new
+ * account in the configs needs no wipe; `added` names them.
+ */
+async function devBudget(): Promise<{ syncId: string; added: string[] }> {
   const existing = (await api.getBudgets()).find((b) => b.name === BUDGET && b.groupId);
   if (existing?.groupId) {
-    return existing.groupId;
+    await api.downloadBudget(existing.groupId, {});
+    const names = new Set((await api.getAccounts()).map((account) => account.name));
+    const added = ACCOUNTS.filter((name) => !names.has(name));
+    for (const name of added) {
+      await api.createAccount({ name, offbudget: true }, 0);
+    }
+    if (added.length > 0) {
+      await api.sync();
+    }
+    return { syncId: existing.groupId, added };
   }
   // runImport creates a local budget, runs this, then uploads it. It also
   // removes the default categories, which off-budget accounts don't need.
@@ -89,12 +112,13 @@ async function devBudget(): Promise<string> {
   if (!created?.groupId) {
     throw new SeedError(`budget "${BUDGET}" was created but not uploaded`);
   }
-  return created.groupId;
+  return { syncId: created.groupId, added: [...ACCOUNTS] };
 }
 
 /**
  * Sets the server password on a new server, makes sure it has the `Dev` budget
- * with the off-budget ACCOUNTS, and returns its sync id and a session token.
+ * with the off-budget ACCOUNTS, and returns its sync id, a session token and
+ * the accounts it created.
  */
 export async function seedBudget({
   serverURL,
@@ -104,20 +128,23 @@ export async function seedBudget({
   serverURL: string;
   password: string;
   dataDir: string;
-}): Promise<{ syncId: string; token: string }> {
+}): Promise<{ syncId: string; token: string; added: string[] }> {
   await bootstrap(serverURL, password);
   const token = await login(serverURL, password);
   await api.init({ serverURL, dataDir, password, verbose: false });
   try {
-    return { syncId: await devBudget(), token };
+    return { ...(await devBudget()), token };
   } finally {
     await api.shutdown();
   }
 }
 
 async function seed(password: string, dataDir: string): Promise<void> {
-  const { syncId, token } = await seedBudget({ serverURL: SERVER_URL, password, dataDir });
+  const { syncId, token, added } = await seedBudget({ serverURL: SERVER_URL, password, dataDir });
   stdout.write(`Budget "${BUDGET}" is ready, with the accounts ${ACCOUNTS.join(', ')}.\n`);
+  if (added.length > 0 && added.length < ACCOUNTS.length) {
+    stdout.write(`Added to the existing budget: ${added.join(', ')}.\n`);
+  }
   stdout.write(
     `\nPut these in dev/.env:\nACTUAL_BUDGET_SYNC_ID=${syncId}\nACTUAL_SESSION_TOKEN=${token}\n`,
   );

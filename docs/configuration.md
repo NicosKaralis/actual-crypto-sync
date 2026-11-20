@@ -28,13 +28,13 @@ The schema checks the shape of the file. The tool checks more when it starts: th
 
 ## Secrets and `${VAR}`
 
-Do not write secrets in the config file. Write `${NAME}`, and the tool reads the value from the environment variable `NAME` when it starts.
+Do not write secrets in the config file. Write `${NAME}` in their place. When the tool starts, it reads the value from the environment variable `NAME`.
 
 - `${NAME}` works in all string values, also inside a longer string, for example `http://${HOST}:5006`.
 - If the variable is not set, the tool stops with an error that names the variable. The error never shows a value.
 - The `actual.auth` values must be a `${VAR}` reference. The tool refuses a secret that is written in the file.
 
-Wallet addresses are not secret, but they tell everybody what you own. Thus, the examples put them in environment variables too.
+Wallet addresses are not secret, but they tell everybody what you own. That is why the examples put them in environment variables too.
 
 ## Top level
 
@@ -46,7 +46,7 @@ Wallet addresses are not secret, but they tell everybody what you own. Thus, the
 | `tokens`   | No       | Tokens that are not built in.                             |
 | `accounts` | Yes      | The Actual accounts to keep in line with your wallets.    |
 
-An unknown key is an error. This applies at all levels, so a spelling mistake does not go unseen.
+An unknown key is an error. This applies at all levels, so the tool finds each spelling mistake in a key.
 
 ## `actual`
 
@@ -78,7 +78,7 @@ actual:
 
 ### `encryption_password`
 
-`encryption_password` is not a login. It decrypts a budget that has end-to-end encryption. Set it only for such a budget. It can be a `${VAR}` reference or a value in the file, but a `${VAR}` reference is better.
+`encryption_password` is not a login. It decrypts a budget that has end-to-end encryption. Set it only for such a budget. It can be a `${VAR}` reference or a value in the file. A `${VAR}` reference is better.
 
 ## `prices`
 
@@ -120,16 +120,18 @@ chains:
 
 `chains` is optional. Each key is a chain id, and its only key is `explorers`. If you do not list a chain, or do not set its `explorers`, the tool uses the default explorers of that chain.
 
-| Chain     | Default explorers |
-| --------- | ----------------- |
-| `tron`    | `trongrid`        |
-| `bitcoin` | `mempool-space`   |
+| Chain      | Default explorers        |
+| ---------- | ------------------------ |
+| `tron`     | `trongrid`               |
+| `bitcoin`  | `mempool-space`          |
+| `ethereum` | `json-rpc`, `blockscout` |
+| `bsc`      | `json-rpc`               |
 
 ### How the tool uses the explorers
 
 The tool reads each wallet one time, with all the tokens of the accounts on that wallet. It asks the first explorer of the chain. If that explorer fails, it asks the next explorer for the full wallet. One run never mixes two explorers for one wallet.
 
-An explorer that cannot read contract tokens is skipped for a wallet with a contract token.
+For a wallet with a contract token, the tool skips the explorers that cannot read contract tokens.
 
 If all the explorers fail for a wallet, the tool does not write to the accounts of that wallet. The run continues for the other accounts and then ends with an error.
 
@@ -149,7 +151,7 @@ A list of names:
 providers: [coingecko]
 ```
 
-A list of entries. Each entry is a name, or a map with one key, the name, and its settings as the value:
+A list of entries. Each entry is a name, or a map with one key. That key is the name, and its value holds the settings:
 
 ```yaml
 providers:
@@ -174,28 +176,47 @@ These settings work on all entries:
 
 Each explorer and provider also has its own settings:
 
-| Id              | Kind             | Setting        | Default                            | What it is                                                                                                    |
-| --------------- | ---------------- | -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `trongrid`      | TRON explorer    | `api_url`      | `https://api.trongrid.io`          | The TronGrid API.                                                                                             |
-| `trongrid`      | TRON explorer    | `api_key`      |                                    | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`.                                               |
-| `mempool-space` | Bitcoin explorer | `api_url`      | `https://mempool.space/api`        | Any mempool or Esplora API, for example your own instance.                                                    |
-| `coingecko`     | Price provider   | `api_url`      | `https://api.coingecko.com/api/v3` | The CoinGecko API.                                                                                            |
-| `coingecko`     | Price provider   | `demo_api_key` |                                    | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                        |
-| `coingecko`     | Price provider   | `pro_api_key`  |                                    | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`. |
-| `coinpaprika`   | Price provider   | `api_url`      | `https://api.coinpaprika.com/v1`   | The CoinPaprika API.                                                                                          |
+| Id              | Kind              | Setting        | Default                                           | What it is                                                                                                                                                                                 |
+| --------------- | ----------------- | -------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `trongrid`      | TRON explorer     | `api_url`      | `https://api.trongrid.io`                         | The TronGrid API.                                                                                                                                                                          |
+| `trongrid`      | TRON explorer     | `api_key`      |                                                   | A TronGrid API key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                            |
+| `mempool-space` | Bitcoin explorer  | `api_url`      | `https://mempool.space/api`                       | Any mempool or Esplora API, for example your own instance.                                                                                                                                 |
+| `json-rpc`      | Ethereum explorer | `api_url`      | `https://ethereum-rpc.publicnode.com`             | Any Ethereum JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                           |
+| `json-rpc`      | Ethereum explorer | `batch_size`   |                                                   | The most calls in one request. Without it, all the calls for a wallet go in one request. See [Ethereum explorers](#ethereum-explorers).                                                    |
+| `json-rpc`      | BSC explorer      | `api_url`      | `https://bsc-rpc.publicnode.com`                  | Any BNB Smart Chain JSON-RPC endpoint: your own node, or a provider's URL with its key in it. Use `${VAR}` for the key.                                                                    |
+| `json-rpc`      | BSC explorer      | `batch_size`   |                                                   | The most calls in one request. Without it, all the calls for a wallet go in one request. See [Ethereum explorers](#ethereum-explorers).                                                    |
+| `blockscout`    | Ethereum explorer | `api_url`      | `https://eth.blockscout.com/api`                  | Any Blockscout API, up to and including `/api`.                                                                                                                                            |
+| `blockscout`    | Ethereum explorer | `api_key`      |                                                   | A free Blockscout API key, from [dev.blockscout.com](https://dev.blockscout.com). It gives higher limits. The default `api_url` is then `https://api.blockscout.com/v2/api`. Use `${VAR}`. |
+| `etherscan`     | Ethereum explorer | `api_url`      | `https://api.etherscan.io/v2/api`                 | The Etherscan API V2.                                                                                                                                                                      |
+| `etherscan`     | Ethereum explorer | `api_key`      |                                                   | Required. A free Etherscan API key. Use `${VAR}`.                                                                                                                                          |
+| `etherscan`     | BSC explorer      | `api_url`      | `https://api.etherscan.io/v2/api`                 | The Etherscan API V2.                                                                                                                                                                      |
+| `etherscan`     | BSC explorer      | `api_key`      |                                                   | Required. An Etherscan API key of a paid plan: the free plan does not cover BNB Smart Chain. Use `${VAR}`.                                                                                 |
+| `coingecko`     | Price provider    | `api_url`      | `https://api.coingecko.com/api/v3`                | The CoinGecko API.                                                                                                                                                                         |
+| `coingecko`     | Price provider    | `demo_api_key` |                                                   | A free CoinGecko Demo key. It gives a higher rate limit. Use `${VAR}`.                                                                                                                     |
+| `coingecko`     | Price provider    | `pro_api_key`  |                                                   | A paid CoinGecko Pro key. The default `api_url` is then `https://pro-api.coingecko.com/api/v3`. Use `${VAR}`.                                                                              |
+| `coinpaprika`   | Price provider    | `api_url`      | `https://api.coinpaprika.com/v1`                  | The CoinPaprika API.                                                                                                                                                                       |
+| `coinpaprika`   | Price provider    | `api_key`      |                                                   | A CoinPaprika API key of a paid plan (pro, business or enterprise). A free plan's key does not work. The default `api_url` is then `https://api-pro.coinpaprika.com/v1`. Use `${VAR}`.     |
+| `coinmarketcap` | Price provider    | `api_url`      | `https://pro-api.coinmarketcap.com/public-api/v2` | The CoinMarketCap API without a key.                                                                                                                                                       |
+| `coinmarketcap` | Price provider    | `api_key`      |                                                   | A CoinMarketCap API key. The free Basic plan works. The default `api_url` is then `https://pro-api.coinmarketcap.com/v2`. Use `${VAR}`.                                                    |
 
-Any other setting is an error, so a misspelled setting cannot be ignored without a message.
+Any other setting is an error. So the tool never ignores a misspelled setting without a message.
 
-CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind with its own header, and a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
+CoinMarketCap works without a key. Then all users on the same IP address share one rate limit. When a request reaches the limit, the tool tries it again after 1, 2 and 4 seconds. With `api_key`, the tool sends the key in a header to the keyed API. It does not try again.
+
+CoinGecko has two kinds of key, and both start with `CG-`. Put a free Demo key in `demo_api_key`, or a paid Pro key in `pro_api_key`. The tool sends each kind in its own header. It sends a Pro key to the Pro API. Set only one of the two. The keys never show in logs, traces or errors.
 
 In serial mode, the wait after each request is:
 
-| Id              | Wait  |
-| --------------- | ----- |
-| `trongrid`      | 1 s   |
-| `mempool-space` | 1 s   |
-| `coingecko`     | 6 s   |
-| `coinpaprika`   | 0.1 s |
+| Id              | Wait   |
+| --------------- | ------ |
+| `trongrid`      | 1 s    |
+| `mempool-space` | 1 s    |
+| `json-rpc`      | 1 s    |
+| `blockscout`    | 1 s    |
+| `etherscan`     | 0.35 s |
+| `coingecko`     | 6 s    |
+| `coinpaprika`   | 0.1 s  |
+| `coinmarketcap` | 2 s    |
 
 ### Rate limits
 
@@ -203,8 +224,12 @@ When an API limits your requests, the tool logs a warning one time for each entr
 
 - TronGrid: add an `api_key`, or set `serial: true`.
 - mempool.space: set `serial: true`, or set `api_url` to your own mempool instance.
+- JSON-RPC: set `serial: true` and a `batch_size`, or set `api_url` to your own node or a provider with an API key.
+- Blockscout: add a free `api_key`, or set `serial: true`.
+- Etherscan: set `serial: true`. If serial mode is already on, run less often, or use a paid Etherscan plan.
 - CoinGecko: add a free Demo key with `demo_api_key`, run less often, or add another provider after it.
-- CoinPaprika: run less often, or add another provider after it.
+- CoinPaprika: run less often, add an `api_key`, or add another provider after it.
+- CoinMarketCap: add an `api_key`, run less often, or add another provider after it.
 
 The run then continues with the next explorer or provider.
 
@@ -212,6 +237,74 @@ The run then continues with the next explorer or provider.
 
 - **`trongrid`** reads TRX and all TRC20 tokens of a wallet in one request. TRX includes the TRX that you staked, and the TRX that you staked and delegated to other accounts.
 - **`mempool-space`** reads BTC. It counts only confirmed transactions, because transactions in the mempool can still change.
+- **`json-rpc`** reads the coin (ETH or BNB) and each token of the wallet in one batch request, or in batches of `batch_size` calls.
+- **`blockscout`** and **`etherscan`** read the coin and each token with one request each.
+
+### Ethereum explorers
+
+With no `explorers` for `ethereum`, the tool asks `json-rpc` (a public PublicNode endpoint) first, and `blockscout` if it fails. Neither needs a key. Without a key, Blockscout's public instance allows only a few requests, enough for a daily run with a few accounts. Add a free `api_key` for more.
+
+To use your own node, or a provider such as Infura or Alchemy, set `api_url` on `json-rpc`. These providers put the key in the URL, so use `${VAR}` for it:
+
+```yaml
+chains:
+  ethereum:
+    explorers:
+      - json-rpc:
+          api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}
+      - blockscout
+```
+
+Some providers count each call in a batch against a limit per second. Infura's free plan allows 500 credits a second. Each balance costs 80 credits, so the plan allows at most 6 calls a second. One wallet's batch is the coin and every token: 13 calls on Ethereum and 16 on BNB Smart Chain. Infura refuses part of the batch, and the tool logs a rate limit. To stay under the limit, use two settings. `batch_size` sends fewer calls in each request, and `serial: true` sends one request a second:
+
+```yaml
+- json-rpc:
+    api_url: https://mainnet.infura.io/v3/${INFURA_API_KEY}
+    batch_size: 6
+    serial: true
+```
+
+The tool never shows a key in logs, traces or errors. In a URL path, it shows `***` in place of a long run of letters and digits.
+
+`etherscan` needs an API key, so the tool uses it only when you list it. A free key from [etherscan.io](https://etherscan.io/apis) covers Ethereum:
+
+```yaml
+chains:
+  ethereum:
+    explorers:
+      - json-rpc
+      - etherscan:
+          api_key: ${ETHERSCAN_API_KEY}
+```
+
+`json-rpc` reads at the latest block. The other explorers can be a few seconds behind it. So two explorers can give slightly different balances for a wallet that just received a transaction.
+
+### BNB Smart Chain explorers
+
+With no `explorers` for `bsc`, the tool asks `json-rpc` (a public PublicNode endpoint). It needs no key. There is no public Blockscout instance for BNB Smart Chain. To use your own node or a provider, set `api_url` on `json-rpc`, as on Ethereum.
+
+The default is the only explorer. When PublicNode is down, a run fails for your BNB Smart Chain accounts. To have a backup, add a second `json-rpc` entry with another public node, for example BNB Chain's own `https://bsc-dataseed.bnbchain.org`. It needs no key either. The tool asks it only when PublicNode fails. Give it a `label`, so that logs and metrics tell the two entries apart:
+
+```yaml
+chains:
+  bsc:
+    explorers:
+      - json-rpc
+      - json-rpc:
+          api_url: https://bsc-dataseed.bnbchain.org
+          label: bnb-dataseed
+```
+
+`etherscan` works on BNB Smart Chain only with a key of a paid Etherscan plan. With a free key, Etherscan answers "Free API access is not supported for this chain".
+
+```yaml
+chains:
+  bsc:
+    explorers:
+      - json-rpc
+      - etherscan:
+          api_key: ${ETHERSCAN_API_KEY}
+```
 
 ## `tokens`
 
@@ -248,7 +341,7 @@ Many fake tokens copy the name and symbol of a real token. Before you add a toke
 2. Copy the decimals from the contract page.
 3. Find the token on CoinGecko. Make sure that the contract on the CoinGecko page is the same contract. The id is in the URL of the page, for example `wrapped-tron` in `coingecko.com/en/coins/wrapped-tron`.
 
-If you think that other users want the token, ask for it to be built in with the [new token form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-token.yml).
+If you think that other users want the token, ask to add it to the built-in tokens with the [new token form](https://github.com/NicosKaralis/actual-crypto-sync/issues/new?template=new-token.yml).
 
 ## `accounts`
 
@@ -264,9 +357,9 @@ accounts:
 | Key       | Required | What it is                                                                                |
 | --------- | -------- | ----------------------------------------------------------------------------------------- |
 | `name`    | Yes      | The Actual account, by its name or its id. Each account can be in the list one time only. |
-| `chain`   | Yes      | `tron` or `bitcoin`.                                                                      |
-| `token`   | Yes      | The chain's coin (TRX or BTC), a built-in token, or a token from `tokens`.                |
-| `wallets` | Yes      | The wallet address. In v1.0, one wallet per account.                                      |
+| `chain`   | Yes      | `tron`, `bitcoin`, `ethereum` or `bsc`.                                                   |
+| `token`   | Yes      | The chain's coin (TRX, BTC, ETH or BNB), a built-in token, or a token from `tokens`.      |
+| `wallets` | Yes      | The wallet addresses. The account shows the total of all its wallets.                     |
 
 The account in Actual must be open and off budget. Each account holds one token on one chain. For TRX and USDT on the same wallet, make two accounts.
 
@@ -281,13 +374,33 @@ wallets: ["${BTC_ADDRESS}"]
 
 In an inline list, put quotes around `${...}`. If you do not, YAML reads it as a map.
 
+An Ethereum or BNB Smart Chain address is `0x` and 40 hex digits. The same address works on both chains. The tool reads the address as text, with or without quotes. But if you write it in the file, put quotes around it: your editor reads `0x...` without quotes as a number. If the address has upper-case and lower-case letters, the case is its checksum (EIP-55), and the tool checks it. An address all in lower case or all in upper case has no checksum.
+
 You can use the same wallet in more than one account. The tool reads it one time.
+
+### Several wallets in one account
+
+An account can have more than one wallet, all on its chain. The account shows the total of its wallets, and the note shows the total only.
+
+```yaml
+accounts:
+  - name: "TRON: TRX, all wallets"
+    chain: tron
+    token: TRX
+    wallets:
+      - ${TRON_WALLET_ADDRESS}
+      - ${TRON_SAVINGS_ADDRESS}
+```
+
+- If the tool cannot read one of the wallets, it does not write to the account in that run. It never writes a total that leaves out a wallet. The run continues for the other accounts and then ends with an error.
+- Each wallet can be in the list one time only. Bitcoin bech32 addresses (`bc1...`) can have upper-case or lower-case letters. The tool compares them in lower case, so `bc1q...` and `BC1Q...` are the same wallet.
+- A different explorer can read each wallet, for example when the first explorer fails for one wallet. The metrics then show each explorer's part. See [Metrics](monitoring.md#metrics).
 
 ## What the tool writes
 
 For each account, the tool writes one transaction per day:
 
-- **The amount** is the difference between the value of the wallet and the balance of the account. Thus, the account balance becomes the value of the wallet.
+- **The amount** is the difference between the value of the wallet and the balance of the account. So the account balance becomes the value of the wallet.
 - **The payee** is `AutoImporter`.
 - **The note** shows the balance, the change since the last sync, the price and the value, for example `156.9193 TRX (Δ +2.009071 @ 0.297 EUR/TRX, 46.6 EUR)`.
 - **The transaction is not cleared.** If the tool runs again on the same day, it updates that transaction. The first run of the next day clears it.
@@ -296,7 +409,7 @@ The tool never changes or deletes a transaction that you added. If two runs writ
 
 The tool also never changes or deletes a reconciled transaction. If you reconcile the account in Actual, today's sync transaction can be part of the reconciliation. A later run on the same day then keeps it as it is:
 
-- If the value of the wallet did not change, the reconciled transaction already has the right amount, and the run does not change it.
+- If the value of the wallet did not change, the reconciled transaction already has the right amount. The run does not change it.
 - If the value changed, the run skips the account and logs the warning `today's sync transaction is reconciled; skipped until tomorrow`. The run still exits with 0.
 
 The first run of the next day writes a new transaction, so the account shows the value of the wallet again.
@@ -317,7 +430,7 @@ To find the change since the last sync, the tool reads the note of the last sync
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf`      | `http/protobuf`, `http/json` or `grpc`. It must match what your collector takes.                        |
 | `OTEL_EXPORTER_OTLP_HEADERS`  |                      | Headers for the collector, such as an API key, as `key=value,key=value`.                                |
 
-The variables that your config uses with `${VAR}` are also necessary.
+Also set each variable that your config uses with `${VAR}`.
 
 The tool reads all the standard `OTEL_*` variables: separate endpoints and protocols for traces and metrics, TLS, timeouts, sampling, and more. See [Sending metrics and traces](opentelemetry.md) for all of them, with examples. For the logs, and the metrics and traces that the tool sends, see [docs/monitoring.md](monitoring.md).
 
@@ -333,35 +446,35 @@ The tool checks all of the config before it connects to Actual. If the config ha
 
 These are the errors that you can see most often:
 
-| Error                                                                                   | What to do                                                                                      |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `config: can't read /config/config.yml (ENOENT)`                                        | Mount the file at that path, or set `--config` or `CONFIG_FILE`.                                |
-| `<path>: unknown key; expected ...`                                                     | Correct the spelling of the key. The error lists the correct keys.                              |
-| `<path>: unknown setting; expected ...`                                                 | Correct the spelling of the setting. The error lists the settings of that explorer or provider. |
-| `<path>: required`                                                                      | Add the key.                                                                                    |
-| `<path>: environment variable NAME is not set`                                          | Set the variable for the tool, for example in your Secret or env file.                          |
-| `actual.auth: set one of session, password, api_key`                                    | Add one login method. See [docs/authentication.md](authentication.md).                          |
-| `actual.auth: set only one of session, password, api_key; found ...`                    | Remove all methods but one.                                                                     |
-| `actual.auth.<method>: use ${VAR}, never the secret itself`                             | Put the secret in an environment variable, and write `${NAME}` in the file.                     |
-| `prices.currency: "..." isn't an ISO 4217 currency code`                                | Use a 3-letter code, for example `eur`.                                                         |
-| `prices.currency: "..." isn't supported by ...`                                         | Use another currency, or add a provider that supports it.                                       |
-| `<path>: unknown explorer "..." for tron; supported: ...`                               | Use one of the listed explorers.                                                                |
-| `<path>: unknown price provider "..."; supported: ...`                                  | Use one of the listed providers.                                                                |
-| `accounts[N].token: "..." isn't built in on tron; define it in tokens:`                 | Add the token to `tokens`, or correct the symbol.                                               |
-| `accounts[N].token: none of the listed price providers (...) has a price id for ...`    | Add a `price_ids` entry for one of your providers.                                              |
-| `accounts[N].wallets[0]: not a valid tron address`                                      | Correct the address. The error does not show it.                                                |
-| `accounts[N].wallets: several wallets per account isn't supported yet (see ROADMAP.md)` | Use one wallet per account. See the [roadmap](../ROADMAP.md).                                   |
-| `accounts[N].name: "..." is already used by accounts[M]`                                | Each account can be in the list one time only.                                                  |
+| Error                                                                                | What to do                                                                                      |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `config: can't read /config/config.yml (ENOENT)`                                     | Mount the file at that path, or set `--config` or `CONFIG_FILE`.                                |
+| `<path>: unknown key; expected ...`                                                  | Correct the spelling of the key. The error lists the correct keys.                              |
+| `<path>: unknown setting; expected ...`                                              | Correct the spelling of the setting. The error lists the settings of that explorer or provider. |
+| `<path>: required`                                                                   | Add the key.                                                                                    |
+| `<path>: environment variable NAME is not set`                                       | Set the variable for the tool, for example in your Secret or env file.                          |
+| `actual.auth: set one of session, password, api_key`                                 | Add one login method. See [docs/authentication.md](authentication.md).                          |
+| `actual.auth: set only one of session, password, api_key; found ...`                 | Remove all methods but one.                                                                     |
+| `actual.auth.<method>: use ${VAR}, never the secret itself`                          | Put the secret in an environment variable, and write `${NAME}` in the file.                     |
+| `prices.currency: "..." isn't an ISO 4217 currency code`                             | Use a 3-letter code, for example `eur`.                                                         |
+| `prices.currency: "..." isn't supported by ...`                                      | Use another currency, or add a provider that supports it.                                       |
+| `<path>: unknown explorer "..." for tron; supported: ...`                            | Use one of the listed explorers.                                                                |
+| `<path>: unknown price provider "..."; supported: ...`                               | Use one of the listed providers.                                                                |
+| `accounts[N].token: "..." isn't built in on tron; define it in tokens:`              | Add the token to `tokens`, or correct the symbol.                                               |
+| `accounts[N].token: none of the listed price providers (...) has a price id for ...` | Add a `price_ids` entry for one of your providers.                                              |
+| `accounts[N].wallets[0]: not a valid tron address`                                   | Correct the address. The error does not show it.                                                |
+| `accounts[N].wallets[I]: the same wallet as accounts[N].wallets[J]`                  | Remove one of the two. The error does not show the address.                                     |
+| `accounts[N].name: "..." is already used by accounts[M]`                             | Each account can be in the list one time only.                                                  |
 
 Errors from the login and the budget download are in [docs/authentication.md](authentication.md#troubleshooting).
 
 Errors during the run do not stop the other accounts:
 
-| Error                                                                                     | What it means                                                                                                     |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `<account>: account "..." not found`                                                      | No open account in the budget has that name or id. Names must be the same, also the letter case.                  |
-| `<account>: account "..." is on budget; only off-budget accounts are synced`              | Make the account off budget in Actual, or use another account.                                                    |
-| `<account>: account "..." is closed`                                                      | Reopen the account, or remove it from the config.                                                                 |
-| `tron:USDT: no price from any provider; its accounts are skipped`                         | All providers failed for that token. The warnings before it tell you why.                                         |
-| `TC9F...R2MJ: every explorer failed (trongrid: ...)`                                      | No explorer could read the wallet. The reason of each explorer is in the parentheses, and the warnings before it. |
-| `TC9F...R2MJ: every explorer failed (trongrid: trongrid: account not found: TC9F...R2MJ)` | The address never received a transaction, so TRON does not know it yet.                                           |
+| Error                                                                                     | What it means                                                                                                            |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `<account>: account "..." not found`                                                      | No open account in the budget has that name or id. The name must be exactly the same, also in letter case.               |
+| `<account>: account "..." is on budget; only off-budget accounts are synced`              | Make the account off budget in Actual, or use another account.                                                           |
+| `<account>: account "..." is closed`                                                      | Reopen the account, or remove it from the config.                                                                        |
+| `tron:USDT: no price from any provider; its accounts are skipped`                         | All providers failed for that token. The warnings before it tell you why.                                                |
+| `TC9F...R2MJ: every explorer failed (trongrid: ...)`                                      | No explorer could read the wallet. The parentheses and the warnings before the error show the reason from each explorer. |
+| `TC9F...R2MJ: every explorer failed (trongrid: trongrid: account not found: TC9F...R2MJ)` | The address never received a transaction, so TRON does not know it yet.                                                  |
