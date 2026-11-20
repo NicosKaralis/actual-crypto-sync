@@ -183,6 +183,36 @@ describe('jsonRpcExplorer', () => {
       }
     });
 
+    // test/fixtures/json-rpc/rate-limited.json: Infura's answer to ETH, USDT, USDC
+    // and DAI over its limit, HTTP 200. Only USDC (id 3) was answered; the other
+    // calls are bare errors with no id.
+    test('a batch with calls refused for a rate limit, without their ids, is a rate limit', async () => {
+      const { result } = balances(fixture('json-rpc/rate-limited.json'), [ETH, USDT, USDC, DAI]);
+      const error = await result.then(
+        () => assert.fail('expected getBalances to throw'),
+        (error: unknown) => error,
+      );
+      assert.ok(error instanceof ApiError);
+      assert.equal(error.message, 'json-rpc: JSON-RPC error -32005');
+      assert.ok(explorer.rateLimitAdvice(error, { settings: {}, serial: false }));
+    });
+
+    test('an error without an id is the error of the batch, even when it is not a rate limit', async () => {
+      const { result } = balances(
+        [
+          { code: -32603, message: 'internal error' },
+          { jsonrpc: '2.0', id: 2, result: '0x1' },
+        ],
+        [ETH, USDT],
+      );
+      await assert.rejects(result, (error: unknown) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.message, 'json-rpc: JSON-RPC error -32603');
+        assert.equal(explorer.rateLimitAdvice(error, { settings: {}, serial: false }), null);
+        return true;
+      });
+    });
+
     test('other errors get no advice', async () => {
       const error = await failure(jsonResponse(fixture('json-rpc/error.json')));
       assert.equal(explorer.rateLimitAdvice(error, { settings: {}, serial: false }), null);

@@ -51,6 +51,15 @@ export function jsonRpcExplorer({ defaultUrl }: { defaultUrl: string }): Explore
       if (!Array.isArray(body)) {
         throw new Error(`${ID}: expected a list of results`);
       }
+      // A call refused with a bare error and no id, as Infura answers a rate
+      // limit ({ code: -32005, message }), can't be matched to its token: it is
+      // the batch's error, not a missing result.
+      const refused = body.find(
+        (entry: unknown) => isRecord(entry) && entry.id === undefined && entry.code !== undefined,
+      );
+      if (refused !== undefined) {
+        throw rpcError(refused);
+      }
       const byId = new Map<unknown, unknown>(
         body.map((entry: unknown) => [isRecord(entry) ? entry.id : undefined, entry]),
       );
