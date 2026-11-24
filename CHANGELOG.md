@@ -2,16 +2,17 @@
 
 ## [1.2.1](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.2.0...v1.2.1) (2026-11-24)
 
+This release makes each sync transaction tell which wallet and coin it comes from. Tested with Actual server 26.11.0.
 
 ### Bug Fixes
 
-* set a wallet and coin key as the imported payee ([eb4ba42](https://github.com/NicosKaralis/actual-crypto-sync/commit/eb4ba42edd5fb5bf0671bc0712a904ce6fe67807))
-* set a wallet and coin key as the imported payee ([5509ab8](https://github.com/NicosKaralis/actual-crypto-sync/commit/5509ab8aed35d697edff882adab3112eb7d1c25c)), closes [#91](https://github.com/NicosKaralis/actual-crypto-sync/issues/91)
-
+- **The imported payee of sync transactions:** each sync transaction had the imported payee `AutoImporter`. So it did not tell which wallet and coin it came from. Now the imported payee is the wallet prefix and the coin, as in the logs, for example `TC9F...R2MJ: TRX`. For a contract token, it also names the native coin of the chain: `TC9F...R2MJ: TRX/USDT`. An account with several wallets gets one part for each wallet, sorted and joined with a comma. The payee stays `AutoImporter`, and the amount does not change. If a run updates the transaction of today, it also sets the new imported payee. Transactions from earlier days keep `AutoImporter`. An Actual rule that matches the imported payee `AutoImporter` no longer matches the new transactions. ([#93](https://github.com/NicosKaralis/actual-crypto-sync/pull/93), [5509ab8](https://github.com/NicosKaralis/actual-crypto-sync/commit/5509ab8aed35d697edff882adab3112eb7d1c25c))
 
 ### Documentation
 
-* describe the imported payee of sync transactions ([5235a4a](https://github.com/NicosKaralis/actual-crypto-sync/commit/5235a4a9df325f7994f9397f63e2dfd12557cac3))
+- **The imported payee:** [What the tool writes](https://github.com/NicosKaralis/actual-crypto-sync/blob/main/docs/configuration.md#what-the-tool-writes) tells you about the imported payee and its format. ([#93](https://github.com/NicosKaralis/actual-crypto-sync/pull/93), [5235a4a](https://github.com/NicosKaralis/actual-crypto-sync/commit/5235a4a9df325f7994f9397f63e2dfd12557cac3))
+
+See the [README](https://github.com/NicosKaralis/actual-crypto-sync#readme) to get started, and the [docs](https://github.com/NicosKaralis/actual-crypto-sync/tree/main/docs) for each setting.
 
 ## [1.2.0](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.3...v1.2.0) (2026-11-20)
 
