@@ -142,6 +142,8 @@ function fakeActual(
   balances: Record<string, number> = {},
 ) {
   const calls: string[] = [];
+  // The imported_payee written: by account id on create, by transaction id on update.
+  const payees: Record<string, string> = {};
   const ids: Record<string, string> = { TRX: 'acc-trx', USDT: 'acc-usdt', Bitcoin: 'acc-btc' };
   const actual: Actual = {
     findAccount: async (name) => {
@@ -162,9 +164,11 @@ function fakeActual(
     },
     createTransaction: async (id, tx) => {
       calls.push(`create ${id} ${tx.date} ${tx.amount} ${tx.notes}`);
+      payees[id] = tx.importedPayee;
     },
     updateTransaction: async (id, fields) => {
       calls.push(`update ${id} ${fields.amount} ${fields.notes}`);
+      payees[id] = fields.importedPayee;
     },
     clearTransaction: async (id) => {
       calls.push(`clear ${id}`);
@@ -176,7 +180,7 @@ function fakeActual(
       calls.push(sync ? 'sync' : 'close');
     },
   };
-  return { actual, calls };
+  return { actual, calls, payees };
 }
 
 /** Telemetry recording every gauge value, with spans in memory. */
@@ -336,6 +340,17 @@ describe('run', () => {
     });
   });
 
+  test('each new entry gets the imported_payee of its wallet and coin', async () => {
+    const actual = fakeActual();
+    const { code } = await runWith({ actual });
+    assert.equal(code, 0);
+    assert.deepEqual(actual.payees, {
+      'acc-trx': 'TC9F...R2MJ: TRX',
+      'acc-usdt': 'TC9F...R2MJ: TRX/USDT',
+      'acc-btc': 'bc1q...298v: BTC',
+    });
+  });
+
   test("updates today's entry, deletes duplicates, clears earlier ones", async () => {
     const note = (balance: string) => `${balance} TRX (Δ +0 @ 0.3 EUR/TRX, 1 EUR)`;
     const actual = fakeActual(
@@ -352,6 +367,8 @@ describe('run', () => {
     const { code, calls, values } = await runWith({ actual });
     assert.equal(code, 0);
     assert.ok(calls.includes('update t-a 561 156.9193 TRX (Δ +6.9193 @ 0.297 EUR/TRX, 46.61 EUR)'));
+    // An entry from an older version (imported_payee AutoImporter) gets the key.
+    assert.equal(actual.payees['t-a'], 'TC9F...R2MJ: TRX');
     assert.ok(calls.includes('delete t-b'));
     assert.ok(calls.includes('clear y'));
     assert.ok(!calls.includes('clear old'));

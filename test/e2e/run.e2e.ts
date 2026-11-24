@@ -206,6 +206,18 @@ describe('e2e', () => {
     await mock?.close();
   });
 
+  // The wallet prefix and the coin; EVM addresses are lowercase once normalized.
+  const IMPORTED_PAYEES: Record<string, string> = {
+    'TRON: TRX': 'TC9F...R2MJ: TRX',
+    'TRON: USDT': 'TC9F...R2MJ: TRX/USDT',
+    'TRON: TRX, two wallets': 'TC9F...R2MJ: TRX, TF4E...JKv2: TRX',
+    Bitcoin: 'bc1q...298v: BTC',
+    'Ethereum: ETH': '0xf9...acec: ETH',
+    'Ethereum: USDC': '0xf9...acec: ETH/USDC',
+    'BNB Smart Chain: BNB': '0xf9...acec: BNB',
+    'BNB Smart Chain: USDT': '0xf9...acec: BNB/USDT',
+  };
+
   test('the first run creates one uncleared transaction per account', async () => {
     const { code, entries } = await sync({ now: DAY1 });
     assert.equal(code, 0);
@@ -219,7 +231,7 @@ describe('e2e', () => {
       const [tx] = txs;
       assert.equal(tx?.date, '2026-11-20', name);
       assert.equal(tx?.cleared, false, name);
-      assert.equal(tx?.imported_payee, 'AutoImporter', name);
+      assert.equal(tx?.imported_payee, IMPORTED_PAYEES[name], name);
       assert.ok(parseNote(tx?.notes ?? null), `${name}: a sync note`);
       assert.equal(tx?.amount, values.get(name), `${name}: the account shows the wallet's value`);
     }
