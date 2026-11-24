@@ -13,7 +13,7 @@ import {
 } from './actual.ts';
 import { collectBalances } from './balances.ts';
 import { type Config, ConfigError, loadConfig } from './config.ts';
-import { redactUrl, toUnits } from './format.ts';
+import { importedPayee, redactUrl, toUnits } from './format.ts';
 import type { Sleep } from './http.ts';
 import { createLog, errorMessage, type Log, type LogFormat, parseLogFormat } from './log.ts';
 import {
@@ -267,8 +267,16 @@ async function syncAccounts(
           account: name,
           currency,
         });
+        // Every account's chain is in config.chains: the config loader adds it.
+        const nativeSymbol = config.chains[chain]?.chain.nativeSymbol ?? token.symbol;
+        const key = importedPayee(
+          account.wallets.map((wallet) => wallet.address),
+          token,
+          nativeSymbol,
+        );
         const fields = {
           account: name,
+          imported_payee: key,
           amount_cents: plan.amountCents,
           value_cents: plan.valueCents,
           note: plan.note,
@@ -302,7 +310,7 @@ async function syncAccounts(
           return true;
         }
 
-        const tx = { amount: plan.amountCents, notes: plan.note };
+        const tx = { amount: plan.amountCents, notes: plan.note, importedPayee: key };
         if (plan.reconciled === 'kept') {
           log('info', "kept today's reconciled transaction", fields);
         } else if (plan.existingId === null) {

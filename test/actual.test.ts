@@ -330,9 +330,14 @@ describe('the opened budget', () => {
     );
   });
 
-  test('createTransaction writes one uncleared AutoImporter transaction', async () => {
+  test('createTransaction writes one uncleared AutoImporter transaction with the key', async () => {
     const { actual, calls } = await opened();
-    await actual.createTransaction('acc-trx', { date: '2026-11-12', amount: 4661, notes: 'n' });
+    await actual.createTransaction('acc-trx', {
+      date: '2026-11-12',
+      amount: 4661,
+      notes: 'n',
+      importedPayee: 'TC9F...R2MJ: TRX',
+    });
     assert.deepEqual(calls, [
       {
         method: 'addTransactions',
@@ -344,7 +349,7 @@ describe('the opened budget', () => {
               amount: 4661,
               notes: 'n',
               payee_name: 'AutoImporter',
-              imported_payee: 'AutoImporter',
+              imported_payee: 'TC9F...R2MJ: TRX',
               cleared: false,
             },
           ],
@@ -356,11 +361,18 @@ describe('the opened budget', () => {
 
   test('update, clear and delete', async () => {
     const { actual, calls } = await opened();
-    await actual.updateTransaction('t1', { amount: 5, notes: 'n' });
+    await actual.updateTransaction('t1', {
+      amount: 5,
+      notes: 'n',
+      importedPayee: 'TC9F...R2MJ: TRX',
+    });
     await actual.clearTransaction('t2');
     await actual.deleteTransaction('t3');
     assert.deepEqual(calls, [
-      { method: 'updateTransaction', args: ['t1', { amount: 5, notes: 'n', cleared: false }] },
+      {
+        method: 'updateTransaction',
+        args: ['t1', { amount: 5, notes: 'n', imported_payee: 'TC9F...R2MJ: TRX', cleared: false }],
+      },
       { method: 'updateTransaction', args: ['t2', { cleared: true }] },
       { method: 'deleteTransaction', args: ['t3'] },
     ]);
@@ -394,7 +406,12 @@ describe('the opened budget', () => {
       },
     );
     const created = await rejection(
-      actual.createTransaction('acc-trx', { date: '2026-11-12', amount: 1, notes: 'n' }),
+      actual.createTransaction('acc-trx', {
+        date: '2026-11-12',
+        amount: 1,
+        notes: 'n',
+        importedPayee: 'TC9F...R2MJ: TRX',
+      }),
     );
     assert.equal(created.message, 'Actual: addTransactions failed (sync-error)');
     const closed = await rejection(actual.close({ sync: true }));
