@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.1](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.2.0...v1.2.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* set a wallet and coin key as the imported payee ([eb4ba42](https://github.com/NicosKaralis/actual-crypto-sync/commit/eb4ba42edd5fb5bf0671bc0712a904ce6fe67807))
+* set a wallet and coin key as the imported payee ([5509ab8](https://github.com/NicosKaralis/actual-crypto-sync/commit/5509ab8aed35d697edff882adab3112eb7d1c25c)), closes [#91](https://github.com/NicosKaralis/actual-crypto-sync/issues/91)
+
+
+### Documentation
+
+* describe the imported payee of sync transactions ([5235a4a](https://github.com/NicosKaralis/actual-crypto-sync/commit/5235a4a9df325f7994f9397f63e2dfd12557cac3))
+
 ## [1.2.0](https://github.com/NicosKaralis/actual-crypto-sync/compare/v1.1.3...v1.2.0) (2026-11-20)
 
 This release adds two chains, Ethereum and BNB Smart Chain, and a third price provider, CoinMarketCap. An account can now hold several wallets. Metrics and traces now carry the version of the tool. Tested with Actual server 26.11.0.
