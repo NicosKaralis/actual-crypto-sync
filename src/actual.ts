@@ -50,7 +50,7 @@ export interface ActualApi {
   ): Promise<unknown>;
   updateTransaction(
     id: string,
-    fields: { amount?: number; notes?: string; cleared?: boolean },
+    fields: { amount?: number; notes?: string; imported_payee?: string; cleared?: boolean },
   ): Promise<unknown>;
   deleteTransaction(id: string): Promise<unknown>;
   sync(): Promise<void>;
@@ -73,11 +73,16 @@ export interface Actual {
   transactionsForPlan(accountId: string, today: string): Promise<PlanTransaction[]>;
   /** The balance in cents of every transaction dated `date` (YYYY-MM-DD) or earlier. */
   balanceThrough(accountId: string, date: string): Promise<number>;
+  /** `importedPayee`: which wallets and coin the transaction comes from (`importedPayee` in format.ts). */
   createTransaction(
     accountId: string,
-    tx: { date: string; amount: number; notes: string },
+    tx: { date: string; amount: number; notes: string; importedPayee: string },
   ): Promise<void>;
-  updateTransaction(id: string, fields: { amount: number; notes: string }): Promise<void>;
+  /** Also sets `importedPayee`, so an entry written by an older version gets the new key. */
+  updateTransaction(
+    id: string,
+    fields: { amount: number; notes: string; importedPayee: string },
+  ): Promise<void>;
   clearTransaction(id: string): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   /** Syncs the changes to the server (unless `sync` is false), then stops the engine. */
@@ -239,20 +244,34 @@ function opened(api: ActualApi): Actual {
       return call('getAccountBalance', () => api.getAccountBalance(accountId, cutoff));
     },
 
-    createTransaction: async (accountId, { date, amount, notes }) => {
+    createTransaction: async (accountId, { date, amount, notes, importedPayee }) => {
       await call('addTransactions', () =>
         api.addTransactions(
           accountId,
-          [{ date, amount, notes, payee_name: PAYEE, imported_payee: PAYEE, cleared: false }],
+          [
+            {
+              date,
+              amount,
+              notes,
+              payee_name: PAYEE,
+              imported_payee: importedPayee,
+              cleared: false,
+            },
+          ],
           { learnCategories: false, runTransfers: false },
         ),
       );
     },
 
     // Uncleared until the day is over; the next day's run clears it.
-    updateTransaction: async (id, { amount, notes }) => {
+    updateTransaction: async (id, { amount, notes, importedPayee }) => {
       await call('updateTransaction', () =>
-        api.updateTransaction(id, { amount, notes, cleared: false }),
+        api.updateTransaction(id, {
+          amount,
+          notes,
+          imported_payee: importedPayee,
+          cleared: false,
+        }),
       );
     },
 

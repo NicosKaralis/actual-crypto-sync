@@ -402,6 +402,7 @@ For each account, the tool writes one transaction per day:
 
 - **The amount** is the difference between the value of the wallet and the balance of the account. So the account balance becomes the value of the wallet.
 - **The payee** is `AutoImporter`.
+- **The imported payee** tells which wallet and which coin the transaction comes from. It is the wallet prefix, then the coin, for example `TC9F...R2MJ: TRX`. For a contract token, the coin is the chain's native coin and the token, for example `TC9F...R2MJ: TRX/USDT`. An account with several wallets gets one part per wallet, sorted and joined with a comma: `TC9F...R2MJ: TRX, TF4E...JKv2: TRX`. Transactions that version 1.2.0 or earlier wrote keep the imported payee `AutoImporter`. If a run updates today's transaction, it also sets the new imported payee.
 - **The note** shows the balance, the change since the last sync, the price and the value, for example `156.9193 TRX (Δ +2.009071 @ 0.297 EUR/TRX, 46.6 EUR)`.
 - **The transaction is not cleared.** If the tool runs again on the same day, it updates that transaction. The first run of the next day clears it.
 

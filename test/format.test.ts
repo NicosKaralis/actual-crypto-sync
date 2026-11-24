@@ -7,6 +7,7 @@ import {
   formatAmount,
   formatDecimals,
   formatDelta,
+  importedPayee,
   isSyncNote,
   parseNote,
   redactUrl,
@@ -28,6 +29,48 @@ describe('toUnits', () => {
     assert.equal(toUnits(1n, 18), 1e-18);
     // More digits than a double holds: the result is the nearest double to the exact value.
     assert.equal(toUnits(123456789012345678901234n, 18), Number('123456.789012345678901234'));
+  });
+});
+
+describe('importedPayee', () => {
+  const native = { symbol: 'TRX', kind: 'native' } as const;
+  const usdt = { symbol: 'USDT', kind: 'contract' } as const;
+
+  test('a native coin: the wallet prefix and the coin', () => {
+    assert.equal(
+      importedPayee(['TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ'], native, 'TRX'),
+      'TC9F...R2MJ: TRX',
+    );
+  });
+
+  test("a contract token: the chain's native coin, then the token", () => {
+    assert.equal(
+      importedPayee(['TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ'], usdt, 'TRX'),
+      'TC9F...R2MJ: TRX/USDT',
+    );
+    assert.equal(
+      importedPayee(['0xf977814e90da44bfa03b6295a0616a897441acec'], usdt, 'ETH'),
+      '0xf9...acec: ETH/USDT',
+    );
+  });
+
+  test('a Bitcoin wallet', () => {
+    assert.equal(
+      importedPayee(
+        ['bc1q0qfzuge7vr5s2xkczrjkccmxemlyyn8mhx298v'],
+        { symbol: 'BTC', kind: 'native' },
+        'BTC',
+      ),
+      'bc1q...298v: BTC',
+    );
+  });
+
+  test('several wallets: sorted and joined, whatever the config order', () => {
+    const key = 'TC9F...R2MJ: TRX, TF4E...JKv2: TRX';
+    const a = 'TC9F6tRXT1gRv3hdFv35sGkFe5P2EdR2MJ';
+    const b = 'TF4EdKvoRoQz3DJA6osYj2z33ip2AqJKv2';
+    assert.equal(importedPayee([a, b], native, 'TRX'), key);
+    assert.equal(importedPayee([b, a], native, 'TRX'), key);
   });
 });
 

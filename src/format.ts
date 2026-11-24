@@ -1,5 +1,5 @@
 import { decodeBase58Check } from './chains/base58check.ts';
-import type { Currency } from './types.ts';
+import type { Currency, Token } from './types.ts';
 
 // The quote (price per token) keeps at most 4 decimals in notes, whatever the
 // currency's minor units: 0.297 EUR/TRX needs more than 2. A quote below 0.1
@@ -30,6 +30,25 @@ export function walletPrefix(address: string): string {
     return address;
   }
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
+}
+
+/**
+ * The `imported_payee` of an account's sync transactions: it tells which
+ * wallets and which coin they come from. One part per wallet: the wallet
+ * prefix, then the coin (`TC9F...R2MJ: TRX`), or the chain's native coin and
+ * the token for a contract token (`TC9F...R2MJ: TRX/USDT`). Several wallets
+ * are sorted and joined with ", ", so the order in the config doesn't change it.
+ */
+export function importedPayee(
+  addresses: readonly string[],
+  token: Pick<Token, 'symbol' | 'kind'>,
+  nativeSymbol: string,
+): string {
+  const coin = token.kind === 'contract' ? `${nativeSymbol}/${token.symbol}` : token.symbol;
+  return addresses
+    .map((address) => `${walletPrefix(address)}: ${coin}`)
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    .join(', ');
 }
 
 // Path segments that are wallet addresses: TRON and Bitcoin legacy (base58check,
