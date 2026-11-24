@@ -2,7 +2,7 @@
 
 # Node runs the .ts files directly (type stripping), so there is no build stage.
 # Keep the version in line with .nvmrc.
-FROM node:26.13.1-trixie-slim@sha256:615a27817f7b9508f0de73eb1cc8fc8894ab122bee56c1a7a568b72cd1032067 AS base
+FROM node:26.13.1-trixie-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a029248184b8e020be5 AS base
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 
@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY . .
 RUN npm test && touch /tmp/tests-passed
 
-FROM node:26.13.1-trixie-slim@sha256:615a27817f7b9508f0de73eb1cc8fc8894ab122bee56c1a7a568b72cd1032067 AS runtime
+FROM node:26.13.1-trixie-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a029248184b8e020be5 AS runtime
 ENV NODE_ENV=production \
     ACTUAL_DATA_DIR=/cache \
     CONFIG_FILE=/config/config.yml
